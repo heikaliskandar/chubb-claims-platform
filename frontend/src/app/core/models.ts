@@ -188,3 +188,24 @@ export interface EmployeeDetail extends Omit<EmployeeSummary, 'managerUsername'>
   approvalAuthority: { unlimited: boolean; limits: { currency: string; amount: number }[] };
   self: boolean;
 }
+
+export type ApprovalView = 'TO_REVIEW' | 'DECIDED' | 'MY_REFERRALS';
+
+export type ApprovalStatus = 'PENDING' | 'APPROVED' | 'RETURNED' | 'REJECTED';
+
+export interface Approval {
+  claimId: string;
+  claimNumber: string;
+  market: Market;
+  claimType: ClaimType;
+  currency: string;
+  claimedAmount: number;
+  recommendedAmount: number;
+  reason: string;
+  referredBy: string;
+  referredAt: string;
+  status: ApprovalStatus;
+  reviewedBy: string | null;
+  reviewedAt: string | null;
+  canReview: boolean;
+}

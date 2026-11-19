@@ -1,5 +1,6 @@
 package com.chubb.claims.claim.api;
 
+import com.chubb.claims.claim.api.dto.ApprovalResponse;
 import com.chubb.claims.claim.api.dto.AssessClaimRequest;
 import com.chubb.claims.claim.api.dto.ClaimDetailResponse;
 import com.chubb.claims.claim.api.dto.ClaimSummaryResponse;
@@ -74,20 +75,35 @@ public class ClaimController {
     public PageResponse<ClaimSummaryResponse> findClaims(
             @RequestParam(required = false) ClaimStatus status,
             @RequestParam(required = false) String assignedTo,
+            @RequestParam(required = false) Boolean closed,
             @RequestParam(defaultValue = "0") @PositiveOrZero int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             Authentication authentication) {
-        return claimService.findClaims(CurrentUser.from(authentication), status, assignedTo, page, size);
+        return claimService.findClaims(CurrentUser.from(authentication), status, assignedTo, closed, page, size);
     }
 
     @GetMapping("/mine")
     @PreAuthorize("hasRole('CLAIMANT')")
-    @Operation(summary = "The authenticated claimant's claims, newest first")
+    @Operation(summary = "The authenticated claimant's claims, most recently updated first",
+            description = "closed=false for active claims, closed=true for settled or rejected ones.")
     public PageResponse<ClaimSummaryResponse> findMyClaims(
+            @RequestParam(required = false) Boolean closed,
             @RequestParam(defaultValue = "0") @PositiveOrZero int page,
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             Authentication authentication) {
-        return claimService.findClaimsOfClaimant(authentication.getName(), page, size);
+        return claimService.findClaimsOfClaimant(authentication.getName(), closed, page, size);
+    }
+
+    @GetMapping("/approvals")
+    @PreAuthorize("hasAnyRole('OFFICER', 'MANAGER')")
+    @Operation(summary = "Referrals for approval",
+            description = "TO_REVIEW and DECIDED cover referrals from people below you; MY_REFERRALS are your own.")
+    public PageResponse<ApprovalResponse> findApprovals(
+            @RequestParam(defaultValue = "TO_REVIEW") ApprovalResponse.View view,
+            @RequestParam(defaultValue = "0") @PositiveOrZero int page,
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            Authentication authentication) {
+        return claimService.findApprovals(CurrentUser.from(authentication), view, page, size);
     }
 
     @GetMapping("/{claimId}")

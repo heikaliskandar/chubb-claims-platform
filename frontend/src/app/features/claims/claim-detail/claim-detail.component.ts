@@ -109,8 +109,8 @@ export class ClaimDetailComponent {
     const isClaimant = this.auth.user()?.role === 'CLAIMANT';
     return [
       isClaimant
-        ? { label: 'My claims', routerLink: '/claimant' }
-        : { label: 'Claims', routerLink: '/officer' },
+        ? { label: 'My claims', routerLink: '/claims/active' }
+        : { label: 'Claims', routerLink: '/claims/open' },
       { label: this.claim()?.claimNumber ?? '' },
     ];
   });

@@ -1,5 +1,6 @@
 package com.chubb.claims.claim.api;
 
+import com.chubb.claims.claim.api.dto.ApprovalResponse;
 import com.chubb.claims.claim.api.dto.ClaimDetailResponse;
 import com.chubb.claims.claim.application.ClaimService;
 import com.chubb.claims.claim.application.ClaimSubmission;
@@ -219,10 +220,28 @@ class ClaimControllerTest {
 
     @Test
     void passesTheAuthenticatedClaimantToTheService() throws Exception {
-        given(claimService.findClaimsOfClaimant("claimant2", 0, 20)).willReturn(
+        given(claimService.findClaimsOfClaimant(eq("claimant2"), isNull(), eq(0), eq(20))).willReturn(
                 new PageResponse<>(List.of(), 0, 20, 0, 0));
 
         mvc.perform(get("/api/v1/claims/mine").with(as("claimant2")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    void claimantsCannotListApprovals() throws Exception {
+        mvc.perform(get("/api/v1/claims/approvals").with(as("claimant1")))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(claimService);
+    }
+
+    @Test
+    void approvalsDefaultToTheToReviewView() throws Exception {
+        given(claimService.findApprovals(user("lead1"), eq(ApprovalResponse.View.TO_REVIEW), eq(0), eq(20)))
+                .willReturn(new PageResponse<>(List.of(), 0, 20, 0, 0));
+
+        mvc.perform(get("/api/v1/claims/approvals").with(as("lead1")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.totalElements").value(0));
     }

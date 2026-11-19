@@ -9,8 +9,8 @@ interface Session {
 }
 
 const HOME_BY_ROLE: Record<Role, string> = {
-  CLAIMANT: '/claimant',
-  OFFICER: '/officer',
+  CLAIMANT: '/claims/active',
+  OFFICER: '/claims/queue',
   MANAGER: '/manager',
 };
 

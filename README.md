@@ -8,6 +8,25 @@ A claims platform for motor and property claims across six APAC markets:
 
 > Take-home assessment. The brief is in [docs/ASSESSMENT_BRIEF.md](docs/ASSESSMENT_BRIEF.md). How AI was used is logged in [AI_JOURNAL.md](AI_JOURNAL.md).
 
+## How the brief is covered
+
+| Brief requirement | Where it lives |
+|---|---|
+| Claimants report an incident | **Claims → New claim** (`POST /claims`, with `Idempotency-Key` so a double submit can't create two claims) |
+| Claimants track their claim | **Claims → My claims / History**; claim page with status, "waiting on", next step and full activity timeline; refreshes every 10 s |
+| Claimants provide information when asked | "We need more information" banner on My claims; **Respond** on the claim page |
+| Claimants receive decisions | Decision card with outcome, amount and reason; event-driven notification stub in insights-service |
+| Staff pick up incoming claims | **Claims → Queue** → **Assign to me** (optimistic locking stops two officers taking the same claim) |
+| Staff review and assess | **Start review**, **Request info**, **Assess** (sets the reserve; every re-assessment kept) |
+| Staff progress to settlement or rejection | **Approve / Reject / Mark settled**; approvals above the officer's per-currency limit go to **Approvals** for someone above them (four-eyes) |
+| Staff see team workload and performance | **Team → Performance** (open claims by officer and status, decisions, average hours to decision) and **Team → People** (reporting line, profiles) |
+| Managers see outstanding claims and liability exposure | **Overview** dashboard: reserve per currency, by market and type, workload chart |
+| Same Angular app for every user type | One app; menus, pages and buttons adapt to role, position and `allowedActions` |
+| REST and Kafka, with a reason for each | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
+| Async processing across both tiers | Outbox → Kafka → read model; the UI polls and shows "Updated hh:mm:ss" on dashboards |
+
+**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, and 146 unit and web tests plus Testcontainers integration tests.
+
 ## Architecture at a glance
 
 | Component | Role | Port |
@@ -106,8 +125,9 @@ Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log i
 | Method | Path | Role |
 |---|---|---|
 | POST | `/api/v1/claims` (optional `Idempotency-Key` header) | CLAIMANT |
-| GET | `/api/v1/claims?status=&assignedTo=&page=&size=` | OFFICER, MANAGER |
-| GET | `/api/v1/claims/mine` | CLAIMANT |
+| GET | `/api/v1/claims?status=&assignedTo=&closed=&page=&size=` | OFFICER, MANAGER (unassigned + own reporting line) |
+| GET | `/api/v1/claims/approvals?view=TO_REVIEW\|DECIDED\|MY_REFERRALS` | OFFICER, MANAGER |
+| GET | `/api/v1/claims/mine?closed=` | CLAIMANT |
 | GET | `/api/v1/claims/{id}` | any (claimants: own claims only) |
 | POST | `/api/v1/claims/{id}/assignment` | OFFICER |
 | POST | `/api/v1/claims/{id}/review` | OFFICER (assigned) |
@@ -150,7 +170,7 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 ## Tests
 
 ```bash
-cd services/claims-service && ./mvnw test      # 129 unit + web-layer tests, no Docker needed
+cd services/claims-service && ./mvnw test      # 134 unit + web-layer tests, no Docker needed
 cd services/insights-service && ./mvnw test    # 12 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
 ```

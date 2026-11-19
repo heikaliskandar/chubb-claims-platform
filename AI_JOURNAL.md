@@ -88,6 +88,12 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ❌ I asked the AI to copy a commercial admin template I had downloaded. It refused because of licensing and because presenting it as my own work would misrepresent the assessment, and built an original layout on PrimeNG instead.
 - ⚠️ The initial bundle grew to 660 kB raw / 151 kB transferred because of the theme engine. I raised the warning budget to 750 kB instead of hiding the warning; the hard limit stays at 1 MB.
 
+## Phase 11: Requirements check and navigation
+
+- ❓ I asked the AI to check every line of the brief against what we had. It found two real gaps: officers had **no screen** for team workload and performance (only the API), and approvers had no single place to see referral statuses. Claimants also had nothing pointing them to claims needing their action.
+- ✅ Added: grouped sidebar menus (Claims, Approvals, Team, Account); separate Queue, Assigned to me, All open and History views; an **Approvals** page whose tabs depend on whether you manage anyone (To review, Decided, My referrals) with a Review button only where the domain rules allow it; a **Team performance** page; an "action needed" banner for claimants; and a requirements traceability table in the README.
+- ✅ Approval status (pending, approved, returned, rejected) is derived from the claim's own audit trail, not stored twice, and is unit-tested, including a returned referral that is referred again.
+
 ## Phase 10: Chasing the 502
 
 - ❓ Sign-in returned 502 in the Codespace, and I could not share the container logs at the time. The AI booted both services locally against a real embedded PostgreSQL 17 (a temporary test, removed afterwards) and called the main endpoints over HTTP. Migrations, seeding, positions from the directory, reporting-line visibility, contact updates and claim submission all worked, so the code was not the cause.

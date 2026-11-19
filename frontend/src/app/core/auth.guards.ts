@@ -1,5 +1,5 @@
 import { inject } from '@angular/core';
-import { CanActivateFn, Router } from '@angular/router';
+import { CanActivateFn, CanMatchFn, Router } from '@angular/router';
 import { AuthService } from './auth.service';
 import { Role } from './models';
 
@@ -10,5 +10,12 @@ export function roleGuard(...roles: Role[]): CanActivateFn {
   return () => {
     const user = inject(AuthService).user();
     return user && roles.includes(user.role) ? true : inject(Router).createUrlTree(['/login']);
+  };
+}
+
+export function roleMatch(...roles: Role[]): CanMatchFn {
+  return () => {
+    const user = inject(AuthService).user();
+    return !!user && roles.includes(user.role);
   };
 }

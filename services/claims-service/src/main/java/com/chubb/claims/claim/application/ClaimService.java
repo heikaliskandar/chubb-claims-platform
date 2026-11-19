@@ -1,10 +1,12 @@
 package com.chubb.claims.claim.application;
 
+import com.chubb.claims.claim.api.dto.ApprovalResponse;
 import com.chubb.claims.claim.api.dto.ClaimDetailResponse;
 import com.chubb.claims.claim.api.dto.ClaimSummaryResponse;
 import com.chubb.claims.claim.domain.Actor;
 import com.chubb.claims.claim.domain.ApprovalLimit;
 import com.chubb.claims.claim.domain.Claim;
+import com.chubb.claims.claim.domain.ClaimAction;
 import com.chubb.claims.claim.domain.ClaimDetails;
 import com.chubb.claims.claim.domain.ClaimNumber;
 import com.chubb.claims.claim.domain.ClaimRuleViolationException;
@@ -20,6 +22,7 @@ import com.chubb.claims.events.ClaimEventRecorder;
 import com.chubb.claims.events.ClaimEventType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -75,19 +78,40 @@ public class ClaimService {
 
     @Transactional(readOnly = true)
     public PageResponse<ClaimSummaryResponse> findClaims(CurrentUser viewer, ClaimStatus status,
-                                                         String assignedOfficerId, int page, int size) {
+                                                         String assignedOfficerId, Boolean closed,
+                                                         int page, int size) {
         Set<String> officers = new HashSet<>(reportsOf(viewer));
         officers.add(viewer.username());
-        Specification<Claim> query = ClaimSpecifications.matching(status, assignedOfficerId)
+        Specification<Claim> query = ClaimSpecifications.matching(status, assignedOfficerId, closed)
                 .and(ClaimSpecifications.unassignedOrAssignedTo(officers));
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("createdAt"));
-        return PageResponse.of(claims.findAll(query, pageRequest).map(ClaimMapper::toSummary));
+        Sort sort = Boolean.TRUE.equals(closed) ? Sort.by("updatedAt").descending() : Sort.by("createdAt");
+        return PageResponse.of(claims.findAll(query, PageRequest.of(page, size, sort)).map(ClaimMapper::toSummary));
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ClaimSummaryResponse> findClaimsOfClaimant(String claimantId, int page, int size) {
-        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("createdAt").descending());
-        return PageResponse.of(claims.findByClaimantId(claimantId, pageRequest).map(ClaimMapper::toSummary));
+    public PageResponse<ApprovalResponse> findApprovals(CurrentUser viewer, ApprovalResponse.View view,
+                                                        int page, int size) {
+        Set<String> reports = reportsOf(viewer);
+        Specification<Claim> query = switch (view) {
+            case TO_REVIEW -> ClaimSpecifications.referredBy(reports).and(ClaimSpecifications.awaitingApproval(true));
+            case DECIDED -> ClaimSpecifications.referredBy(reports).and(ClaimSpecifications.awaitingApproval(false));
+            case MY_REFERRALS -> ClaimSpecifications.referredBy(Set.of(viewer.username()));
+        };
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("referral.referredAt").descending());
+        if (view != ApprovalResponse.View.MY_REFERRALS && reports.isEmpty()) {
+            return PageResponse.of(Page.empty(pageRequest));
+        }
+        return PageResponse.of(claims.findAll(query, pageRequest).map(claim -> ApprovalMapper.toApproval(claim,
+                claim.availableActions(actorFor(viewer, claim, reports)).contains(ClaimAction.APPROVE_REFERRAL))));
+    }
+
+    @Transactional(readOnly = true)
+    public PageResponse<ClaimSummaryResponse> findClaimsOfClaimant(String claimantId, Boolean closed,
+                                                                   int page, int size) {
+        Specification<Claim> query = ClaimSpecifications.ofClaimant(claimantId)
+                .and(ClaimSpecifications.matching(null, null, closed));
+        PageRequest pageRequest = PageRequest.of(page, size, Sort.by("updatedAt").descending());
+        return PageResponse.of(claims.findAll(query, pageRequest).map(ClaimMapper::toSummary));
     }
 
     @Transactional(readOnly = true)

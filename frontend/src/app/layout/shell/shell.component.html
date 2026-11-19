@@ -3,7 +3,7 @@
     <span class="dots" aria-hidden="true"></span>
 
     <div class="sidebar-head">
-      <a class="brand" [routerLink]="navItems()[0]?.link" aria-label="Home">
+      <a class="brand" [routerLink]="homeLink()" aria-label="Home">
         <app-logo [product]="collapsed() ? undefined : 'Claims'" />
       </a>
       <button type="button" class="close" aria-label="Close menu" (click)="mobileOpen.set(false)">
@@ -12,19 +12,21 @@
     </div>
 
     <nav>
-      <span class="section label">Menu</span>
-      @for (item of navItems(); track item.link) {
-        <a
-          class="nav-item"
-          [routerLink]="item.link"
-          routerLinkActive="active"
-          [routerLinkActiveOptions]="{ exact: true }"
-          [attr.title]="collapsed() ? item.label : null"
-          (click)="mobileOpen.set(false)"
-        >
-          <span class="ms">{{ item.icon }}</span>
-          <span class="label">{{ item.label }}</span>
-        </a>
+      @for (group of navGroups(); track group.title) {
+        <span class="section label">{{ group.title }}</span>
+        @for (item of group.items; track item.link) {
+          <a
+            class="nav-item"
+            [routerLink]="item.link"
+            routerLinkActive="active"
+            [routerLinkActiveOptions]="{ exact: true }"
+            [attr.title]="collapsed() ? item.label : null"
+            (click)="mobileOpen.set(false)"
+          >
+            <span class="ms">{{ item.icon }}</span>
+            <span class="label">{{ item.label }}</span>
+          </a>
+        }
       }
     </nav>
 

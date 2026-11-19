@@ -1,13 +1,22 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
-import { ClaimDetail, ClaimStatus, ClaimSummary, PageResponse, SubmitClaimRequest } from './models';
+import {
+  Approval,
+  ApprovalView,
+  ClaimDetail,
+  ClaimStatus,
+  ClaimSummary,
+  PageResponse,
+  SubmitClaimRequest,
+} from './models';
 
 const BASE = '/api/v1/claims';
 
 export interface QueueFilter {
   status?: ClaimStatus;
   assignedTo?: string;
+  closed?: boolean;
   page: number;
   size: number;
 }
@@ -30,11 +39,22 @@ export class ClaimsApiService {
     if (filter.assignedTo) {
       params = params.set('assignedTo', filter.assignedTo);
     }
+    if (filter.closed !== undefined) {
+      params = params.set('closed', filter.closed);
+    }
     return this.http.get<PageResponse<ClaimSummary>>(BASE, { params });
   }
 
-  mine(page: number, size: number): Observable<PageResponse<ClaimSummary>> {
-    return this.http.get<PageResponse<ClaimSummary>>(`${BASE}/mine`, { params: { page, size } });
+  mine(closed: boolean, page: number, size: number): Observable<PageResponse<ClaimSummary>> {
+    return this.http.get<PageResponse<ClaimSummary>>(`${BASE}/mine`, {
+      params: { closed, page, size },
+    });
+  }
+
+  approvals(view: ApprovalView, page: number, size: number): Observable<PageResponse<Approval>> {
+    return this.http.get<PageResponse<Approval>>(`${BASE}/approvals`, {
+      params: { view, page, size },
+    });
   }
 
   get(id: string): Observable<ClaimDetail> {

@@ -1,0 +1,136 @@
+<app-page-header title="Approvals" [crumbs]="[{ label: 'Approvals' }]" />
+
+@if (view(); as current) {
+  @if (tabs().length > 1) {
+    <div class="tabs" role="tablist">
+      @for (tab of tabs(); track tab.value) {
+        <button
+          type="button"
+          role="tab"
+          class="tab"
+          [class.active]="current === tab.value"
+          [attr.aria-selected]="current === tab.value"
+          (click)="show(tab.value)"
+        >
+          <span class="ms">{{ tab.icon }}</span>
+          {{ tab.label }}
+        </button>
+      }
+    </div>
+  }
+
+  <section class="surface-card">
+    <p class="intro muted small">
+      @switch (current) {
+        @case ('TO_REVIEW') {
+          Referrals from your team that are above the recommending officer's approval limit.
+        }
+        @case ('DECIDED') {
+          Referrals from your team that have been approved, returned or rejected.
+        }
+        @case ('MY_REFERRALS') {
+          Approvals you recommended above your own limit, and what happened to them.
+        }
+      }
+    </p>
+
+    @if (result(); as page) {
+      @if (page.content.length === 0) {
+        <div class="empty-state">
+          <span class="ms">{{ current === 'TO_REVIEW' ? 'check_circle' : 'inbox' }}</span>
+          {{ current === 'TO_REVIEW' ? 'Nothing waiting for you' : 'No referrals yet' }}
+        </div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Claim</th>
+                <th class="right">Recommended</th>
+                @if (current !== 'MY_REFERRALS') {
+                  <th>Recommended by</th>
+                }
+                <th>Referred</th>
+                <th>Status</th>
+                <th>Reviewed by</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (approval of page.content; track approval.claimId) {
+                <tr
+                  class="clickable"
+                  tabindex="0"
+                  (click)="open(approval)"
+                  (keydown.enter)="open(approval)"
+                >
+                  <td>
+                    <div class="primary-cell">
+                      <strong>{{ approval.claimNumber }}</strong>
+                      <span class="muted small">
+                        {{ marketName(approval.market) }} · {{ approval.claimType | label }}
+                      </span>
+                    </div>
+                  </td>
+                  <td class="right">
+                    <div class="primary-cell amounts">
+                      <strong class="amount">
+                        {{ approval.recommendedAmount | currency: approval.currency : 'code' }}
+                      </strong>
+                      <span class="muted small amount">
+                        of {{ approval.claimedAmount | currency: approval.currency : 'code' }}
+                      </span>
+                    </div>
+                  </td>
+                  @if (current !== 'MY_REFERRALS') {
+                    <td>
+                      <span class="person">
+                        <app-user-avatar [username]="approval.referredBy" size="sm" />
+                        {{ approval.referredBy }}
+                      </span>
+                    </td>
+                  }
+                  <td class="muted">{{ approval.referredAt | date: 'd MMM, HH:mm' }}</td>
+                  <td>
+                    <span class="tag" [class]="'tag ' + statusTone[approval.status]">
+                      {{ approval.status | label }}
+                    </span>
+                  </td>
+                  <td class="muted">
+                    {{ approval.reviewedBy ?? '—' }}
+                    @if (approval.reviewedAt) {
+                      <span class="small">· {{ approval.reviewedAt | date: 'd MMM' }}</span>
+                    }
+                  </td>
+                  <td class="right">
+                    @if (approval.canReview) {
+                      <button
+                        type="button"
+                        class="btn btn-primary review"
+                        (click)="open(approval); $event.stopPropagation()"
+                      >
+                        Review
+                      </button>
+                    } @else {
+                      <span class="ms muted">chevron_right</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      <app-pager
+        [page]="page.page"
+        [size]="pageSize"
+        [total]="page.totalElements"
+        (pageChange)="pageIndex.set($event)"
+      />
+    } @else {
+      <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+    }
+  </section>
+} @else {
+  <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+}

@@ -1,6 +1,6 @@
 <app-page-header
   title="New claim"
-  [crumbs]="[{ label: 'My claims', routerLink: '/claimant' }, { label: 'New claim' }]"
+  [crumbs]="[{ label: 'My claims', routerLink: '/claims/active' }, { label: 'New claim' }]"
 />
 
 <form class="surface-card form-card" [formGroup]="form" (ngSubmit)="submit()">
@@ -79,7 +79,7 @@
   </div>
 
   <div class="form-actions">
-    <a class="btn btn-ghost" routerLink="/claimant">Cancel</a>
+    <a class="btn btn-ghost" routerLink="/claims/active">Cancel</a>
     <button type="submit" class="btn btn-primary" [disabled]="form.invalid || busy()">
       <span class="ms">send</span>
       {{ busy() ? 'Submitting…' : 'Submit claim' }}

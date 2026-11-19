@@ -24,21 +24,66 @@ interface NavItem {
   link: string;
 }
 
-const NAV_BY_ROLE: Record<Role, NavItem[]> = {
+interface NavGroup {
+  title: string;
+  items: NavItem[];
+}
+
+const TEAM: NavGroup = {
+  title: 'Team',
+  items: [
+    { label: 'Performance', icon: 'leaderboard', link: '/team' },
+    { label: 'People', icon: 'account_tree', link: '/people' },
+  ],
+};
+
+const ACCOUNT: NavGroup = {
+  title: 'Account',
+  items: [{ label: 'My profile', icon: 'badge', link: '/people/me' }],
+};
+
+const APPROVALS: NavGroup = {
+  title: 'Approvals',
+  items: [{ label: 'Approvals', icon: 'how_to_reg', link: '/approvals' }],
+};
+
+const NAV_BY_ROLE: Record<Role, NavGroup[]> = {
   CLAIMANT: [
-    { label: 'My claims', icon: 'folder', link: '/claimant' },
-    { label: 'New claim', icon: 'add_circle', link: '/claimant/new' },
+    {
+      title: 'Claims',
+      items: [
+        { label: 'New claim', icon: 'add_circle', link: '/claims/new' },
+        { label: 'My claims', icon: 'folder', link: '/claims/active' },
+        { label: 'History', icon: 'history', link: '/claims/history' },
+      ],
+    },
   ],
   OFFICER: [
-    { label: 'Claims', icon: 'inbox', link: '/officer' },
-    { label: 'People', icon: 'account_tree', link: '/people' },
-    { label: 'My profile', icon: 'badge', link: '/people/me' },
+    {
+      title: 'Claims',
+      items: [
+        { label: 'Queue', icon: 'inbox', link: '/claims/queue' },
+        { label: 'Assigned to me', icon: 'person', link: '/claims/assigned' },
+        { label: 'All open', icon: 'folder_open', link: '/claims/open' },
+        { label: 'History', icon: 'history', link: '/claims/history' },
+      ],
+    },
+    APPROVALS,
+    TEAM,
+    ACCOUNT,
   ],
   MANAGER: [
-    { label: 'Overview', icon: 'bar_chart', link: '/manager' },
-    { label: 'Claims', icon: 'inbox', link: '/officer' },
-    { label: 'People', icon: 'account_tree', link: '/people' },
-    { label: 'My profile', icon: 'badge', link: '/people/me' },
+    { title: 'Overview', items: [{ label: 'Dashboard', icon: 'bar_chart', link: '/manager' }] },
+    {
+      title: 'Claims',
+      items: [
+        { label: 'All open', icon: 'folder_open', link: '/claims/open' },
+        { label: 'History', icon: 'history', link: '/claims/history' },
+      ],
+    },
+    APPROVALS,
+    TEAM,
+    ACCOUNT,
   ],
 };
 
@@ -79,9 +124,13 @@ export class ShellComponent {
   protected readonly collapsed = signal(matches(TABLET_QUERY) && !matches(MOBILE_QUERY));
   protected readonly mobileOpen = signal(false);
   protected readonly menuOpen = signal(false);
-  protected readonly navItems = computed(() => {
+  protected readonly navGroups = computed(() => {
     const role = this.user()?.role;
     return role ? NAV_BY_ROLE[role] : [];
+  });
+  protected readonly homeLink = computed(() => {
+    const role = this.user()?.role;
+    return role ? this.auth.homeFor(role) : '/login';
   });
   protected readonly userMenu = computed<MenuEntry[]>(() => [
     ...(this.user()?.role === 'CLAIMANT'
