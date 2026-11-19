@@ -24,10 +24,8 @@ export class ThemeService {
 
 function readInitial(): boolean {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored) {
-      return stored === 'dark';
-    }
-  } catch {}
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return localStorage.getItem(STORAGE_KEY) === 'dark';
+  } catch {
+    return false;
+  }
 }
