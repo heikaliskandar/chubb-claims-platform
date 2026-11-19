@@ -5,33 +5,68 @@
 </app-page-header>
 
 @if (dashboard(); as dashboard) {
-  <div class="stats">
-    <div class="surface-card stat">
-      <span class="icon blue"><i class="pi pi-folder-open"></i></span>
-      <div>
-        <span class="muted small">Open claims</span><strong>{{ openClaims() }}</strong>
+  <div class="hero-row">
+    <section class="surface-card welcome">
+      <div class="welcome-text">
+        <h2>Welcome back, {{ username() }}</h2>
+        <span class="muted">{{ openClaims() }} open claims across the region</span>
+
+        <div class="metrics">
+          <div class="metric">
+            <span class="icon sky"><i class="pi pi-inbox"></i></span>
+            <div>
+              <strong>{{ dashboard.workload.unassignedClaims }}</strong>
+              <span class="muted small">Unassigned</span>
+            </div>
+          </div>
+          <div class="metric">
+            <span class="icon amber"><i class="pi pi-user-edit"></i></span>
+            <div>
+              <strong>{{ pendingApproval() }}</strong>
+              <span class="muted small">Awaiting approval</span>
+            </div>
+          </div>
+          <div class="metric">
+            <span class="icon blue"><i class="pi pi-folder-open"></i></span>
+            <div>
+              <strong>{{ openClaims() }}</strong>
+              <span class="muted small">In progress</span>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="surface-card stat">
-      <span class="icon sky"><i class="pi pi-inbox"></i></span>
-      <div>
-        <span class="muted small">Unassigned</span
-        ><strong>{{ dashboard.workload.unassignedClaims }}</strong>
+      <img class="illustration" src="images/claims-illustration.svg" alt="" />
+    </section>
+
+    <section class="surface-card decision">
+      <div class="card-title">
+        Decision time
+        <span class="icon green"><i class="pi pi-stopwatch"></i></span>
       </div>
-    </div>
-    <div class="surface-card stat">
-      <span class="icon amber"><i class="pi pi-user-edit"></i></span>
-      <div>
-        <span class="muted small">Awaiting approval</span><strong>{{ pendingApproval() }}</strong>
+      <div class="big amount">
+        {{ averageHours() === null ? '—' : (averageHours() | number: '1.0-1') }}
+        <span class="muted small">hours avg.</span>
       </div>
-    </div>
-    <div class="surface-card stat">
-      <span class="icon green"><i class="pi pi-stopwatch"></i></span>
-      <div>
-        <span class="muted small">Avg. hours to decision</span>
-        <strong>{{ averageHours() === null ? '—' : (averageHours() | number: '1.0-1') }}</strong>
-      </div>
-    </div>
+      @for (team of dashboard.performance.teams; track team.team) {
+        <div class="team">
+          <div class="team-head">
+            <strong>{{ team.team }}</strong>
+            <span class="muted small">
+              {{
+                team.averageHoursToDecision === null
+                  ? '—'
+                  : (team.averageHoursToDecision | number: '1.0-1') + ' h'
+              }}
+            </span>
+          </div>
+          <div class="team-stats">
+            <span><i class="pi pi-check green-text"></i>{{ team.approved }}</span>
+            <span><i class="pi pi-times red-text"></i>{{ team.rejected }}</span>
+            <span><i class="pi pi-lock muted"></i>{{ team.closed }}</span>
+          </div>
+        </div>
+      }
+    </section>
   </div>
 
   <section class="surface-card">
@@ -60,55 +95,33 @@
     </section>
 
     <section class="surface-card">
-      <h3 class="card-title">Teams</h3>
-      @for (team of dashboard.performance.teams; track team.team) {
-        <div class="team">
-          <div class="team-head">
-            <strong>{{ team.team }}</strong>
-            <span class="muted small">
-              {{
-                team.averageHoursToDecision === null
-                  ? '—'
-                  : (team.averageHoursToDecision | number: '1.0-1') + ' h avg'
-              }}
-            </span>
-          </div>
-          <div class="team-stats">
-            <span><i class="pi pi-check green-text"></i>{{ team.approved }}</span>
-            <span><i class="pi pi-times red-text"></i>{{ team.rejected }}</span>
-            <span><i class="pi pi-lock muted"></i>{{ team.closed }}</span>
-          </div>
-        </div>
-      }
+      <h3 class="card-title">Exposure by market</h3>
+      <p-table [value]="dashboard.exposure.lines" [rowHover]="true">
+        <ng-template #header>
+          <tr>
+            <th>Market</th>
+            <th class="right">Reserve</th>
+          </tr>
+        </ng-template>
+        <ng-template #body let-line>
+          <tr>
+            <td>
+              <div class="market">{{ marketName(line.market) }}</div>
+              <span class="muted small"
+                >{{ line.claimType | label }} · {{ line.openClaims }} open</span
+              >
+            </td>
+            <td class="right amount">
+              {{ line.outstandingReserve | currency: line.currency : 'code' : '1.0-0' }}
+            </td>
+          </tr>
+        </ng-template>
+        <ng-template #emptymessage>
+          <tr>
+            <td colspan="2"><div class="empty-state">No open claims</div></td>
+          </tr>
+        </ng-template>
+      </p-table>
     </section>
   </div>
-
-  <section class="surface-card">
-    <h3 class="card-title">Exposure by market</h3>
-    <p-table [value]="dashboard.exposure.lines" [rowHover]="true">
-      <ng-template #header>
-        <tr>
-          <th>Market</th>
-          <th>Type</th>
-          <th class="right">Open</th>
-          <th class="right">Reserve</th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-line>
-        <tr>
-          <td>{{ marketName(line.market) }}</td>
-          <td>{{ line.claimType | label }}</td>
-          <td class="right">{{ line.openClaims }}</td>
-          <td class="right amount">
-            {{ line.outstandingReserve | currency: line.currency : 'code' }}
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="4"><div class="empty-state">No open claims</div></td>
-        </tr>
-      </ng-template>
-    </p-table>
-  </section>
 }

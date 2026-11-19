@@ -1,13 +1,13 @@
 :root {
-  --app-bg: #f5f7fb;
+  --app-bg: #f4f7fc;
   --app-surface: #ffffff;
-  --app-border: #e8ebf3;
+  --app-border: #edf0f6;
   --app-text: #1d2433;
   --app-muted: #6b7385;
   --app-primary: #4f7df3;
   --app-primary-soft: #eef4ff;
-  --app-radius: 14px;
-  --app-shadow: 0 1px 2px rgb(16 24 40 / 4%), 0 6px 20px rgb(16 24 40 / 4%);
+  --app-radius: 16px;
+  --app-shadow: 0 1px 3px rgb(42 67 155 / 5%), 0 10px 30px -8px rgb(42 67 155 / 10%);
   --app-sidebar-width: 256px;
   --app-topbar-height: 64px;
 }
@@ -48,17 +48,16 @@ a {
 
 .surface-card {
   background: var(--app-surface);
-  border: 1px solid var(--app-border);
   border-radius: var(--app-radius);
   box-shadow: var(--app-shadow);
-  padding: 20px 24px;
+  padding: 24px 28px;
 }
 
 .card-title {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  font-size: 15px;
+  font-size: 17px;
   font-weight: 600;
   margin: 0 0 16px;
 }
@@ -186,4 +185,10 @@ a {
 .p-timeline-event-opposite {
   flex: 0;
   padding: 0;
+}
+
+.p-avatar.initials {
+  background: var(--app-primary-soft);
+  color: var(--app-primary);
+  font-weight: 700;
 }

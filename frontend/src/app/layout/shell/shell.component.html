@@ -1,50 +1,69 @@
-<div class="shell" [class.sidebar-open]="sidebarOpen()">
+<div class="shell" [class.collapsed]="collapsed()" [class.mobile-open]="mobileOpen()">
   <aside class="sidebar">
     <a class="brand" [routerLink]="navItems()[0]?.link">
       <span class="logo"><i class="pi pi-shield"></i></span>
-      <span>APAC Claims</span>
+      <span class="label">APAC Claims</span>
     </a>
 
     <nav>
-      <span class="section">Menu</span>
+      <span class="section label">Home</span>
       @for (item of navItems(); track item.link) {
         <a
           class="nav-item"
           [routerLink]="item.link"
           routerLinkActive="active"
           [routerLinkActiveOptions]="{ exact: true }"
-          (click)="sidebarOpen.set(false)"
+          [attr.title]="collapsed() ? item.label : null"
+          (click)="mobileOpen.set(false)"
         >
           <i [class]="item.icon"></i>
-          <span>{{ item.label }}</span>
+          <span class="label">{{ item.label }}</span>
         </a>
       }
     </nav>
+
+    @if (user(); as user) {
+      <div class="profile-card">
+        <app-user-avatar [username]="user.username" size="large" />
+        <div class="who label">
+          <strong>{{ user.username }}</strong>
+          <span>{{ user.position ?? user.role | label }}</span>
+        </div>
+        <p-button
+          class="label"
+          icon="pi pi-sign-out"
+          [text]="true"
+          [rounded]="true"
+          ariaLabel="Sign out"
+          (onClick)="logout()"
+        />
+      </div>
+    }
   </aside>
 
-  <div class="backdrop" (click)="sidebarOpen.set(false)"></div>
+  <div class="backdrop" (click)="mobileOpen.set(false)"></div>
 
   <div class="main">
     <header class="topbar">
       <p-button
-        class="menu-toggle"
         icon="pi pi-bars"
         [text]="true"
+        [rounded]="true"
         severity="secondary"
-        ariaLabel="Menu"
-        (onClick)="sidebarOpen.set(true)"
+        ariaLabel="Toggle menu"
+        (onClick)="toggleSidebar()"
       />
       <span class="spacer"></span>
       @if (user(); as user) {
         <button type="button" class="profile" (click)="menu.toggle($event)">
-          <p-avatar [label]="initials()" shape="circle" />
+          <app-user-avatar [username]="user.username" size="large" />
           <span class="who">
             <strong>{{ user.username }}</strong>
-            <span class="muted small">{{ user.position ?? user.role | label }}</span>
+            <span>{{ user.position ?? user.role | label }}</span>
           </span>
-          <i class="pi pi-angle-down muted"></i>
         </button>
         <p-menu #menu [model]="userMenu" [popup]="true" appendTo="body" />
+        <input #photo type="file" accept="image/*" hidden (change)="onPhotoSelected($event)" />
       }
     </header>
 

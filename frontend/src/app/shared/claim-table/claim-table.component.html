@@ -35,11 +35,7 @@
       <td>
         @if (claim.assignedOfficerId) {
           <span class="officer">
-            <p-avatar
-              [label]="claim.assignedOfficerId.slice(0, 2).toUpperCase()"
-              shape="circle"
-              size="normal"
-            />
+            <app-user-avatar [username]="claim.assignedOfficerId" />
             {{ claim.assignedOfficerId }}
           </span>
         } @else {

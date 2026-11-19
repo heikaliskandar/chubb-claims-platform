@@ -84,6 +84,8 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 
 - ❓ The first UI (Angular Material defaults) looked unfinished. I asked for a modern, consistent admin layout: sidebar, breadcrumbs, minimal text.
 - ✅ Rebuilt on **PrimeNG 22** with a customised Aura theme (custom royal-blue palette with teal, amber and coral accents; Plus Jakarta Sans), a shared shell (sidebar, top bar, user menu) and one page-header component (breadcrumb, title, actions), so every page has the same structure. Tables are lazy-paged with PrimeNG `p-table`, actions that need input open a dialog, the claim history uses a timeline, and the dashboard has stat cards and a stacked workload chart.
+- ✅ Second pass on the shell: the sidebar and top bar are floating rounded cards, the active menu item is a soft blue pill, a profile card sits at the bottom of the sidebar, and the sidebar collapses to icons. Users can upload a profile photo (resized in the browser, stored locally per user). The dashboard has a welcome card with an original SVG illustration drawn in code.
+- ❌ I asked the AI to copy a commercial admin template I had downloaded. It refused because of licensing and because presenting it as my own work would misrepresent the assessment, and built an original layout on PrimeNG instead.
 - ⚠️ The initial bundle grew to 660 kB raw / 151 kB transferred because of the theme engine. I raised the warning budget to 750 kB instead of hiding the warning; the hard limit stays at 1 MB.
 
 ## Phase 7: Docs & polish

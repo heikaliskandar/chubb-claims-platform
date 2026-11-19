@@ -188,6 +188,6 @@ Most important first:
 3. **Workflow:** SLA timers and escalation, automatic triage and assignment by market and line of business, senior sign-off for high-value rejections, approvers scoped to team or market, reopening claims.
 4. **Contract:** generate the frontend models from `/v3/api-docs`, and detect an `Idempotency-Key` reused with a different request body.
 5. **Operations:** outbox retention job, structured JSON logs with correlation IDs, metrics and alerts on outbox lag and DLT depth, a DLT replay tool.
-6. **UI:** Server-Sent Events instead of polling, frontend component tests, dashboard time filters.
+6. **UI:** Server-Sent Events instead of polling, frontend component tests, dashboard time filters. Profile photos are resized in the browser and kept in that browser's local storage; storing them server-side needs a file-storage service.
 
 See [docs/architecture.md](docs/architecture.md#scaling) for what changes at 10x and 100x volume.

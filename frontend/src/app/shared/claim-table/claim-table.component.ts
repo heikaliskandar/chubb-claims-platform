@@ -1,16 +1,23 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, inject, input, output } from '@angular/core';
 import { Router } from '@angular/router';
-import { AvatarModule } from 'primeng/avatar';
 import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { ClaimSummary, PageResponse } from '../../core/models';
 import { LabelPipe } from '../label.pipe';
 import { marketName } from '../markets';
 import { StatusTagComponent } from '../status-tag/status-tag.component';
+import { UserAvatarComponent } from '../user-avatar/user-avatar.component';
 
 @Component({
   selector: 'app-claim-table',
-  imports: [TableModule, AvatarModule, CurrencyPipe, DatePipe, LabelPipe, StatusTagComponent],
+  imports: [
+    TableModule,
+    UserAvatarComponent,
+    CurrencyPipe,
+    DatePipe,
+    LabelPipe,
+    StatusTagComponent,
+  ],
   templateUrl: './claim-table.component.html',
   styleUrl: './claim-table.component.scss',
 })

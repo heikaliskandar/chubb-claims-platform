@@ -4,6 +4,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ChartModule } from 'primeng/chart';
 import { TableModule } from 'primeng/table';
 import { forkJoin } from 'rxjs';
+import { AuthService } from '../../../core/auth.service';
 import { InsightsApiService } from '../../../core/insights-api.service';
 import {
   ClaimStatus,
@@ -46,6 +47,8 @@ const CHART_STATUSES: { status: ClaimStatus; color: string }[] = [
 })
 export class DashboardComponent {
   protected readonly marketName = marketName;
+  private readonly auth = inject(AuthService);
+  protected readonly username = computed(() => this.auth.user()?.username ?? '');
   protected readonly dashboard = signal<Dashboard | null>(null);
 
   protected readonly openClaims = computed(

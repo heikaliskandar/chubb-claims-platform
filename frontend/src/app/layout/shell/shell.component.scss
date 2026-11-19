@@ -1,45 +1,62 @@
 .shell {
+  --gap: 20px;
+  --sidebar: 250px;
   min-height: 100vh;
 }
 
 .sidebar {
   position: fixed;
-  inset: 0 auto 0 0;
-  width: var(--app-sidebar-width);
-  background: var(--app-surface);
-  border-right: 1px solid var(--app-border);
-  padding: 20px 16px;
-  box-sizing: border-box;
+  top: var(--gap);
+  bottom: var(--gap);
+  left: var(--gap);
   z-index: 20;
-  transition: transform 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  width: var(--sidebar);
+  padding: 24px 16px 16px;
+  box-sizing: border-box;
+  background: var(--app-surface);
+  border-radius: 18px;
+  box-shadow: var(--app-shadow);
+  transition:
+    width 0.2s ease,
+    transform 0.2s ease;
+  overflow: hidden;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 4px 8px 24px;
+  gap: 12px;
+  padding: 0 10px 28px;
   color: var(--app-text);
-  font-size: 17px;
+  font-size: 19px;
   font-weight: 700;
+  white-space: nowrap;
 }
 
 .logo {
   display: grid;
+  flex: none;
   place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   background: var(--app-primary);
   color: #fff;
+  font-size: 17px;
+}
+
+nav {
+  flex: 1;
 }
 
 .section {
   display: block;
-  padding: 0 12px 8px;
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
+  padding: 0 14px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
   color: var(--app-muted);
 }
@@ -47,93 +64,148 @@
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 11px 14px;
-  margin-bottom: 4px;
-  border-radius: 10px;
+  gap: 14px;
+  padding: 12px 16px;
+  margin-bottom: 6px;
+  border-radius: 12px;
   color: var(--app-text);
   font-weight: 500;
+  white-space: nowrap;
+
+  i {
+    font-size: 17px;
+  }
 
   &:hover {
-    background: var(--app-bg);
+    color: var(--app-primary);
   }
 
   &.active {
-    background: var(--app-primary);
-    color: #fff;
-    box-shadow: 0 6px 14px rgb(79 125 243 / 30%);
+    background: var(--app-primary-soft);
+    color: var(--app-primary);
+    font-weight: 600;
+  }
+}
+
+.profile-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px;
+  border-radius: 14px;
+  background: var(--app-primary-soft);
+}
+
+.who {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  line-height: 1.3;
+
+  strong {
+    font-size: 14px;
+  }
+
+  span {
+    font-size: 12px;
+    color: var(--app-muted);
   }
 }
 
 .main {
-  margin-left: var(--app-sidebar-width);
+  margin-left: calc(var(--sidebar) + var(--gap) * 2);
+  padding: var(--gap) var(--gap) var(--gap) 0;
+  transition: margin-left 0.2s ease;
 }
 
 .topbar {
   position: sticky;
-  top: 0;
+  top: var(--gap);
   z-index: 10;
   display: flex;
   align-items: center;
-  height: var(--app-topbar-height);
-  padding: 0 28px;
-  background: rgb(245 247 251 / 85%);
-  backdrop-filter: blur(8px);
+  height: 70px;
+  padding: 0 20px;
+  margin-bottom: 28px;
+  background: var(--app-surface);
+  border-radius: 16px;
+  box-shadow: var(--app-shadow);
 }
 
 .spacer {
   flex: 1;
 }
 
-.menu-toggle {
-  display: none;
-}
-
 .profile {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 6px 10px;
+  gap: 12px;
+  padding: 6px 8px;
   border: 0;
   border-radius: 12px;
   background: transparent;
-  cursor: pointer;
+  color: var(--app-text);
   text-align: left;
+  cursor: pointer;
 
   &:hover {
-    background: var(--app-surface);
+    background: var(--app-bg);
   }
 }
 
-.who {
-  display: flex;
-  flex-direction: column;
-  line-height: 1.25;
-}
-
 .content {
-  padding: 4px 28px 32px;
-  max-width: 1320px;
+  max-width: 1400px;
 }
 
 .backdrop {
   display: none;
 }
 
+.collapsed {
+  --sidebar: 84px;
+
+  .label {
+    display: none;
+  }
+
+  .brand,
+  .nav-item {
+    justify-content: center;
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .profile-card {
+    justify-content: center;
+    padding: 10px 0;
+  }
+}
+
 @media (max-width: 960px) {
   .sidebar {
-    transform: translateX(-100%);
+    top: 0;
+    bottom: 0;
+    left: 0;
+    border-radius: 0 18px 18px 0;
+    transform: translateX(-110%);
   }
 
   .main {
     margin-left: 0;
+    padding: 12px;
   }
 
-  .menu-toggle {
-    display: inline-flex;
+  .topbar {
+    top: 12px;
+    margin-bottom: 20px;
   }
 
-  .sidebar-open {
+  .profile .who {
+    display: none;
+  }
+
+  .mobile-open {
     .sidebar {
       transform: none;
     }
@@ -145,11 +217,5 @@
       z-index: 15;
       background: rgb(16 24 40 / 35%);
     }
-  }
-
-  .content,
-  .topbar {
-    padding-left: 16px;
-    padding-right: 16px;
   }
 }
