@@ -1,0 +1,13 @@
+package com.chubb.claims.events;
+
+public enum ClaimEventType {
+    CLAIM_SUBMITTED,
+    CLAIM_ASSIGNED,
+    CLAIM_REVIEW_STARTED,
+    INFORMATION_REQUESTED,
+    INFORMATION_PROVIDED,
+    CLAIM_ASSESSED,
+    CLAIM_APPROVED,
+    CLAIM_REJECTED,
+    CLAIM_SETTLED
+}

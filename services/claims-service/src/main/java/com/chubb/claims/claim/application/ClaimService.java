@@ -11,6 +11,8 @@ import com.chubb.claims.claim.domain.Decision;
 import com.chubb.claims.claim.infrastructure.ClaimRepository;
 import com.chubb.claims.claim.infrastructure.ClaimSpecifications;
 import com.chubb.claims.common.security.CurrentUser;
+import com.chubb.claims.events.ClaimEventRecorder;
+import com.chubb.claims.events.ClaimEventType;
 import com.chubb.claims.common.web.PageResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,10 +36,12 @@ public class ClaimService {
     private static final Logger log = LoggerFactory.getLogger(ClaimService.class);
 
     private final ClaimRepository claims;
+    private final ClaimEventRecorder events;
     private final Clock clock;
 
-    public ClaimService(ClaimRepository claims, Clock clock) {
+    public ClaimService(ClaimRepository claims, ClaimEventRecorder events, Clock clock) {
         this.claims = claims;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -52,12 +56,14 @@ public class ClaimService {
         String claimNumber = ClaimNumber.format(details.market(), now.atZone(ZoneOffset.UTC).getYear(),
                 claims.nextClaimNumberSequence());
         Claim claim = claims.save(Claim.submit(claimNumber, claimantId, details, idempotencyKey, now));
+        events.record(ClaimEventType.CLAIM_SUBMITTED, claim, claimantId);
         logStatus(claim);
         return new ClaimSubmission(ClaimMapper.toDetail(claim, false), true);
     }
 
     @Transactional(readOnly = true)
-    public PageResponse<ClaimSummaryResponse> findClaims(ClaimStatus status, String assignedOfficerId, int page, int size) {
+    public PageResponse<ClaimSummaryResponse> findClaims(ClaimStatus status, String assignedOfficerId,
+                                                         int page, int size) {
         PageRequest pageRequest = PageRequest.of(page, size, Sort.by("createdAt"));
         return PageResponse.of(claims.findAll(ClaimSpecifications.matching(status, assignedOfficerId), pageRequest)
                 .map(ClaimMapper::toSummary));
@@ -76,31 +82,40 @@ public class ClaimService {
     }
 
     public ClaimDetailResponse assign(UUID claimId, String officerId) {
-        return officerAction(claimId, claim -> claim.assignTo(officerId, clock.instant()));
+        return officerAction(claimId, officerId, ClaimEventType.CLAIM_ASSIGNED,
+                claim -> claim.assignTo(officerId, clock.instant()));
     }
 
     public ClaimDetailResponse startReview(UUID claimId, String officerId) {
-        return officerAction(claimId, claim -> claim.startReview(officerId, clock.instant()));
+        return officerAction(claimId, officerId, ClaimEventType.CLAIM_REVIEW_STARTED,
+                claim -> claim.startReview(officerId, clock.instant()));
     }
 
     public ClaimDetailResponse requestInformation(UUID claimId, String officerId, String question) {
-        return officerAction(claimId, claim -> claim.requestInformation(officerId, question, clock.instant()));
+        return officerAction(claimId, officerId, ClaimEventType.INFORMATION_REQUESTED,
+                claim -> claim.requestInformation(officerId, question, clock.instant()));
     }
 
     public ClaimDetailResponse provideInformation(UUID claimId, UUID requestId, String claimantId, String response) {
         Claim claim = loadOwnedBy(claimId, claimantId);
         claim.provideInformation(requestId, claimantId, response, clock.instant());
+        events.record(ClaimEventType.INFORMATION_PROVIDED, claim, claimantId);
         logStatus(claim);
         return ClaimMapper.toDetail(claim, false);
     }
 
     public ClaimDetailResponse assess(UUID claimId, String officerId, BigDecimal assessedAmount, String notes) {
-        return officerAction(claimId, claim -> claim.assess(officerId, assessedAmount, notes, clock.instant()));
+        return officerAction(claimId, officerId, ClaimEventType.CLAIM_ASSESSED,
+                claim -> claim.assess(officerId, assessedAmount, notes, clock.instant()));
     }
 
     public ClaimDetailResponse decide(UUID claimId, String officerId, Decision.Outcome outcome,
                                       BigDecimal approvedAmount, String reason) {
-        return officerAction(claimId, claim -> {
+        ClaimEventType eventType = switch (outcome) {
+            case APPROVED -> ClaimEventType.CLAIM_APPROVED;
+            case REJECTED -> ClaimEventType.CLAIM_REJECTED;
+        };
+        return officerAction(claimId, officerId, eventType, claim -> {
             switch (outcome) {
                 case APPROVED -> claim.approve(officerId, approvedAmount, reason, clock.instant());
                 case REJECTED -> {
@@ -114,12 +129,15 @@ public class ClaimService {
     }
 
     public ClaimDetailResponse settle(UUID claimId, String officerId) {
-        return officerAction(claimId, claim -> claim.settle(officerId, clock.instant()));
+        return officerAction(claimId, officerId, ClaimEventType.CLAIM_SETTLED,
+                claim -> claim.settle(officerId, clock.instant()));
     }
 
-    private ClaimDetailResponse officerAction(UUID claimId, Consumer<Claim> action) {
+    private ClaimDetailResponse officerAction(UUID claimId, String officerId, ClaimEventType eventType,
+                                              Consumer<Claim> action) {
         Claim claim = load(claimId);
         action.accept(claim);
+        events.record(eventType, claim, officerId);
         logStatus(claim);
         return ClaimMapper.toDetail(claim, true);
     }
