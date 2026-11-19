@@ -74,10 +74,14 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/insights
       DB_USERNAME: insights_app
       DB_PASSWORD: ${INSIGHTS_DB_PASSWORD:-insights_dev_pw}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-password}
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
     ports:
       - "8082:8082"
     depends_on:
       postgres:
+        condition: service_healthy
+      kafka:
         condition: service_healthy
 
 volumes:

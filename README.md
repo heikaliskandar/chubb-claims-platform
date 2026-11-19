@@ -83,6 +83,16 @@ Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log i
 | POST | `/api/v1/claims/{id}/settlement` | OFFICER (assigned) |
 | GET | `/api/v1/me` | any |
 
+insights-service (Swagger UI: http://localhost:8082/swagger-ui.html). Read-only and eventually consistent: each report carries `asOf`, the time of the latest event applied.
+
+| Method | Path | Role |
+|---|---|---|
+| GET | `/api/v1/insights/workload` | OFFICER, MANAGER |
+| GET | `/api/v1/insights/performance` | OFFICER, MANAGER |
+| GET | `/api/v1/insights/exposure` | MANAGER |
+
+Officer teams are configured in `app.officer-teams`: officer1 and officer2 are in Motor Claims, officer3 in Property Claims.
+
 Errors are RFC 7807 Problem Details: 400 validation, 401 unauthenticated, 403 not allowed, 404 not found (also returned for another claimant's claim), 409 invalid status or concurrent update, 422 business rule violated.
 
 ```bash
