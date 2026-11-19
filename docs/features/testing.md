@@ -4,9 +4,9 @@ Tests are layered so most checks are fast and a few are realistic:
 
 ```mermaid
 flowchart BT
-    U["Unit and web-layer · 151 backend + 13 frontend<br/>JUnit 5, AssertJ, MockMvc, Vitest<br/>seconds, no Docker"]
+    U["Unit and web-layer · 171 backend + 16 frontend<br/>JUnit 5, AssertJ, MockMvc, Vitest<br/>seconds, no Docker"]
     I["Integration · Testcontainers<br/>real PostgreSQL 17 + Kafka 4.4"]
-    E["End to end · 62<br/>Playwright + axe-core<br/>real stack, desktop and mobile"]
+    E["End to end · 69<br/>Playwright + axe-core<br/>real stack, desktop and mobile"]
     U --> I --> E
 ```
 
@@ -14,7 +14,7 @@ flowchart BT
 |---|---|---|
 | Unit and web | `./mvnw test` in each service | State machine (all 64 status pairs), business rules, approval limits, four-eyes, report maths, API validation, security and Problem Details mapping, login lockout |
 | Frontend unit | `npm test -- --watch=false` | Session storage and sign-out, error interceptor behaviour, a regression test for the tab re-select bug (proven to fail without the fix), label formatting |
-| Integration | `./mvnw verify` | Flyway schema matches the entities; claim and outbox event commit together; events reach Kafka in order; optimistic locking; recursive reporting-line query; duplicate, stale and poison events |
+| Integration | `./mvnw verify` | The live OpenAPI spec matches the committed contract and every operation is documented; document storage round trip; Flyway schema matches the entities; claim and outbox event commit together; events reach Kafka in order; optimistic locking; recursive reporting-line query; duplicate, stale and poison events |
 | End to end | `cd e2e && npx playwright test` | Every requirement in the brief through the browser as each user type; Kafka-fed dashboards; security headers; WCAG 2.1 AA |
 | Performance and accessibility audit | Lighthouse | 100 accessibility and best practices on 12 pages |
 

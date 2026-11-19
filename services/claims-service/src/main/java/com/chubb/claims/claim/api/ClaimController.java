@@ -1,13 +1,11 @@
 package com.chubb.claims.claim.api;
 
-import com.chubb.claims.claim.api.dto.ApprovalResponse;
 import com.chubb.claims.claim.api.dto.AssessClaimRequest;
 import com.chubb.claims.claim.api.dto.ClaimDetailResponse;
 import com.chubb.claims.claim.api.dto.ClaimSummaryResponse;
 import com.chubb.claims.claim.api.dto.DecideClaimRequest;
 import com.chubb.claims.claim.api.dto.ProvideInformationRequest;
 import com.chubb.claims.claim.api.dto.RequestInformationRequest;
-import com.chubb.claims.claim.api.dto.ReviewReferralRequest;
 import com.chubb.claims.claim.api.dto.SubmitClaimRequest;
 import com.chubb.claims.claim.application.ClaimService;
 import com.chubb.claims.claim.application.ClaimSubmission;
@@ -15,6 +13,7 @@ import com.chubb.claims.claim.domain.ClaimStatus;
 import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.common.web.PageResponse;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Max;
@@ -52,6 +51,8 @@ public class ClaimController {
     @PreAuthorize("hasRole('CLAIMANT')")
     @Operation(summary = "Submit a claim",
             description = "Repeating a request with the same Idempotency-Key returns the original claim with 200.")
+    @ApiResponse(responseCode = "201", description = "Created; Location points to the new claim")
+    @ApiResponse(responseCode = "200", description = "Same Idempotency-Key as an earlier submission; the original claim")
     public ResponseEntity<ClaimDetailResponse> submit(
             @Valid @RequestBody SubmitClaimRequest request,
             @RequestHeader(name = "Idempotency-Key", required = false) @Size(max = 100) String idempotencyKey,
@@ -92,18 +93,6 @@ public class ClaimController {
             @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
             Authentication authentication) {
         return claimService.findClaimsOfClaimant(authentication.getName(), closed, page, size);
-    }
-
-    @GetMapping("/approvals")
-    @PreAuthorize("hasAnyRole('OFFICER', 'MANAGER')")
-    @Operation(summary = "Referrals for approval",
-            description = "TO_REVIEW and DECIDED cover referrals from people below you; MY_REFERRALS are your own.")
-    public PageResponse<ApprovalResponse> findApprovals(
-            @RequestParam(defaultValue = "TO_REVIEW") ApprovalResponse.View view,
-            @RequestParam(defaultValue = "0") @PositiveOrZero int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
-            Authentication authentication) {
-        return claimService.findApprovals(CurrentUser.from(authentication), view, page, size);
     }
 
     @GetMapping("/{claimId}")
@@ -165,17 +154,6 @@ public class ClaimController {
                                       Authentication authentication) {
         return claimService.decide(claimId, CurrentUser.from(authentication), request.outcome(),
                 request.approvedAmount(), request.reason());
-    }
-
-    @PostMapping("/{claimId}/approval")
-    @PreAuthorize("hasAnyRole('OFFICER', 'MANAGER')")
-    @Operation(summary = "Approve, return or reject a claim referred above the recommending officer's authority",
-            description = "The approver must be a different person (four-eyes) with authority for the amount.")
-    public ClaimDetailResponse reviewReferral(@PathVariable UUID claimId,
-                                              @Valid @RequestBody ReviewReferralRequest request,
-                                              Authentication authentication) {
-        return claimService.reviewReferral(claimId, CurrentUser.from(authentication), request.outcome(),
-                request.comment());
     }
 
     @PostMapping("/{claimId}/settlement")

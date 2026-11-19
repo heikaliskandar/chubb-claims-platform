@@ -15,6 +15,7 @@ import { ModalComponent } from '../../../shared/modal/modal.component';
 import { poll } from '../../../shared/polling';
 import { StatusTagComponent } from '../../../shared/status-tag/status-tag.component';
 import { ApprovalPanelComponent } from './approval-panel/approval-panel.component';
+import { DocumentsCardComponent } from './documents-card/documents-card.component';
 
 interface ActionConfig {
   label: string;
@@ -39,6 +40,7 @@ const ACTIONS: Record<ClaimAction, ActionConfig> = {
     icon: 'reply',
     style: 'btn-primary',
     text: { label: 'Answer' },
+    hint: 'Need to send a photo, report or quote? Add it under Supporting documents on this page.',
   },
   ASSESS: {
     label: 'Assess',
@@ -92,6 +94,7 @@ const REVIEW_ACTIONS: ClaimAction[] = ['APPROVE_REFERRAL', 'RETURN_REFERRAL', 'R
     PageHeaderComponent,
     StatusTagComponent,
     ApprovalPanelComponent,
+    DocumentsCardComponent,
   ],
   templateUrl: './claim-detail.component.html',
   styleUrl: './claim-detail.component.scss',

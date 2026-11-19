@@ -1,4 +1,4 @@
-import { HttpErrorResponse } from '@angular/common/http';
+import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
 import { Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import {
@@ -10,14 +10,30 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
+import { concatMap, filter, from, tap, toArray } from 'rxjs';
 import { ClaimsApiService } from '../../../core/claims-api.service';
-import { ClaimType, Market, ProblemDetail } from '../../../core/models';
+import {
+  ClaimDetail,
+  ClaimType,
+  DocumentCategory,
+  Market,
+  ProblemDetail,
+} from '../../../core/models';
+import { ToastService } from '../../../core/toast.service';
+import {
+  ACCEPT_ATTRIBUTE,
+  CATEGORIES,
+  fileProblem,
+  formatBytes,
+  isImage,
+} from '../../../shared/documents';
 import { PageHeaderComponent } from '../../../layout/page-header/page-header.component';
 import { MARKETS } from '../../../shared/markets';
 
 type FieldName = 'policyNumber' | 'incidentDate' | 'claimedAmount' | 'incidentDescription';
 
 const MAX_POLICY = 50;
+const MAX_ATTACHMENTS = 20;
 const MAX_DESCRIPTION = 2000;
 const AMOUNT_PATTERN = /^\d{1,17}(\.\d{1,2})?$/;
 
@@ -119,6 +135,79 @@ export class SubmitClaimComponent {
     this.host.nativeElement.querySelector<HTMLElement>(`#${id}`)?.focus();
   }
 
+  protected readonly accept = ACCEPT_ATTRIBUTE;
+  protected readonly documentCategories = CATEGORIES.filter((option) => !option.staffOnly);
+  protected readonly formatBytes = formatBytes;
+  protected readonly attachments = signal<{ file: File; category: DocumentCategory }[]>([]);
+  protected readonly attachmentProblems = signal<string[]>([]);
+  protected readonly uploading = signal<{ done: number; total: number } | null>(null);
+  private readonly toasts = inject(ToastService);
+
+  protected addFiles(files: FileList | null): void {
+    const problems: string[] = [];
+    const accepted = Array.from(files ?? []).filter((file) => {
+      const problem = fileProblem(file);
+      if (problem) {
+        problems.push(problem);
+      }
+      return !problem;
+    });
+    const room = MAX_ATTACHMENTS - this.attachments().length;
+    if (accepted.length > room) {
+      problems.push(`You can attach up to ${MAX_ATTACHMENTS} files.`);
+    }
+    this.attachments.update((list) => [
+      ...list,
+      ...accepted.slice(0, Math.max(0, room)).map((file) => ({
+        file,
+        category: (isImage(file.type) ? 'PHOTO' : 'OTHER') as DocumentCategory,
+      })),
+    ]);
+    this.attachmentProblems.set(problems);
+  }
+
+  protected setAttachmentCategory(index: number, category: DocumentCategory): void {
+    this.attachments.update((list) =>
+      list.map((item, position) => (position === index ? { ...item, category } : item)),
+    );
+  }
+
+  protected removeAttachment(index: number): void {
+    this.attachments.update((list) => list.filter((_, position) => position !== index));
+  }
+
+  private uploadAttachments(claim: ClaimDetail): void {
+    const attachments = this.attachments();
+    if (attachments.length === 0) {
+      this.router.navigate(['/claims', claim.id]);
+      return;
+    }
+    this.uploading.set({ done: 0, total: attachments.length });
+    from(attachments)
+      .pipe(
+        concatMap(({ file, category }) =>
+          this.api.uploadDocument(claim.id, file, category).pipe(
+            filter((event) => event.type === HttpEventType.Response),
+            tap(() =>
+              this.uploading.update((state) => state && { ...state, done: state.done + 1 }),
+            ),
+          ),
+        ),
+        toArray(),
+      )
+      .subscribe({
+        next: () => this.router.navigate(['/claims', claim.id]),
+        error: () => {
+          this.toasts.show(
+            'warn',
+            'Claim submitted',
+            'Some documents could not be uploaded. Add them from the claim page.',
+          );
+          this.router.navigate(['/claims', claim.id]);
+        },
+      });
+  }
+
   protected submit(): void {
     this.normalisePolicyNumber();
     this.normaliseAmount();
@@ -143,7 +232,7 @@ export class SubmitClaimComponent {
         this.idempotencyKey,
       )
       .subscribe({
-        next: (claim) => this.router.navigate(['/claims', claim.id]),
+        next: (claim) => this.uploadAttachments(claim),
         error: (failure: HttpErrorResponse) => {
           this.busy.set(false);
           this.applyServerErrors(failure.error as ProblemDetail | null);

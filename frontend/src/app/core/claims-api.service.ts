@@ -1,10 +1,12 @@
-import { HttpClient, HttpParams } from '@angular/common/http';
+import { HttpClient, HttpEvent, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   Approval,
   ApprovalView,
   ClaimDetail,
+  ClaimDocument,
+  DocumentCategory,
   ClaimStatus,
   ClaimSummary,
   PageResponse,
@@ -105,5 +107,29 @@ export class ClaimsApiService {
 
   settle(id: string): Observable<ClaimDetail> {
     return this.http.post<ClaimDetail>(`${BASE}/${id}/settlement`, null);
+  }
+
+  documents(claimId: string): Observable<ClaimDocument[]> {
+    return this.http.get<ClaimDocument[]>(`${BASE}/${claimId}/documents`);
+  }
+
+  uploadDocument(
+    claimId: string,
+    file: File,
+    category: DocumentCategory,
+  ): Observable<HttpEvent<ClaimDocument>> {
+    const form = new FormData();
+    form.append('file', file, file.name);
+    form.append('category', category);
+    return this.http.post<ClaimDocument>(`${BASE}/${claimId}/documents`, form, {
+      reportProgress: true,
+      observe: 'events',
+    });
+  }
+
+  documentContent(claimId: string, documentId: string): Observable<Blob> {
+    return this.http.get(`${BASE}/${claimId}/documents/${documentId}/content`, {
+      responseType: 'blob',
+    });
   }
 }

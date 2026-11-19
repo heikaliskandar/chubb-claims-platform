@@ -5,6 +5,8 @@ import com.chubb.claims.claim.domain.ClaimAccessDeniedException;
 import com.chubb.claims.claim.domain.ClaimRuleViolationException;
 import com.chubb.claims.claim.domain.InformationRequestNotFoundException;
 import com.chubb.claims.claim.domain.InvalidClaimStateException;
+import com.chubb.claims.document.application.DocumentNotFoundException;
+import com.chubb.claims.document.application.UnsupportedDocumentTypeException;
 import com.chubb.claims.employee.application.EmployeeNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -32,9 +34,14 @@ import java.util.Map;
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     @ExceptionHandler({ClaimNotFoundException.class, InformationRequestNotFoundException.class,
-            EmployeeNotFoundException.class})
+            EmployeeNotFoundException.class, DocumentNotFoundException.class})
     ProblemDetail handleNotFound(RuntimeException exception) {
         return problem(HttpStatus.NOT_FOUND, "Not found", exception.getMessage());
+    }
+
+    @ExceptionHandler(UnsupportedDocumentTypeException.class)
+    ProblemDetail handleUnsupportedDocument(UnsupportedDocumentTypeException exception) {
+        return problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Unsupported file type", exception.getMessage());
     }
 
     @ExceptionHandler(InvalidClaimStateException.class)

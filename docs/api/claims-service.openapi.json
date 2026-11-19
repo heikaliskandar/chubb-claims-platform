@@ -1,0 +1,1935 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "description" : "System of record for motor and property claims across six APAC markets (SG, MY, HK, TH, ID, PH).\nEvery write goes through this API; claim events are published to Kafka for the insights service.\n\n**Authentication.** HTTP Basic on every request (demo users: `claimant1`, `officer1`, `lead1`, `manager1`, password `password`). Click **Authorize** to try requests from this page.\n\n**Roles.** `CLAIMANT` sees only their own claims. `OFFICER` and `MANAGER` see unassigned claims plus claims of people below them in the reporting line. Anything outside your scope returns **404**, not 403, so its existence is not revealed.\n\n**Rules live on the server.** Each claim response lists `allowedActions` for the caller, who it is `waitingOn` and the `nextStep`, so clients never re-implement the workflow.\n\n**Errors** are RFC 7807 Problem Details (`application/problem+json`): 400 validation (with an `errors` map per field), 401, 403, 404, 409 invalid state or concurrent update, 413 file too large, 415 unsupported file, 422 business rule.\n\n**Idempotency.** Send an `Idempotency-Key` header when submitting a claim; a retry returns the original claim.\n\n**Paging.** List endpoints take `page` (from 0) and `size` (1-100) and return `content`, `page`, `size`, `totalElements`, `totalPages`.\n",
+    "title" : "Claims Service API",
+    "version" : "v1"
+  },
+  "servers" : [ {
+    "url" : "/",
+    "description" : "Same origin as the web app"
+  } ],
+  "security" : [ {
+    "basicAuth" : [ ]
+  } ],
+  "tags" : [ {
+    "description" : "Directory and profiles, scoped to yourself and the people below you.",
+    "name" : "Employees"
+  }, {
+    "description" : "Supporting documents attached to a claim: photos, police reports, quotes, invoices. Visible to anyone who can see the claim; uploads are limited to the claimant and the assigned officer while the claim is open. Documents cannot be deleted.",
+    "name" : "Documents"
+  }, {
+    "description" : "Submit, track and progress claims through review, assessment, decision and settlement.",
+    "name" : "Claims"
+  }, {
+    "description" : "Who is signed in.",
+    "name" : "Current user"
+  }, {
+    "description" : "Approvals above an officer's limit, reviewed by someone above them in the reporting line (four-eyes).",
+    "name" : "Approvals"
+  }, {
+    "name" : "Documents"
+  } ],
+  "paths" : {
+    "/api/v1/claims" : {
+      "get" : {
+        "description" : "Shows unassigned claims plus claims assigned to the user or anyone in their reporting line.",
+        "operationId" : "findClaims",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "status",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+          }
+        }, {
+          "in" : "query",
+          "name" : "assignedTo",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "closed",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseClaimSummaryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "Claims queue, oldest first, optionally filtered by status and assigned officer",
+        "tags" : [ "Claims" ]
+      },
+      "post" : {
+        "description" : "Repeating a request with the same Idempotency-Key returns the original claim with 200.",
+        "operationId" : "submit",
+        "parameters" : [ {
+          "in" : "header",
+          "name" : "Idempotency-Key",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "maxLength" : 100,
+            "minLength" : 0
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/SubmitClaimRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "Same Idempotency-Key as an earlier submission; the original claim"
+          },
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "Created; Location points to the new claim"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "Submit a claim",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/approvals" : {
+      "get" : {
+        "description" : "TO_REVIEW and DECIDED cover referrals from people below you; MY_REFERRALS are your own.",
+        "operationId" : "findApprovals",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "view",
+          "required" : false,
+          "schema" : {
+            "type" : "string",
+            "default" : "TO_REVIEW",
+            "enum" : [ "TO_REVIEW", "DECIDED", "MY_REFERRALS" ]
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseApprovalResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "Referrals for approval",
+        "tags" : [ "Approvals" ]
+      }
+    },
+    "/api/v1/claims/mine" : {
+      "get" : {
+        "description" : "closed=false for active claims, closed=true for settled or rejected ones.",
+        "operationId" : "findMyClaims",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "closed",
+          "required" : false,
+          "schema" : {
+            "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseClaimSummaryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "The authenticated claimant's claims, most recently updated first",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/{claimId}" : {
+      "get" : {
+        "description" : "Claimants can only see their own claims.",
+        "operationId" : "getClaim",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Claim detail",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/approval" : {
+      "post" : {
+        "description" : "The approver must be a different person (four-eyes) with authority for the amount.",
+        "operationId" : "reviewReferral",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ReviewReferralRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Approve, return or reject a claim referred above the recommending officer's authority",
+        "tags" : [ "Approvals" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/assessment" : {
+      "post" : {
+        "operationId" : "assess",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/AssessClaimRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Assess the claim and set its reserve",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/assignment" : {
+      "post" : {
+        "operationId" : "assign",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Pick up an unassigned claim",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/decision" : {
+      "post" : {
+        "description" : "Approvals above the officer's authority limit are referred (PENDING_APPROVAL).",
+        "operationId" : "decide",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/DecideClaimRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Approve or reject the claim",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/documents" : {
+      "get" : {
+        "description" : "Oldest first.",
+        "operationId" : "list",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "type" : "array",
+                  "items" : {
+                    "$ref" : "#/components/schemas/DocumentResponse"
+                  }
+                }
+              }
+            },
+            "description" : "The documents"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "The claim does not exist or is not visible to the caller"
+          }
+        },
+        "summary" : "List a claim's documents",
+        "tags" : [ "Documents" ]
+      },
+      "post" : {
+        "description" : "PDF, JPEG, PNG or WebP, up to 10 MB, at most 20 per claim. The type is detected from the file's content; a renamed file of another type is rejected.",
+        "operationId" : "upload",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "description" : "What the document is",
+          "in" : "query",
+          "name" : "category",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "enum" : [ "PHOTO", "POLICE_REPORT", "REPAIR_QUOTE", "INVOICE", "PROOF_OF_OWNERSHIP", "ADJUSTER_REPORT", "OTHER" ]
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "multipart/form-data" : {
+              "schema" : {
+                "type" : "object",
+                "properties" : {
+                  "file" : {
+                    "type" : "string",
+                    "format" : "binary",
+                    "description" : "The file"
+                  }
+                },
+                "required" : [ "file" ]
+              }
+            }
+          }
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/DocumentResponse"
+                }
+              }
+            },
+            "description" : "Stored"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not the claimant or assigned officer, or the claim is closed"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          },
+          "413" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Larger than 10 MB"
+          },
+          "415" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not a PDF, JPEG, PNG or WebP file"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Empty file, or the claim already has 20 documents"
+          }
+        },
+        "summary" : "Attach a document",
+        "tags" : [ "Documents" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/documents/{documentId}/content" : {
+      "get" : {
+        "description" : "Sent as an attachment with no-store caching and a sandbox CSP, so it is never cached or run by the browser.",
+        "operationId" : "download",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "documentId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/octet-stream" : {
+                "schema" : {
+                  "type" : "string",
+                  "format" : "binary"
+                }
+              }
+            },
+            "description" : "The file"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not found, or the claim is not visible to the caller"
+          }
+        },
+        "summary" : "Download a document",
+        "tags" : [ "Documents" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/information-requests" : {
+      "post" : {
+        "operationId" : "requestInformation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/RequestInformationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Ask the claimant for more information",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/information-requests/{requestId}/response" : {
+      "post" : {
+        "operationId" : "provideInformation",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "requestId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ProvideInformationRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Answer an information request",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/review" : {
+      "post" : {
+        "operationId" : "startReview",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Start reviewing an assigned claim",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/settlement" : {
+      "post" : {
+        "operationId" : "settle",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Mark an approved claim as paid",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/employees" : {
+      "get" : {
+        "operationId" : "directory",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "q",
+          "required" : false,
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 0,
+            "minimum" : 0
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "type" : "integer",
+            "format" : "int32",
+            "default" : 20,
+            "maximum" : 100,
+            "minimum" : 1
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PageResponseEmployeeSummaryResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "Directory of the current user and everyone who reports to them, directly or indirectly",
+        "tags" : [ "Employees" ]
+      }
+    },
+    "/api/v1/employees/me" : {
+      "get" : {
+        "operationId" : "me",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EmployeeDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "The current user's own profile, including the name of their direct manager",
+        "tags" : [ "Employees" ]
+      },
+      "patch" : {
+        "operationId" : "updateMyContact",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateContactRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EmployeeDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "Update the current user's own contact details",
+        "tags" : [ "Employees" ]
+      }
+    },
+    "/api/v1/employees/{username}" : {
+      "get" : {
+        "description" : "People above or beside the current user return 404.",
+        "operationId" : "profile",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "username",
+          "required" : true,
+          "schema" : {
+            "type" : "string"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/EmployeeDetailResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Profile of someone in the current user's reporting line",
+        "tags" : [ "Employees" ]
+      }
+    },
+    "/api/v1/me" : {
+      "get" : {
+        "operationId" : "me_1",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CurrentUser"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "Returns the authenticated user and their role",
+        "tags" : [ "Current user" ]
+      }
+    }
+  },
+  "components" : {
+    "responses" : {
+      "BadRequest" : {
+        "content" : {
+          "application/problem+json" : {
+            "schema" : {
+              "type" : "object",
+              "$ref" : "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description" : "Validation failed; see `errors` for each field"
+      },
+      "Forbidden" : {
+        "content" : {
+          "application/problem+json" : {
+            "schema" : {
+              "type" : "object",
+              "$ref" : "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description" : "Your role cannot call this endpoint"
+      },
+      "NotFound" : {
+        "content" : {
+          "application/problem+json" : {
+            "schema" : {
+              "type" : "object",
+              "$ref" : "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description" : "Not found, or outside what you are allowed to see"
+      },
+      "Unauthorized" : {
+        "content" : {
+          "application/problem+json" : {
+            "schema" : {
+              "type" : "object",
+              "$ref" : "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description" : "Missing or invalid credentials"
+      }
+    },
+    "schemas" : {
+      "ApprovalAuthority" : {
+        "type" : "object",
+        "properties" : {
+          "limits" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CurrencyLimit"
+            }
+          },
+          "unlimited" : {
+            "type" : "boolean"
+          }
+        }
+      },
+      "ApprovalResponse" : {
+        "type" : "object",
+        "properties" : {
+          "canReview" : {
+            "type" : "boolean"
+          },
+          "claimId" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "claimNumber" : {
+            "type" : "string"
+          },
+          "claimType" : {
+            "type" : "string",
+            "enum" : [ "MOTOR", "PROPERTY" ]
+          },
+          "claimedAmount" : {
+            "type" : "number"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "market" : {
+            "type" : "string",
+            "enum" : [ "SG", "MY", "HK", "TH", "ID", "PH" ]
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "recommendedAmount" : {
+            "type" : "number"
+          },
+          "referredAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "referredBy" : {
+            "type" : "string"
+          },
+          "reviewedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "reviewedBy" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "PENDING", "APPROVED", "RETURNED", "REJECTED" ]
+          }
+        }
+      },
+      "AssessClaimRequest" : {
+        "type" : "object",
+        "properties" : {
+          "assessedAmount" : {
+            "type" : "number",
+            "minimum" : 0
+          },
+          "notes" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "assessedAmount" ]
+      },
+      "AssessmentResponse" : {
+        "type" : "object",
+        "properties" : {
+          "assessedAmount" : {
+            "type" : "number"
+          },
+          "assessedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "notes" : {
+            "type" : "string"
+          },
+          "officerId" : {
+            "type" : "string"
+          }
+        }
+      },
+      "ClaimDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "allowedActions" : {
+            "type" : "array",
+            "items" : {
+              "type" : "string",
+              "enum" : [ "ASSIGN_TO_ME", "START_REVIEW", "REQUEST_INFORMATION", "RESPOND_TO_INFORMATION_REQUEST", "ASSESS", "APPROVE", "REJECT", "APPROVE_REFERRAL", "RETURN_REFERRAL", "REJECT_REFERRAL", "SETTLE" ]
+            },
+            "uniqueItems" : true
+          },
+          "assessments" : {
+            "type" : [ "array", "null" ],
+            "description" : "Officer assessments. Null for claimants.",
+            "items" : {
+              "$ref" : "#/components/schemas/AssessmentResponse"
+            }
+          },
+          "assignedOfficerId" : {
+            "type" : "string"
+          },
+          "canUploadDocuments" : {
+            "type" : "boolean",
+            "description" : "Whether the current user can attach supporting documents to this claim."
+          },
+          "claimNumber" : {
+            "type" : "string"
+          },
+          "claimType" : {
+            "type" : "string",
+            "enum" : [ "MOTOR", "PROPERTY" ]
+          },
+          "claimantId" : {
+            "type" : "string"
+          },
+          "claimedAmount" : {
+            "type" : "number"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "decision" : {
+            "$ref" : "#/components/schemas/DecisionResponse"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "incidentDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "incidentDescription" : {
+            "type" : "string"
+          },
+          "informationRequests" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/InformationRequestResponse"
+            }
+          },
+          "market" : {
+            "type" : "string",
+            "enum" : [ "SG", "MY", "HK", "TH", "ID", "PH" ]
+          },
+          "nextStep" : {
+            "type" : "string"
+          },
+          "policyNumber" : {
+            "type" : "string"
+          },
+          "referral" : {
+            "type" : "null",
+            "$ref" : "#/components/schemas/ReferralResponse",
+            "description" : "Latest referral for approval above the officer's authority. Null for claimants."
+          },
+          "reserveAmount" : {
+            "type" : [ "number", "null" ],
+            "description" : "Internal estimate of liability. Null for claimants."
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+          },
+          "statusHistory" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/StatusChangeResponse"
+            }
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "waitingOn" : {
+            "type" : "string",
+            "enum" : [ "CLAIMS_TEAM", "ASSIGNED_OFFICER", "CLAIMANT", "APPROVER", "NOBODY" ]
+          }
+        }
+      },
+      "ClaimSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "assignedOfficerId" : {
+            "type" : "string"
+          },
+          "claimNumber" : {
+            "type" : "string"
+          },
+          "claimType" : {
+            "type" : "string",
+            "enum" : [ "MOTOR", "PROPERTY" ]
+          },
+          "claimedAmount" : {
+            "type" : "number"
+          },
+          "createdAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "incidentDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "market" : {
+            "type" : "string",
+            "enum" : [ "SG", "MY", "HK", "TH", "ID", "PH" ]
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+          },
+          "updatedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "waitingOn" : {
+            "type" : "string",
+            "enum" : [ "CLAIMS_TEAM", "ASSIGNED_OFFICER", "CLAIMANT", "APPROVER", "NOBODY" ]
+          }
+        }
+      },
+      "CurrencyLimit" : {
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "currency" : {
+            "type" : "string"
+          }
+        }
+      },
+      "CurrentUser" : {
+        "type" : "object",
+        "properties" : {
+          "position" : {
+            "type" : "string",
+            "enum" : [ "CLAIMS_OFFICER", "SENIOR_CLAIMS_OFFICER", "TEAM_LEAD", "CLAIMS_MANAGER" ]
+          },
+          "role" : {
+            "type" : "string",
+            "enum" : [ "CLAIMANT", "OFFICER", "MANAGER" ]
+          },
+          "username" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DecideClaimRequest" : {
+        "type" : "object",
+        "properties" : {
+          "approvedAmount" : {
+            "type" : "number",
+            "exclusiveMinimum" : 0
+          },
+          "outcome" : {
+            "type" : "string",
+            "enum" : [ "APPROVED", "REJECTED" ]
+          },
+          "reason" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "outcome", "reason" ]
+      },
+      "DecisionResponse" : {
+        "type" : "object",
+        "properties" : {
+          "approvedAmount" : {
+            "type" : "number"
+          },
+          "decidedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "decidedBy" : {
+            "type" : "string"
+          },
+          "outcome" : {
+            "type" : "string",
+            "enum" : [ "APPROVED", "REJECTED" ]
+          },
+          "reason" : {
+            "type" : "string"
+          }
+        }
+      },
+      "DocumentResponse" : {
+        "type" : "object",
+        "description" : "A supporting document attached to a claim. The content is downloaded separately.",
+        "properties" : {
+          "category" : {
+            "type" : "string",
+            "enum" : [ "PHOTO", "POLICE_REPORT", "REPAIR_QUOTE", "INVOICE", "PROOF_OF_OWNERSHIP", "ADJUSTER_REPORT", "OTHER" ]
+          },
+          "contentType" : {
+            "type" : "string",
+            "description" : "Detected from the file's content, not from its name.",
+            "example" : "application/pdf"
+          },
+          "fileName" : {
+            "type" : "string",
+            "description" : "Original file name, cleaned of path segments and control characters."
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "sha256" : {
+            "type" : "string",
+            "description" : "SHA-256 of the content, for integrity checks."
+          },
+          "sizeBytes" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "uploadedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "uploadedBy" : {
+            "type" : "string"
+          }
+        }
+      },
+      "EmployeeDetailResponse" : {
+        "type" : "object",
+        "properties" : {
+          "approvalAuthority" : {
+            "$ref" : "#/components/schemas/ApprovalAuthority"
+          },
+          "department" : {
+            "type" : "string"
+          },
+          "directReports" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/Person"
+            }
+          },
+          "email" : {
+            "type" : "string"
+          },
+          "employeeNumber" : {
+            "type" : "string"
+          },
+          "employmentType" : {
+            "type" : "string",
+            "enum" : [ "FULL_TIME", "PART_TIME", "CONTRACT" ]
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "joinDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "manager" : {
+            "$ref" : "#/components/schemas/Person"
+          },
+          "market" : {
+            "type" : "string",
+            "enum" : [ "SG", "MY", "HK", "TH", "ID", "PH" ]
+          },
+          "officeLocation" : {
+            "type" : "string"
+          },
+          "phone" : {
+            "type" : "string"
+          },
+          "position" : {
+            "type" : "string",
+            "enum" : [ "CLAIMS_OFFICER", "SENIOR_CLAIMS_OFFICER", "TEAM_LEAD", "CLAIMS_MANAGER" ]
+          },
+          "self" : {
+            "type" : "boolean"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "ACTIVE", "ON_LEAVE", "INACTIVE" ]
+          },
+          "team" : {
+            "type" : "string"
+          },
+          "totalReports" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        }
+      },
+      "EmployeeSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "email" : {
+            "type" : "string"
+          },
+          "employeeNumber" : {
+            "type" : "string"
+          },
+          "fullName" : {
+            "type" : "string"
+          },
+          "joinDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "managerUsername" : {
+            "type" : "string"
+          },
+          "market" : {
+            "type" : "string",
+            "enum" : [ "SG", "MY", "HK", "TH", "ID", "PH" ]
+          },
+          "position" : {
+            "type" : "string",
+            "enum" : [ "CLAIMS_OFFICER", "SENIOR_CLAIMS_OFFICER", "TEAM_LEAD", "CLAIMS_MANAGER" ]
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "ACTIVE", "ON_LEAVE", "INACTIVE" ]
+          },
+          "team" : {
+            "type" : "string"
+          },
+          "username" : {
+            "type" : "string"
+          }
+        }
+      },
+      "InformationRequestResponse" : {
+        "type" : "object",
+        "properties" : {
+          "answeredAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "id" : {
+            "type" : "string",
+            "format" : "uuid"
+          },
+          "question" : {
+            "type" : "string"
+          },
+          "requestedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "requestedBy" : {
+            "type" : "string"
+          },
+          "response" : {
+            "type" : "string"
+          },
+          "status" : {
+            "type" : "string",
+            "enum" : [ "OPEN", "ANSWERED" ]
+          }
+        }
+      },
+      "PageResponseApprovalResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ApprovalResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseClaimSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ClaimSummaryResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "PageResponseEmployeeSummaryResponse" : {
+        "type" : "object",
+        "properties" : {
+          "content" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/EmployeeSummaryResponse"
+            }
+          },
+          "page" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "size" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "totalElements" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "totalPages" : {
+            "type" : "integer",
+            "format" : "int32"
+          }
+        }
+      },
+      "Person" : {
+        "type" : "object",
+        "properties" : {
+          "fullName" : {
+            "type" : "string"
+          },
+          "position" : {
+            "type" : "string",
+            "enum" : [ "CLAIMS_OFFICER", "SENIOR_CLAIMS_OFFICER", "TEAM_LEAD", "CLAIMS_MANAGER" ]
+          },
+          "username" : {
+            "type" : "string"
+          }
+        }
+      },
+      "Problem" : {
+        "type" : "object",
+        "description" : "RFC 7807 Problem Details",
+        "properties" : {
+          "detail" : {
+            "type" : "string",
+            "example" : "One or more fields are invalid."
+          },
+          "errors" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "string"
+            },
+            "description" : "Field name to message, for validation errors only"
+          },
+          "instance" : {
+            "type" : "string",
+            "example" : "/api/v1/claims"
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 400
+          },
+          "title" : {
+            "type" : "string",
+            "example" : "Validation failed"
+          },
+          "type" : {
+            "type" : "string",
+            "example" : "about:blank"
+          }
+        }
+      },
+      "ProblemDetail" : {
+        "type" : "object",
+        "properties" : {
+          "detail" : {
+            "type" : "string"
+          },
+          "instance" : {
+            "type" : "string",
+            "format" : "uri"
+          },
+          "properties" : {
+            "type" : "object",
+            "additionalProperties" : { }
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32"
+          },
+          "title" : {
+            "type" : "string"
+          },
+          "type" : {
+            "type" : "string",
+            "format" : "uri"
+          }
+        }
+      },
+      "ProvideInformationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "response" : {
+            "type" : "string",
+            "maxLength" : 4000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "response" ]
+      },
+      "ReferralResponse" : {
+        "type" : "object",
+        "properties" : {
+          "amount" : {
+            "type" : "number"
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "referredAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "referredBy" : {
+            "type" : "string"
+          }
+        }
+      },
+      "RequestInformationRequest" : {
+        "type" : "object",
+        "properties" : {
+          "question" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "question" ]
+      },
+      "ReviewReferralRequest" : {
+        "type" : "object",
+        "properties" : {
+          "comment" : {
+            "type" : "string",
+            "maxLength" : 1000,
+            "minLength" : 0
+          },
+          "outcome" : {
+            "type" : "string",
+            "enum" : [ "APPROVE", "RETURN", "REJECT" ]
+          }
+        },
+        "required" : [ "outcome" ]
+      },
+      "StatusChangeResponse" : {
+        "type" : "object",
+        "properties" : {
+          "changedAt" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "changedBy" : {
+            "type" : "string"
+          },
+          "fromStatus" : {
+            "type" : "string",
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+          },
+          "reason" : {
+            "type" : "string"
+          },
+          "toStatus" : {
+            "type" : "string",
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+          }
+        }
+      },
+      "SubmitClaimRequest" : {
+        "type" : "object",
+        "properties" : {
+          "claimType" : {
+            "type" : "string",
+            "enum" : [ "MOTOR", "PROPERTY" ]
+          },
+          "claimedAmount" : {
+            "type" : "number",
+            "exclusiveMinimum" : 0
+          },
+          "incidentDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "incidentDescription" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "market" : {
+            "type" : "string",
+            "enum" : [ "SG", "MY", "HK", "TH", "ID", "PH" ]
+          },
+          "policyNumber" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "claimType", "claimedAmount", "incidentDate", "incidentDescription", "market", "policyNumber" ]
+      },
+      "UpdateContactRequest" : {
+        "type" : "object",
+        "properties" : {
+          "officeLocation" : {
+            "type" : "string",
+            "maxLength" : 80,
+            "minLength" : 0
+          },
+          "phone" : {
+            "type" : "string",
+            "maxLength" : 30,
+            "minLength" : 0,
+            "pattern" : "^[+0-9 ()-]*$"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "basicAuth" : {
+        "scheme" : "basic",
+        "type" : "http"
+      }
+    }
+  }
+}

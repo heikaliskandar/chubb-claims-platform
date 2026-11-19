@@ -42,7 +42,9 @@ public record ClaimDetailResponse(
         @Schema(description = "Officer assessments. Null for claimants.", nullable = true)
         List<AssessmentResponse> assessments,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        @Schema(description = "Whether the current user can attach supporting documents to this claim.")
+        boolean canUploadDocuments) {
 
     public record DecisionResponse(
             Decision.Outcome outcome,

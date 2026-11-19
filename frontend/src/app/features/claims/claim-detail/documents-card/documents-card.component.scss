@@ -1,0 +1,144 @@
+.title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+
+  .card-title {
+    margin-bottom: 12px;
+  }
+}
+
+.empty {
+  margin: 0 0 4px;
+}
+
+.files {
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.file {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 10px 0;
+
+  & + .file {
+    border-top: 1px solid var(--app-border);
+  }
+}
+
+.thumb {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: var(--app-surface-2);
+
+  &.icon {
+    display: grid;
+    place-items: center;
+    color: var(--app-primary-strong);
+    background: var(--app-primary-soft);
+  }
+
+  &.pdf {
+    color: var(--app-danger);
+    background: color-mix(in srgb, var(--app-danger) 10%, transparent);
+  }
+}
+
+.meta {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  overflow: hidden;
+  color: var(--app-heading);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.file-actions {
+  display: flex;
+  gap: 4px;
+}
+
+.upload {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--app-border);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+
+  label {
+    font-weight: 600;
+    font-size: 14px;
+  }
+}
+
+.drop {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: center;
+  padding: 20px;
+  border: 1.5px dashed var(--app-border);
+  border-radius: var(--app-radius-sm);
+  background: var(--app-surface-2);
+  text-align: center;
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+
+  .ms {
+    font-size: 28px;
+    color: var(--app-primary-strong);
+  }
+
+  &:hover,
+  &.dragging,
+  &:focus-within {
+    border-color: var(--app-primary);
+    background: var(--app-primary-soft);
+  }
+}
+
+.bar {
+  width: min(280px, 100%);
+  height: 6px;
+  margin-top: 6px;
+  border-radius: 999px;
+  background: var(--app-border);
+
+  span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--app-primary-strong);
+    transition: width 0.2s;
+  }
+}
+
+.problem {
+  margin: 0;
+  color: var(--app-danger);
+  font-size: 14px;
+}

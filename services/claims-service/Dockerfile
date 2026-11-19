@@ -6,7 +6,8 @@ COPY src src
 RUN --mount=type=cache,target=/root/.m2 sh ./mvnw -B -DskipTests package
 
 FROM eclipse-temurin:21-jre
-RUN groupadd --system app && useradd --system --gid app app
+RUN groupadd --system app && useradd --system --gid app app \
+    && mkdir -p /data/documents && chown app:app /data/documents
 WORKDIR /app
 COPY --from=build /workspace/target/*.jar app.jar
 USER app

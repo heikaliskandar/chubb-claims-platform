@@ -230,6 +230,10 @@ public class Claim {
         return actions;
     }
 
+    public boolean acceptsDocumentsFrom(String userId) {
+        return !status.isTerminal() && (claimantId.equals(userId) || userId.equals(assignedOfficerId));
+    }
+
     private boolean isEligibleApprover(Actor actor) {
         return actor.manages(referral.referredBy()) && actor.approvalLimit().covers(referral.amount());
     }

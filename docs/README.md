@@ -7,6 +7,7 @@
 | [User flows](user-flows.md) | How claimants, officers, team leads and managers use the platform, with diagrams, the demo data and a ten-minute walkthrough |
 | [Architecture](architecture.md) | Services, REST vs Kafka, write path, reliability, money, scaling to 10x and 100x |
 | [Technology stack](tech-stack.md) | Every framework and library, with version, licence and reason |
+| [API reference](api/README.md) | Live docs for both services at http://localhost:4200/api/docs, and the committed OpenAPI contract |
 
 ## Features
 
@@ -14,6 +15,7 @@
 |---|---|
 | [Claim submission and tracking](features/claim-submission-and-tracking.md) | Claimants report, track, provide information, receive decisions |
 | [Claim handling](features/claim-handling.md) | Staff pick up, review, assess, settle or reject |
+| [Supporting documents](features/supporting-documents.md) | Claimants and officers attach photos, reports and quotes |
 | [Approvals and delegated authority](features/approvals.md) | Beyond the brief: per-position limits, four-eyes referrals, approvals inbox |
 | [Dashboards and insights](features/dashboards-and-insights.md) | Team workload and performance; manager exposure |
 | [Employees and reporting line](features/employees-and-hierarchy.md) | Beyond the brief: directory, profiles, who sees what |
@@ -34,6 +36,7 @@
 | [0005](adr/0005-delegated-approval-authority.md) | Delegated approval authority per position and currency |
 | [0006](adr/0006-reporting-line-visibility.md) | The reporting line drives visibility and approvals |
 | [0007](adr/0007-personal-data-protection.md) | Personal data protection (PDPA) |
+| [0008](adr/0008-document-storage.md) | Supporting documents: metadata in PostgreSQL, content behind a storage interface |
 
 ## Assessment inputs
 

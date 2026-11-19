@@ -149,10 +149,84 @@
     </div>
   </div>
 
+  <section class="attachments" aria-labelledby="attachments-title">
+    <div class="label-line">
+      <h2 id="attachments-title" class="attachments-title">Supporting documents</h2>
+      <span class="count">Optional</span>
+    </div>
+    <p class="hint">
+      Photos of the damage, a police report or a repair quote help us decide faster. You can also
+      add them later.
+    </p>
+
+    @if (attachments().length) {
+      <ul class="attachment-list">
+        @for (item of attachments(); track $index) {
+          <li>
+            <span class="ms" aria-hidden="true">{{
+              item.file.type === 'application/pdf' ? 'picture_as_pdf' : 'image'
+            }}</span>
+            <span class="attachment-name">
+              <strong>{{ item.file.name }}</strong>
+              <span class="hint">{{ formatBytes(item.file.size) }}</span>
+            </span>
+            <select
+              class="control attachment-category"
+              [attr.aria-label]="'Type of document for ' + item.file.name"
+              [value]="item.category"
+              (change)="setAttachmentCategory($index, $any($event.target).value)"
+            >
+              @for (option of documentCategories; track option.value) {
+                <option [value]="option.value" [selected]="option.value === item.category">
+                  {{ option.label }}
+                </option>
+              }
+            </select>
+            <button
+              type="button"
+              class="remove"
+              [attr.aria-label]="'Remove ' + item.file.name"
+              (click)="removeAttachment($index)"
+            >
+              <span class="ms" aria-hidden="true">close</span>
+            </button>
+          </li>
+        }
+      </ul>
+    }
+
+    <label
+      class="drop"
+      (dragover)="$event.preventDefault()"
+      (drop)="$event.preventDefault(); addFiles($event.dataTransfer?.files ?? null)"
+    >
+      <input
+        class="visually-hidden"
+        type="file"
+        multiple
+        [accept]="accept"
+        (change)="addFiles($any($event.target).files); $any($event.target).value = ''"
+      />
+      <span class="ms" aria-hidden="true">attach_file</span>
+      <span
+        ><strong>Add files</strong> or drag them here · PDF, JPEG, PNG or WebP, up to 10 MB
+        each</span
+      >
+    </label>
+    @for (message of attachmentProblems(); track message) {
+      <p class="hint error" role="alert">{{ message }}</p>
+    }
+  </section>
+
   <div class="actions">
     <a class="cancel" routerLink="/claims/active">Cancel</a>
     <button type="submit" class="submit" [disabled]="busy()">
-      {{ busy() ? 'Submitting…' : 'Submit claim' }}
+      @if (uploading(); as state) {
+        Uploading {{ state.done + 1 > state.total ? state.total : state.done + 1 }} of
+        {{ state.total }}…
+      } @else {
+        {{ busy() ? 'Submitting…' : 'Submit claim' }}
+      }
     </button>
   </div>
 </form>

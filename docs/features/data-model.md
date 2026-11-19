@@ -10,6 +10,7 @@ erDiagram
     CLAIM ||--o{ INFORMATION_REQUEST : "questions"
     CLAIM ||--o{ ASSESSMENT : "reserve history"
     CLAIM ||--o{ OUTBOX_EVENT : "events to publish"
+    CLAIM ||--o{ CLAIM_DOCUMENT : "supporting documents"
     EMPLOYEE ||--o{ EMPLOYEE : "manages"
 
     CLAIM {
@@ -66,6 +67,18 @@ erDiagram
         text payload
         timestamptz published_at "null = pending"
     }
+    CLAIM_DOCUMENT {
+        uuid id PK
+        uuid claim_id FK
+        varchar category "PHOTO POLICE_REPORT REPAIR_QUOTE ..."
+        varchar file_name
+        varchar content_type "pdf jpeg png webp"
+        bigint size_bytes
+        varchar sha256
+        varchar storage_key UK "claimId/documentId"
+        varchar uploaded_by
+        timestamptz uploaded_at
+    }
     EMPLOYEE {
         varchar username PK
         varchar employee_number UK
@@ -109,5 +122,6 @@ erDiagram
 | V3 | Referral (delegated approval) |
 | V4 | Employee directory |
 | V5 | Domain CHECK constraints and the approvals index |
+| V6 | Supporting documents (metadata; content in `DocumentStorage`) |
 
 Migrations are append-only. Once committed, a migration is never edited; a fix is a new version.

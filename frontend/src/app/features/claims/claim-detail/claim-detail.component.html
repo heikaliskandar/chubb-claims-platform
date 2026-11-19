@@ -76,6 +76,8 @@
         <p class="description">{{ claim.incidentDescription }}</p>
       </section>
 
+      <app-documents-card [claimId]="claim.id" [canUpload]="claim.canUploadDocuments" />
+
       @if (claim.informationRequests.length > 0) {
         <section class="surface-card">
           <h2 class="card-title">Information requests</h2>

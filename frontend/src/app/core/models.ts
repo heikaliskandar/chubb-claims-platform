@@ -98,6 +98,7 @@ export interface ClaimDetail extends ClaimSummary {
         assessedAt: string;
       }[]
     | null;
+  canUploadDocuments: boolean;
 }
 
 export interface SubmitClaimRequest {
@@ -208,4 +209,24 @@ export interface Approval {
   reviewedBy: string | null;
   reviewedAt: string | null;
   canReview: boolean;
+}
+
+export type DocumentCategory =
+  | 'PHOTO'
+  | 'POLICE_REPORT'
+  | 'REPAIR_QUOTE'
+  | 'INVOICE'
+  | 'PROOF_OF_OWNERSHIP'
+  | 'ADJUSTER_REPORT'
+  | 'OTHER';
+
+export interface ClaimDocument {
+  id: string;
+  category: DocumentCategory;
+  fileName: string;
+  contentType: string;
+  sizeBytes: number;
+  sha256: string;
+  uploadedBy: string;
+  uploadedAt: string;
 }

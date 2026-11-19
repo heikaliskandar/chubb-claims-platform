@@ -172,6 +172,13 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✅ New inbox: plain tabs (Waiting for me, Decided, Sent by me), a three-step explainer, cards that read like a sentence with real names and "waiting 3 hours". New "Approval needed" panel on the claim: progress tracker, the officer's limit vs the amount, amounts as bars, and three explained choices (Approve payment, Send back for changes, Decline the claim). Checked on desktop and phone.
 - 🐞 The e2e suite caught that each choice button's accessible name included its whole description; fixed with `aria-labelledby`/`aria-describedby`. Also caught that officers saw their team lead as "lead1": names now include your own manager, which the visibility rules already allow. Backend unchanged.
 
+## Phase 22: Supporting documents and live API docs
+
+- ❓ I asked for claim documents (database, API and UI) and for API docs that always reflect the code and make the backend easy to refer to and debug.
+- ✅ Documents as their own module: `claim_document` table (V6) with CHECK constraints, content behind a `DocumentStorage` interface (Docker volume now, object storage later), type detected from the file's bytes, 10 MB and 20 per claim, upload only by the claimant or assigned officer while open, hardened downloads, audited, immutable. UI: attach while reporting, a documents card with thumbnails, drag and drop and progress. Seeded a quote, a photo and an adjuster report. ADR 0008.
+- ✅ API docs: one portal at /api/docs for both services through nginx (try-it-out uses the app's proxy and login), a rich introduction, standard error responses added to every operation automatically, and a committed OpenAPI contract per service checked by `OpenApiContractIT`. I proved the check by tampering with the file: the build failed with the update command.
+- 🐞 Hibernate schema validation caught `CHAR(64)` vs the entity's string before anything shipped. The first spec showed approval endpoints under two tags and submit missing its 201; moved approvals to their own controller. nginx dropped the port on the docs redirect (`absolute_redirect off`).
+
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.

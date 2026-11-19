@@ -123,6 +123,11 @@ public class ClaimService {
         return detail;
     }
 
+    @Transactional(readOnly = true)
+    public Claim findVisibleClaim(UUID claimId, CurrentUser user) {
+        return loadFor(claimId, user, reportsOf(user));
+    }
+
     public ClaimDetailResponse assign(UUID claimId, CurrentUser officer) {
         return act(claimId, officer, (claim, actor) -> {
             claim.assignTo(officer.username(), clock.instant());
@@ -229,7 +234,8 @@ public class ClaimService {
 
     private ClaimDetailResponse toDetail(Claim claim, CurrentUser user, Set<String> reports) {
         Actor actor = actorFor(user, claim, reports);
-        return ClaimMapper.toDetail(claim, !user.isClaimant(), claim.availableActions(actor));
+        return ClaimMapper.toDetail(claim, !user.isClaimant(), claim.availableActions(actor),
+                claim.acceptsDocumentsFrom(user.username()));
     }
 
     private Actor actorFor(CurrentUser user, Claim claim, Set<String> reports) {

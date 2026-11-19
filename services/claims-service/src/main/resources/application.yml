@@ -5,6 +5,10 @@ spring:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/claims}
     username: ${DB_USERNAME:claims_app}
     password: ${DB_PASSWORD}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 11MB
   jpa:
     open-in-view: false
     hibernate:
@@ -40,6 +44,9 @@ app:
       CLAIMS_OFFICER: { SGD: 10000, MYR: 30000, HKD: 60000, THB: 250000, IDR: 100000000, PHP: 400000 }
       SENIOR_CLAIMS_OFFICER: { SGD: 50000, MYR: 150000, HKD: 300000, THB: 1250000, IDR: 500000000, PHP: 2000000 }
       TEAM_LEAD: { SGD: 250000, MYR: 750000, HKD: 1500000, THB: 6000000, IDR: 2500000000, PHP: 10000000 }
+  documents:
+    storage-path: ${DOCUMENT_STORAGE_PATH:${java.io.tmpdir}/claims-documents}
+    max-per-claim: 20
   demo-data:
     enabled: ${DEMO_DATA_ENABLED:false}
   security:
@@ -56,7 +63,19 @@ app:
         manager1: { role: MANAGER }
 
 springdoc:
+  writer-with-order-by-keys: true
+  default-produces-media-type: application/json
   api-docs:
     enabled: ${API_DOCS_ENABLED:false}
   swagger-ui:
     enabled: ${API_DOCS_ENABLED:false}
+    urls:
+      - name: Insights service
+        url: /v3/api-docs/insights
+    urls-primary-name: Claims service
+    tags-sorter: alpha
+    operations-sorter: method
+    display-request-duration: true
+    filter: true
+    try-it-out-enabled: true
+    show-common-extensions: true

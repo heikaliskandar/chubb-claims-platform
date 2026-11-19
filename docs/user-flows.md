@@ -90,9 +90,9 @@ flowchart LR
 
 | Step | Screen | What the claimant sees |
 |---|---|---|
-| Report an incident | **Claims → New claim** | Form with validation; a double click cannot create two claims (`Idempotency-Key`). Lands on the new claim's page. |
+| Report an incident | **Claims → New claim** | Form with validation; a double click cannot create two claims (`Idempotency-Key`). Optional **supporting documents** (photos, police report, quote). Lands on the new claim's page. |
 | Track | **Claims → My claims** | Active claims with status and who they are waiting on. Updates every 10 seconds. |
-| Provide information | Banner **We need more information** → claim → **Respond** | The officer's question and an answer box. |
+| Provide information | Banner **We need more information** → claim → **Respond** | The officer's question and an answer box; files go under **Supporting documents** on the same page. |
 | Receive the decision | **Claims → History** → claim | Outcome, approved amount and reason, plus the full activity timeline. |
 
 Claimants never see other people's claims (404), staff pages, or internal notes such as the reserve.
@@ -161,9 +161,9 @@ A fresh stack (`docker compose down -v && docker compose up --build -d`) contain
 | CLM-SG-2026-000001 | Submitted | Claims team | A new motor claim in the queue | `officer1`: Queue → Assign to me |
 | CLM-MY-2026-000002 | Submitted | Claims team | A property claim in the queue | `officer3` |
 | CLM-PH-2026-000003 | Assigned | officer3 | Picked up, review not started | `officer3`: Start review |
-| CLM-SG-2026-000004 | Under review | officer1 | Question asked **and answered**, assessed at SGD 6,500, within officer1's limit | `officer1`: Approve SGD 6,500, then Mark settled |
+| CLM-SG-2026-000004 | Under review | officer1 | Question asked **and answered**, with the **repair quote and a damage photo** attached; assessed at SGD 6,500, within officer1's limit | `officer1`: Approve SGD 6,500, then Mark settled |
 | CLM-TH-2026-000005 | Info requested | Claimant | Officer is waiting for the police report | `claimant2`: banner → Respond |
-| CLM-SG-2026-000006 | Pending approval | Approver | officer1 recommended SGD 78,000, above the SGD 10,000 limit | `lead1`: Approvals → Waiting for me → Review and decide |
+| CLM-SG-2026-000006 | Pending approval | Approver | officer1 recommended SGD 78,000, above the SGD 10,000 limit, with the **loss adjuster report** attached | `lead1`: Approvals → Waiting for me → Review and decide |
 | CLM-HK-2026-000007 | Approved | officer2 | Referral already approved by lead1 (four-eyes complete) | `officer2`: Mark settled; `lead1`: Approvals → Decided |
 | CLM-PH-2026-000008 | Rejected | Nobody | Rejection with the policy exclusion as the reason | `claimant2`: History |
 | CLM-ID-2026-000009 | Settled | Nobody | Full lifecycle completed | `claimant1`: History → decision |

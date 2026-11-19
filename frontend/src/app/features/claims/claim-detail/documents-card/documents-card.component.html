@@ -1,0 +1,115 @@
+<section class="surface-card" aria-labelledby="documents-title">
+  <div class="title-row">
+    <h2 id="documents-title" class="card-title">Supporting documents</h2>
+    @if (documents(); as list) {
+      <span class="muted small">{{ list.length }} {{ list.length === 1 ? 'file' : 'files' }}</span>
+    }
+  </div>
+
+  @if (documents(); as list) {
+    @if (list.length === 0) {
+      <p class="muted empty">
+        No documents yet.
+        @if (canUpload()) {
+          Photos, a police report or a repair quote help the claim move faster.
+        }
+      </p>
+    } @else {
+      <ul class="files">
+        @for (document of list; track document.id) {
+          <li class="file">
+            @if (thumbnails()[document.id]; as thumbnail) {
+              <img class="thumb" [src]="thumbnail" alt="" />
+            } @else {
+              <span class="thumb icon" [class.pdf]="!isImage(document.contentType)">
+                <span class="ms" aria-hidden="true">{{ icon(document.contentType) }}</span>
+              </span>
+            }
+            <div class="meta">
+              <strong class="name" [title]="document.fileName">{{ document.fileName }}</strong>
+              <span class="muted small">
+                {{ label(document.category) }} · {{ size(document.sizeBytes) }} ·
+                {{ uploaderName(document) }},
+                {{ document.uploadedAt | date: 'd MMM, HH:mm' }}
+              </span>
+            </div>
+            <div class="file-actions">
+              <button
+                type="button"
+                class="btn btn-ghost btn-icon"
+                [attr.aria-label]="'View ' + document.fileName"
+                (click)="open(document, false)"
+              >
+                <span class="ms" aria-hidden="true">visibility</span>
+              </button>
+              <button
+                type="button"
+                class="btn btn-ghost btn-icon"
+                [attr.aria-label]="'Download ' + document.fileName"
+                (click)="open(document, true)"
+              >
+                <span class="ms" aria-hidden="true">download</span>
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+  } @else {
+    <p class="muted empty">Loading…</p>
+  }
+
+  @if (canUpload()) {
+    <div class="upload">
+      <div class="field">
+        <label for="document-category">What are you adding?</label>
+        <select
+          id="document-category"
+          class="select"
+          [ngModel]="category()"
+          (ngModelChange)="category.set($event)"
+        >
+          @for (option of categories(); track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </div>
+
+      <label
+        class="drop"
+        [class.dragging]="dragging()"
+        (dragover)="$event.preventDefault(); dragging.set(true)"
+        (dragleave)="dragging.set(false)"
+        (drop)="onDrop($event)"
+      >
+        <input
+          class="visually-hidden"
+          type="file"
+          [accept]="accept"
+          [disabled]="progress() !== null"
+          (change)="onFiles($any($event.target).files); $any($event.target).value = ''"
+        />
+        <span class="ms" aria-hidden="true">upload_file</span>
+        @if (progress() !== null) {
+          <span>Uploading… {{ progress() }}%</span>
+          <span
+            class="bar"
+            role="progressbar"
+            [attr.aria-valuenow]="progress()"
+            aria-valuemin="0"
+            aria-valuemax="100"
+          >
+            <span [style.width.%]="progress()"></span>
+          </span>
+        } @else {
+          <span><strong>Choose a file</strong> or drag it here</span>
+          <span class="muted small">PDF, JPEG, PNG or WebP, up to 10 MB</span>
+        }
+      </label>
+
+      @if (problem(); as message) {
+        <p class="problem" role="alert">{{ message }}</p>
+      }
+    </div>
+  }
+</section>

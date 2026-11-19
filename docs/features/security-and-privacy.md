@@ -30,6 +30,10 @@
 | Accountability | A dedicated `AUDIT` logger records every claim view, colleague-profile view, contact change and lockout as `action actor role resource id`. It holds identifiers, never the data itself. |
 | Integrity | Database CHECK constraints on every code column and on the completeness of decisions, referrals and answers (`V5__add_domain_constraints.sql`). |
 
+## Uploaded files
+
+File type is detected from the content (PDF, JPEG, PNG and WebP only), never from the name. Size and count are limited. Files are stored under generated keys, so a file name can never become a path. Only the claimant and the assigned officer can upload, and only while the claim is open. Downloads are attachments with `no-store`, `nosniff` and a sandbox CSP, and every upload and download is audited. See [supporting documents](supporting-documents.md).
+
 ## Browser and transport
 
 nginx serves the app with:

@@ -39,7 +39,8 @@ final class ClaimMapper {
                 claim.getUpdatedAt());
     }
 
-    static ClaimDetailResponse toDetail(Claim claim, boolean includeInternalFields, Set<ClaimAction> allowedActions) {
+    static ClaimDetailResponse toDetail(Claim claim, boolean includeInternalFields, Set<ClaimAction> allowedActions,
+                                        boolean canUploadDocuments) {
         return new ClaimDetailResponse(
                 claim.getId(),
                 claim.getClaimNumber(),
@@ -63,7 +64,8 @@ final class ClaimMapper {
                 claim.getInformationRequests().stream().map(ClaimMapper::toInformationRequest).toList(),
                 includeInternalFields ? claim.getAssessments().stream().map(ClaimMapper::toAssessment).toList() : null,
                 claim.getCreatedAt(),
-                claim.getUpdatedAt());
+                claim.getUpdatedAt(),
+                canUploadDocuments);
     }
 
     private static String nextStep(ClaimStatus status) {

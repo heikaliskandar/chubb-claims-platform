@@ -1,0 +1,346 @@
+{
+  "openapi" : "3.1.0",
+  "info" : {
+    "description" : "Read-only dashboards built from claim events on Kafka (`claims.claim-events.v1`).\n\n**Eventually consistent.** Every report carries `asOf`, the time of the latest event applied. A change made through the claims service usually appears within a second or two. Read a single claim from the claims service when you need its exact current state.\n\n**No personal data.** The read model holds identifiers, codes, amounts and timestamps only.\n\n**Money is never mixed.** Amounts are always reported per currency; there is no FX conversion.\n\n**Authentication.** HTTP Basic, same demo users as the claims service. Workload and performance are for `OFFICER` and `MANAGER`; exposure is `MANAGER` only. Errors are RFC 7807 Problem Details.\n",
+    "title" : "Insights Service API",
+    "version" : "v1"
+  },
+  "servers" : [ {
+    "url" : "/",
+    "description" : "Same origin as the web app"
+  } ],
+  "security" : [ {
+    "basicAuth" : [ ]
+  } ],
+  "tags" : [ {
+    "description" : "Workload, performance and liability exposure, aggregated per currency.",
+    "name" : "Insights"
+  } ],
+  "paths" : {
+    "/api/v1/insights/exposure" : {
+      "get" : {
+        "description" : "Totals are per currency; amounts in different currencies are never added together.",
+        "operationId" : "exposure",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ExposureReport"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "Outstanding reserve on open claims by market, claim type and currency",
+        "tags" : [ "Insights" ]
+      }
+    },
+    "/api/v1/insights/performance" : {
+      "get" : {
+        "operationId" : "performance",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PerformanceReport"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "Decisions, closures and average hours from submission to decision, per team and officer",
+        "tags" : [ "Insights" ]
+      }
+    },
+    "/api/v1/insights/workload" : {
+      "get" : {
+        "operationId" : "workload",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/WorkloadReport"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          }
+        },
+        "summary" : "Open claims per team and officer, by status",
+        "tags" : [ "Insights" ]
+      }
+    }
+  },
+  "components" : {
+    "responses" : {
+      "Forbidden" : {
+        "content" : {
+          "application/problem+json" : {
+            "schema" : {
+              "type" : "object",
+              "$ref" : "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description" : "Your role cannot read this report"
+      },
+      "Unauthorized" : {
+        "content" : {
+          "application/problem+json" : {
+            "schema" : {
+              "type" : "object",
+              "$ref" : "#/components/schemas/Problem"
+            }
+          }
+        },
+        "description" : "Missing or invalid credentials"
+      }
+    },
+    "schemas" : {
+      "CurrencyTotal" : {
+        "type" : "object",
+        "properties" : {
+          "currency" : {
+            "type" : "string"
+          },
+          "openClaims" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "outstandingReserve" : {
+            "type" : "number"
+          }
+        }
+      },
+      "ExposureLine" : {
+        "type" : "object",
+        "properties" : {
+          "claimType" : {
+            "type" : "string"
+          },
+          "currency" : {
+            "type" : "string"
+          },
+          "market" : {
+            "type" : "string"
+          },
+          "openClaims" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "outstandingReserve" : {
+            "type" : "number"
+          }
+        }
+      },
+      "ExposureReport" : {
+        "type" : "object",
+        "properties" : {
+          "asOf" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "lines" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/ExposureLine"
+            }
+          },
+          "totalsByCurrency" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/CurrencyTotal"
+            }
+          }
+        }
+      },
+      "OfficerPerformance" : {
+        "type" : "object",
+        "properties" : {
+          "approved" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "averageHoursToDecision" : {
+            "type" : "number"
+          },
+          "closed" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "decided" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "officerId" : {
+            "type" : "string"
+          },
+          "rejected" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "OfficerWorkload" : {
+        "type" : "object",
+        "properties" : {
+          "claimsByStatus" : {
+            "type" : "object",
+            "additionalProperties" : {
+              "type" : "integer",
+              "format" : "int64"
+            }
+          },
+          "officerId" : {
+            "type" : "string"
+          },
+          "openClaims" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      },
+      "PerformanceReport" : {
+        "type" : "object",
+        "properties" : {
+          "asOf" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "teams" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TeamPerformance"
+            }
+          }
+        }
+      },
+      "Problem" : {
+        "type" : "object",
+        "description" : "RFC 7807 Problem Details",
+        "properties" : {
+          "detail" : {
+            "type" : "string",
+            "example" : "Access denied"
+          },
+          "instance" : {
+            "type" : "string",
+            "example" : "/api/v1/insights/exposure"
+          },
+          "status" : {
+            "type" : "integer",
+            "format" : "int32",
+            "example" : 403
+          },
+          "title" : {
+            "type" : "string",
+            "example" : "Forbidden"
+          },
+          "type" : {
+            "type" : "string",
+            "example" : "about:blank"
+          }
+        }
+      },
+      "TeamPerformance" : {
+        "type" : "object",
+        "properties" : {
+          "approved" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "averageHoursToDecision" : {
+            "type" : "number"
+          },
+          "closed" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "decided" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "officers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OfficerPerformance"
+            }
+          },
+          "rejected" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "team" : {
+            "type" : "string"
+          }
+        }
+      },
+      "TeamWorkload" : {
+        "type" : "object",
+        "properties" : {
+          "officers" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/OfficerWorkload"
+            }
+          },
+          "openClaims" : {
+            "type" : "integer",
+            "format" : "int64"
+          },
+          "team" : {
+            "type" : "string"
+          }
+        }
+      },
+      "WorkloadReport" : {
+        "type" : "object",
+        "properties" : {
+          "asOf" : {
+            "type" : "string",
+            "format" : "date-time"
+          },
+          "teams" : {
+            "type" : "array",
+            "items" : {
+              "$ref" : "#/components/schemas/TeamWorkload"
+            }
+          },
+          "unassignedClaims" : {
+            "type" : "integer",
+            "format" : "int64"
+          }
+        }
+      }
+    },
+    "securitySchemes" : {
+      "basicAuth" : {
+        "scheme" : "basic",
+        "type" : "http"
+      }
+    }
+  }
+}

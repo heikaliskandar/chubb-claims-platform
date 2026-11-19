@@ -46,9 +46,10 @@ Open **http://localhost:4200** and sign in as `claimant1`, `officer1`, `lead1` o
 | | |
 |---|---|
 | **[User flows](docs/user-flows.md)** | Each user type step by step, with diagrams, the demo data and a ten-minute walkthrough |
-| **[Features](docs/README.md#features)** | [Submission and tracking](docs/features/claim-submission-and-tracking.md) · [Claim handling](docs/features/claim-handling.md) · [Approvals](docs/features/approvals.md) · [Dashboards](docs/features/dashboards-and-insights.md) · [Employees](docs/features/employees-and-hierarchy.md) · [Events](docs/features/events-and-messaging.md) · [Security and privacy](docs/features/security-and-privacy.md) · [Data model](docs/features/data-model.md) · [Frontend](docs/features/frontend.md) · [Testing](docs/features/testing.md) |
+| **[Features](docs/README.md#features)** | [Submission and tracking](docs/features/claim-submission-and-tracking.md) · [Claim handling](docs/features/claim-handling.md) · [Approvals](docs/features/approvals.md) · [Supporting documents](docs/features/supporting-documents.md) · [Dashboards](docs/features/dashboards-and-insights.md) · [Employees](docs/features/employees-and-hierarchy.md) · [Events](docs/features/events-and-messaging.md) · [Security and privacy](docs/features/security-and-privacy.md) · [Data model](docs/features/data-model.md) · [Frontend](docs/features/frontend.md) · [Testing](docs/features/testing.md) |
 | **[Architecture](docs/architecture.md)** | Services, REST vs Kafka, reliability, scaling |
-| **[Decisions](docs/README.md#decisions-adrs)** | Seven architecture decision records |
+| **[API reference](docs/api/README.md)** | Live docs at **http://localhost:4200/api/docs** for both services, generated from the code, plus the committed OpenAPI contract |
+| **[Decisions](docs/README.md#decisions-adrs)** | Eight architecture decision records |
 | **[Tech stack](docs/tech-stack.md)** | Frameworks, libraries, versions and licences |
 
 ## How the brief is covered
@@ -59,7 +60,7 @@ Step-by-step flows for every user type, with diagrams, the demo data and a ten-m
 |---|---|
 | Claimants report an incident ([doc](docs/features/claim-submission-and-tracking.md)) | **Claims → New claim** (`POST /claims`, with `Idempotency-Key` so a double submit can't create two claims) |
 | Claimants track their claim | **Claims → My claims / History**; claim page with status, "waiting on", next step and full activity timeline; refreshes every 10 s |
-| Claimants provide information when asked | "We need more information" banner on My claims; **Respond** on the claim page |
+| Claimants provide information when asked ([documents](docs/features/supporting-documents.md)) | "We need more information" banner on My claims; **Respond** on the claim page; **supporting documents** (photos, police report, quotes) attached when reporting or at any time while the claim is open |
 | Claimants receive decisions | Decision card with outcome, amount and reason; event-driven notification stub in insights-service |
 | Staff pick up incoming claims ([doc](docs/features/claim-handling.md)) | **Claims → Queue** → **Assign to me** (optimistic locking stops two officers taking the same claim) |
 | Staff review and assess | **Start review**, **Request info**, **Assess** (sets the reserve; every re-assessment kept) |
@@ -70,7 +71,7 @@ Step-by-step flows for every user type, with diagrams, the demo data and a ten-m
 | REST and Kafka, with a reason for each ([doc](docs/features/events-and-messaging.md)) | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
 | Async processing across both tiers | Outbox → Kafka → read model; the UI polls and shows "Updated hh:mm:ss" on dashboards |
 
-**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 151 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 62 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
+**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 171 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 69 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
 
 ## Architecture at a glance
 
@@ -102,6 +103,7 @@ docker compose up --build
 | **Web app** | **http://localhost:4200** |
 | claims-service health | http://localhost:8081/actuator/health |
 | insights-service health | http://localhost:8082/actuator/health |
+| **API docs (both services, try it out)** | **http://localhost:4200/api/docs** |
 | Kafka UI | http://localhost:8090 |
 
 Each health endpoint should report `"status":"UP"`. Component details (database, disk) are only shown to authenticated callers.
@@ -167,7 +169,7 @@ Every claim response includes `allowedActions` for the current user, `waitingOn`
 
 ## API
 
-Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log in as a demo user). API docs are switched on by `API_DOCS_ENABLED=true` in the Compose stack and are off by default.
+**Live, interactive docs for both services: http://localhost:4200/api/docs** (click **Authorize** and sign in as a demo user). They are generated from the code, so they always match it, and every change to the API also shows up as a diff in the committed contract under [docs/api](docs/api/README.md). On by default only in the Compose stack (`API_DOCS_ENABLED=true`).
 
 | Method | Path | Role |
 |---|---|---|
@@ -184,6 +186,9 @@ Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log i
 | POST | `/api/v1/claims/{id}/decision` | OFFICER (assigned) |
 | POST | `/api/v1/claims/{id}/approval` | OFFICER, MANAGER (above the recommender, enough authority) |
 | POST | `/api/v1/claims/{id}/settlement` | OFFICER (assigned) |
+| GET | `/api/v1/claims/{id}/documents` | anyone who can see the claim |
+| POST | `/api/v1/claims/{id}/documents` (multipart `file`, `category`) | claimant (owner) or assigned officer, while the claim is open |
+| GET | `/api/v1/claims/{id}/documents/{documentId}/content` | anyone who can see the claim |
 | GET | `/api/v1/me` | any |
 | GET | `/api/v1/employees?q=&page=&size=` | OFFICER, MANAGER (yourself and everyone below you) |
 | GET | `/api/v1/employees/me` | OFFICER, MANAGER |
@@ -192,7 +197,7 @@ Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log i
 
 **Who sees what.** Staff see unassigned claims plus claims assigned to themselves or anyone below them in the reporting line; the same rule hides people above or beside you in the directory. Your own profile shows your direct manager's name only.
 
-insights-service (Swagger UI: http://localhost:8082/swagger-ui.html). Read-only and eventually consistent: each report carries `asOf`, the time of the latest event applied.
+insights-service (same docs portal, *Insights service*). Read-only and eventually consistent: each report carries `asOf`, the time of the latest event applied.
 
 | Method | Path | Role |
 |---|---|---|
@@ -217,11 +222,11 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 ## Tests
 
 ```bash
-cd services/claims-service && ./mvnw test      # 138 unit + web-layer tests, no Docker needed
+cd services/claims-service && ./mvnw test      # 158 unit + web-layer tests, no Docker needed
 cd services/insights-service && ./mvnw test    # 13 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
-cd frontend && npm test -- --watch=false       # 13 frontend unit tests (Vitest)
-cd e2e && npm ci && npx playwright test        # 62 end-to-end tests against the running stack
+cd frontend && npm test -- --watch=false       # 16 frontend unit tests (Vitest)
+cd e2e && npm ci && npx playwright test        # 69 end-to-end tests against the running stack
 ```
 
 Every push runs all of these in **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.yml)): both services' unit and Testcontainers suites, frontend formatting, unit tests and production build, then the full stack in Docker Compose with the Playwright suite. On failure the Playwright report, traces and service logs are uploaded.
@@ -268,7 +273,7 @@ Deliberately not built, to keep the scope honest. The design already leaves room
 
 1. The six markets are SG, MY, HK, TH, ID and PH, with currencies SGD, MYR, HKD, THB, IDR and PHP.
 2. Policy numbers are not validated (no policy admin system integration).
-3. Claimants answer information requests with text only. No document uploads.
+3. Supporting documents are PDF, JPEG, PNG or WebP, up to 10 MB each and 20 per claim, and cannot be deleted once added.
 4. Only the assigned officer works a claim. Any officer can pick up an unassigned one. A referral can only be reviewed by someone above the recommending officer in the reporting line, with enough authority.
 5. Approving a claim requires an assessment first, and the approved amount can't exceed the claimed amount.
 6. Exposure is reported per currency. Amounts in different currencies are never summed.
@@ -280,7 +285,7 @@ Deliberately not built, to keep the scope honest. The design already leaves room
 | Left out | Why |
 |---|---|
 | SSO / OIDC | Needs an identity provider and a token flow in both services and the SPA. HTTP Basic shows the same role and position model; production would use Entra ID, Okta or Keycloak. |
-| Document upload and storage | Needs object storage, virus scanning and retention rules. Claimants answer information requests in text. |
+| Virus scanning and object storage for documents | Documents are stored on a volume behind a `DocumentStorage` interface; production adds S3 or Azure Blob with encryption and a scan before a file becomes visible ([ADR 0008](docs/adr/0008-document-storage.md)). |
 | Payments | Settlement records that payment happened; releasing money belongs to finance systems with their own controls. |
 | FX conversion | Avoided by design: exposure and approval limits are per currency. |
 | Email / SMS | Notifications are logged by insights-service as a stub at the point a real sender would be called. |

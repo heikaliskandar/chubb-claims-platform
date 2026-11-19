@@ -10,6 +10,8 @@ import com.chubb.claims.claim.infrastructure.ClaimRepository;
 import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.common.security.Position;
 import com.chubb.claims.common.security.Role;
+import com.chubb.claims.document.application.DocumentService;
+import com.chubb.claims.document.domain.DocumentCategory;
 import com.chubb.claims.employee.domain.Employee;
 import com.chubb.claims.employee.infrastructure.EmployeeRepository;
 import org.slf4j.Logger;
@@ -17,8 +19,11 @@ import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.UUID;
@@ -44,11 +49,14 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final ClaimService claimService;
     private final ClaimRepository claims;
     private final EmployeeRepository employees;
+    private final DocumentService documents;
 
-    public DemoDataSeeder(ClaimService claimService, ClaimRepository claims, EmployeeRepository employees) {
+    public DemoDataSeeder(ClaimService claimService, ClaimRepository claims, EmployeeRepository employees,
+                          DocumentService documents) {
         this.claimService = claimService;
         this.claims = claims;
         this.employees = employees;
+        this.documents = documents;
     }
 
     @Override
@@ -77,6 +85,8 @@ public class DemoDataSeeder implements ApplicationRunner {
         startReview(readyToDecide, OFFICER_1);
         UUID question = claimService.requestInformation(readyToDecide, OFFICER_1,
                 "Please share the workshop quotation and the other driver's insurer.").informationRequests().get(0).id();
+        attach(readyToDecide, CLAIMANT_1, DocumentCategory.REPAIR_QUOTE, "repair-quote.pdf");
+        attach(readyToDecide, CLAIMANT_1, DocumentCategory.PHOTO, "rear-bumper-damage.jpg");
         claimService.provideInformation(readyToDecide, question, CLAIMANT_1,
                 "Quotation WS-88213 from Ah Seng Motor Works attached; the other driver is insured with ABC General.");
         claimService.assess(readyToDecide, OFFICER_1, new BigDecimal("6500.00"),
@@ -91,6 +101,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         UUID referred = submit(CLAIMANT_2, Market.SG, ClaimType.PROPERTY, "POL-SG-P-401276", 9, "85000.00",
                 "Fire spread from the neighbouring unit; kitchen and two bedrooms smoke- and water-damaged.");
         startReview(referred, OFFICER_1);
+        attach(referred, OFFICER_1, DocumentCategory.ADJUSTER_REPORT, "loss-adjuster-report.pdf");
         claimService.assess(referred, OFFICER_1, new BigDecimal("80000.00"), "Loss adjuster report LA-5521 received.");
         claimService.decide(referred, OFFICER_1, Decision.Outcome.APPROVED, new BigDecimal("78000.00"),
                 "Covered; loss adjuster report supports the amount after depreciation.");
@@ -152,6 +163,15 @@ public class DemoDataSeeder implements ApplicationRunner {
         ClaimDetails details = new ClaimDetails(policyNumber, market, type, LocalDate.now().minusDays(daysAgo),
                 description, new BigDecimal(amount));
         return claimService.submit(claimant, details, null).claim().id();
+    }
+
+    private void attach(UUID claimId, CurrentUser uploader, DocumentCategory category, String fileName) {
+        try {
+            byte[] content = new ClassPathResource("demo/" + fileName).getContentAsByteArray();
+            documents.upload(claimId, uploader, category, fileName, content);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 
     private void startReview(UUID claimId, CurrentUser officer) {

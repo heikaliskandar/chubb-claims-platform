@@ -47,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = ClaimController.class, properties = "app.security.demo-users.password=test-password")
+@WebMvcTest(controllers = {ClaimController.class, ApprovalController.class}, properties = "app.security.demo-users.password=test-password")
 @Import(SecurityConfig.class)
 class ClaimControllerTest {
 
@@ -86,7 +86,7 @@ class ClaimControllerTest {
                 ClaimType.MOTOR, LocalDate.of(2026, 11, 1), "Rear-ended at a traffic light", "SGD",
                 new BigDecimal("3200.00"), status, status.waitingOn(), "Next step", Set.of(), null, null, null, null,
                 List.of(), List.of(), null,
-                Instant.parse("2026-11-19T10:00:00Z"), Instant.parse("2026-11-19T10:00:00Z"));
+                Instant.parse("2026-11-19T10:00:00Z"), Instant.parse("2026-11-19T10:00:00Z"), true);
     }
 
     @Test
