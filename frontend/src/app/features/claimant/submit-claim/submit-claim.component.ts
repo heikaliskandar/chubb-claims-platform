@@ -1,14 +1,7 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { SelectButtonModule } from 'primeng/selectbutton';
-import { TextareaModule } from 'primeng/textarea';
+import { Router, RouterLink } from '@angular/router';
 import { ClaimsApiService } from '../../../core/claims-api.service';
 import { ClaimType, Market } from '../../../core/models';
 import { PageHeaderComponent } from '../../../layout/page-header/page-header.component';
@@ -16,32 +9,54 @@ import { MARKETS } from '../../../shared/markets';
 
 @Component({
   selector: 'app-submit-claim',
-  imports: [
-    ReactiveFormsModule,
-    ButtonModule,
-    DatePickerModule,
-    InputNumberModule,
-    InputTextModule,
-    SelectModule,
-    SelectButtonModule,
-    TextareaModule,
-    PageHeaderComponent,
-  ],
+  imports: [ReactiveFormsModule, RouterLink, PageHeaderComponent],
   templateUrl: './submit-claim.component.html',
+  styles: `
+    .type-options {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+      max-width: 420px;
+    }
+    .type-option {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 16px;
+      border: 1px solid var(--app-border);
+      border-radius: 14px;
+      background: var(--app-surface);
+      color: var(--app-text);
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .type-option .ms {
+      font-size: 24px;
+      color: var(--app-muted);
+    }
+    .type-option.selected {
+      border-color: var(--app-primary);
+      background: var(--app-primary-soft);
+      color: var(--app-primary);
+    }
+    .type-option.selected .ms {
+      color: var(--app-primary);
+    }
+  `,
 })
 export class SubmitClaimComponent {
   private readonly api = inject(ClaimsApiService);
-  protected readonly router = inject(Router);
+  private readonly router = inject(Router);
   private readonly idempotencyKey = crypto.randomUUID();
 
   protected readonly markets = MARKETS;
-  protected readonly claimTypes = [
-    { label: 'Motor', value: 'MOTOR' as ClaimType, icon: 'pi pi-car' },
-    { label: 'Property', value: 'PROPERTY' as ClaimType, icon: 'pi pi-home' },
+  protected readonly claimTypes: { value: ClaimType; label: string; icon: string }[] = [
+    { value: 'MOTOR', label: 'Motor', icon: 'directions_car' },
+    { value: 'PROPERTY', label: 'Property', icon: 'home' },
   ];
-  protected readonly today = new Date();
+  protected readonly today = toIsoDate(new Date());
   protected readonly busy = signal(false);
-  protected readonly form = inject(FormBuilder).group({
+  protected readonly form = inject(FormBuilder).nonNullable.group({
     claimType: ['MOTOR' as ClaimType, Validators.required],
     market: ['SG' as Market, Validators.required],
     policyNumber: ['', [Validators.required, Validators.maxLength(50)]],
@@ -50,6 +65,9 @@ export class SubmitClaimComponent {
     incidentDescription: ['', [Validators.required, Validators.maxLength(2000)]],
   });
 
+  protected readonly claimType = toSignal(this.form.controls.claimType.valueChanges, {
+    initialValue: this.form.controls.claimType.value,
+  });
   private readonly market = toSignal(this.form.controls.market.valueChanges, {
     initialValue: this.form.controls.market.value,
   });
@@ -61,17 +79,7 @@ export class SubmitClaimComponent {
     const value = this.form.getRawValue();
     this.busy.set(true);
     this.api
-      .submit(
-        {
-          policyNumber: value.policyNumber!,
-          market: value.market!,
-          claimType: value.claimType!,
-          incidentDate: toIsoDate(value.incidentDate!),
-          incidentDescription: value.incidentDescription!,
-          claimedAmount: value.claimedAmount!,
-        },
-        this.idempotencyKey,
-      )
+      .submit({ ...value, claimedAmount: value.claimedAmount ?? 0 }, this.idempotencyKey)
       .subscribe({
         next: (claim) => this.router.navigate(['/claims', claim.id]),
         error: () => this.busy.set(false),

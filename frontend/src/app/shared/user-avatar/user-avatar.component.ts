@@ -1,20 +1,39 @@
 import { Component, computed, inject, input } from '@angular/core';
-import { AvatarModule } from 'primeng/avatar';
 import { AvatarService } from '../../core/avatar.service';
+
+const SIZES = { sm: 32, md: 40, lg: 48, xl: 88 };
 
 @Component({
   selector: 'app-user-avatar',
-  imports: [AvatarModule],
+  host: {
+    '[style.--size.px]': 'pixels()',
+    '[attr.aria-hidden]': 'true',
+  },
   template: `
     @if (image(); as image) {
-      <p-avatar [image]="image" shape="circle" [size]="size()" />
+      <img [src]="image" alt="" />
     } @else {
-      <p-avatar [label]="initials()" shape="circle" [size]="size()" styleClass="initials" />
+      <span>{{ initials() }}</span>
     }
   `,
   styles: `
     :host {
-      display: inline-flex;
+      display: inline-grid;
+      flex: none;
+      place-items: center;
+      width: var(--size);
+      height: var(--size);
+      overflow: hidden;
+      border-radius: 50%;
+      background: var(--app-primary-soft);
+      color: var(--app-primary);
+      font-size: calc(var(--size) * 0.36);
+      font-weight: 700;
+    }
+    img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
     }
   `,
 })
@@ -22,8 +41,9 @@ export class UserAvatarComponent {
   private readonly avatars = inject(AvatarService);
 
   readonly username = input.required<string>();
-  readonly size = input<'normal' | 'large' | 'xlarge'>('normal');
+  readonly size = input<keyof typeof SIZES>('md');
 
+  protected readonly pixels = computed(() => SIZES[this.size()]);
   protected readonly image = computed(() => this.avatars.avatarOf(this.username()));
   protected readonly initials = computed(() => this.username().slice(0, 2).toUpperCase());
 }

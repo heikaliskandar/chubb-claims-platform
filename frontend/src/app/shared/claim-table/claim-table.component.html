@@ -1,56 +1,58 @@
-<p-table
-  [value]="page()?.content ?? []"
-  [lazy]="true"
-  [paginator]="(page()?.totalElements ?? 0) > rows()"
-  [rows]="rows()"
-  [first]="(page()?.page ?? 0) * rows()"
-  [totalRecords]="page()?.totalElements ?? 0"
-  [loading]="page() === null"
-  [rowHover]="true"
-  dataKey="id"
-  (onLazyLoad)="onLazyLoad($event)"
->
-  <ng-template #header>
-    <tr>
-      <th>Claim</th>
-      <th>Status</th>
-      <th>Waiting on</th>
-      <th class="right">Claimed</th>
-      <th>Officer</th>
-      <th>Submitted</th>
-    </tr>
-  </ng-template>
-
-  <ng-template #body let-claim>
-    <tr class="clickable-row" (click)="open(claim)">
-      <td>
-        <div class="claim-number">{{ claim.claimNumber }}</div>
-        <div class="muted small">
-          {{ marketName(claim.market) }} · {{ claim.claimType | label }}
-        </div>
-      </td>
-      <td><app-status-tag [status]="claim.status" /></td>
-      <td class="muted">{{ claim.waitingOn | label }}</td>
-      <td class="right amount">{{ claim.claimedAmount | currency: claim.currency : 'code' }}</td>
-      <td>
-        @if (claim.assignedOfficerId) {
-          <span class="officer">
-            <app-user-avatar [username]="claim.assignedOfficerId" />
-            {{ claim.assignedOfficerId }}
-          </span>
-        } @else {
-          <span class="muted">—</span>
-        }
-      </td>
-      <td class="muted">{{ claim.createdAt | date: 'd MMM y' }}</td>
-    </tr>
-  </ng-template>
-
-  <ng-template #emptymessage>
-    <tr>
-      <td colspan="6">
-        <div class="empty-state"><i class="pi pi-inbox"></i>No claims</div>
-      </td>
-    </tr>
-  </ng-template>
-</p-table>
+@if (page(); as page) {
+  @if (page.content.length === 0) {
+    <div class="empty-state"><span class="ms">inbox</span>No claims</div>
+  } @else {
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Claim</th>
+            <th>Status</th>
+            <th>Waiting on</th>
+            <th class="right">Claimed</th>
+            <th>Officer</th>
+            <th>Submitted</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (claim of page.content; track claim.id) {
+            <tr class="clickable" tabindex="0" (click)="open(claim)" (keydown.enter)="open(claim)">
+              <td>
+                <div class="primary-cell">
+                  <strong>{{ claim.claimNumber }}</strong>
+                  <span class="muted small"
+                    >{{ marketName(claim.market) }} · {{ claim.claimType | label }}</span
+                  >
+                </div>
+              </td>
+              <td><app-status-tag [status]="claim.status" /></td>
+              <td class="muted">{{ claim.waitingOn | label }}</td>
+              <td class="right amount">
+                {{ claim.claimedAmount | currency: claim.currency : 'code' }}
+              </td>
+              <td>
+                @if (claim.assignedOfficerId; as officer) {
+                  <span class="officer">
+                    <app-user-avatar [username]="officer" size="sm" />
+                    {{ officer }}
+                  </span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </td>
+              <td class="muted">{{ claim.createdAt | date: 'd MMM y' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+  <app-pager
+    [page]="page.page"
+    [size]="rows()"
+    [total]="page.totalElements"
+    (pageChange)="pageChange.emit($event)"
+  />
+} @else {
+  <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+}

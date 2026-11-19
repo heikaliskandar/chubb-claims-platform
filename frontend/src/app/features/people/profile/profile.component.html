@@ -1,25 +1,23 @@
 @if (employee(); as employee) {
   <app-page-header [title]="employee.self ? 'My profile' : employee.fullName" [crumbs]="crumbs()">
     @if (employee.self) {
-      <p-button
-        label="Edit contact"
-        icon="pi pi-pencil"
-        [outlined]="true"
-        (onClick)="openEdit(employee)"
-      />
+      <button type="button" class="btn btn-outline" (click)="openEdit(employee)">
+        <span class="ms">edit</span>
+        Edit contact
+      </button>
     }
   </app-page-header>
 
   <section class="surface-card hero">
     <div class="cover"></div>
     <div class="identity">
-      <app-user-avatar [username]="employee.username" size="xlarge" />
+      <app-user-avatar class="avatar" [username]="employee.username" size="xl" />
       <div class="names">
         <h2>{{ employee.fullName }}</h2>
         <span class="muted">{{ employee.position | label }} · {{ employee.team }}</span>
       </div>
       <div class="badges">
-        <span class="chip"><i class="pi pi-id-card"></i>{{ employee.employeeNumber }}</span>
+        <span class="chip"><span class="ms">badge</span>{{ employee.employeeNumber }}</span>
         <app-employee-status-tag [status]="employee.status" />
       </div>
     </div>
@@ -44,165 +42,158 @@
     </div>
   </section>
 
-  <p-tabs value="overview">
-    <p-tablist>
-      <p-tab value="overview"><i class="pi pi-user"></i>Overview</p-tab>
-      <p-tab value="team"><i class="pi pi-users"></i>Team</p-tab>
-      <p-tab value="claims"><i class="pi pi-inbox"></i>Claims</p-tab>
-      <p-tab value="authority"><i class="pi pi-shield"></i>Authority</p-tab>
-    </p-tablist>
+  <div class="tabs" role="tablist">
+    @for (option of tabs; track option.value) {
+      <button
+        type="button"
+        role="tab"
+        class="tab"
+        [class.active]="tab() === option.value"
+        [attr.aria-selected]="tab() === option.value"
+        (click)="tab.set(option.value)"
+      >
+        <span class="ms">{{ option.icon }}</span>
+        {{ option.label }}
+      </button>
+    }
+  </div>
 
-    <p-tabpanels>
-      <p-tabpanel value="overview">
-        <div class="layout-main-side">
-          <section class="surface-card">
-            <h3 class="card-title">Employment</h3>
-            <dl class="kv">
-              <div>
-                <dt>Employee no.</dt>
-                <dd>{{ employee.employeeNumber }}</dd>
-              </div>
-              <div>
-                <dt>Position</dt>
-                <dd>{{ employee.position | label }}</dd>
-              </div>
-              <div>
-                <dt>Department</dt>
-                <dd>{{ employee.department }}</dd>
-              </div>
-              <div>
-                <dt>Team</dt>
-                <dd>{{ employee.team }}</dd>
-              </div>
-              <div>
-                <dt>Market</dt>
-                <dd>{{ marketName(employee.market) }}</dd>
-              </div>
-              <div>
-                <dt>Employment</dt>
-                <dd>{{ employee.employmentType | label }}</dd>
-              </div>
-              <div>
-                <dt>Joined</dt>
-                <dd>
-                  {{ employee.joinDate | date: 'd MMM y' }}
-                  <span class="muted small">({{ tenure() }})</span>
-                </dd>
-              </div>
-              <div>
-                <dt>Reports to</dt>
-                <dd>
-                  @if (employee.manager; as manager) {
-                    {{ manager.fullName }}
-                    <span class="muted small">{{ manager.position | label }}</span>
-                  } @else {
-                    <span class="muted">—</span>
-                  }
-                </dd>
-              </div>
-            </dl>
-          </section>
-
-          <section class="surface-card">
-            <h3 class="card-title">Contact</h3>
-            <ul class="contact">
-              <li>
-                <i class="pi pi-envelope"></i>
-                <a [href]="'mailto:' + employee.email">{{ employee.email }}</a>
-              </li>
-              <li><i class="pi pi-phone"></i>{{ employee.phone ?? '—' }}</li>
-              <li><i class="pi pi-building"></i>{{ employee.officeLocation ?? '—' }}</li>
-            </ul>
-          </section>
-        </div>
-      </p-tabpanel>
-
-      <p-tabpanel value="team">
+  @switch (tab()) {
+    @case ('overview') {
+      <div class="layout-main-side">
         <section class="surface-card">
-          <h3 class="card-title">
-            Direct reports
-            <span class="muted small">{{ employee.directReports.length }}</span>
-          </h3>
+          <h3 class="card-title">Employment</h3>
+          <dl class="kv">
+            <div>
+              <dt>Employee no.</dt>
+              <dd>{{ employee.employeeNumber }}</dd>
+            </div>
+            <div>
+              <dt>Position</dt>
+              <dd>{{ employee.position | label }}</dd>
+            </div>
+            <div>
+              <dt>Department</dt>
+              <dd>{{ employee.department }}</dd>
+            </div>
+            <div>
+              <dt>Team</dt>
+              <dd>{{ employee.team }}</dd>
+            </div>
+            <div>
+              <dt>Market</dt>
+              <dd>{{ marketName(employee.market) }}</dd>
+            </div>
+            <div>
+              <dt>Employment</dt>
+              <dd>{{ employee.employmentType | label }}</dd>
+            </div>
+            <div>
+              <dt>Joined</dt>
+              <dd>
+                {{ employee.joinDate | date: 'd MMM y' }}
+                <span class="muted small">({{ tenure() }})</span>
+              </dd>
+            </div>
+            <div>
+              <dt>Reports to</dt>
+              <dd>
+                @if (employee.manager; as manager) {
+                  {{ manager.fullName }}
+                  <span class="muted small">{{ manager.position | label }}</span>
+                } @else {
+                  <span class="muted">—</span>
+                }
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section class="surface-card">
+          <h3 class="card-title">Contact</h3>
+          <ul class="contact">
+            <li>
+              <span class="ms">mail</span>
+              <a [href]="'mailto:' + employee.email">{{ employee.email }}</a>
+            </li>
+            <li><span class="ms">call</span>{{ employee.phone ?? '—' }}</li>
+            <li><span class="ms">apartment</span>{{ employee.officeLocation ?? '—' }}</li>
+          </ul>
+        </section>
+      </div>
+    }
+    @case ('team') {
+      <section class="surface-card">
+        <h3 class="card-title">
+          Direct reports
+          <span class="muted small">{{ employee.directReports.length }}</span>
+        </h3>
+        @if (employee.directReports.length === 0) {
+          <div class="empty-state"><span class="ms">group</span>No direct reports</div>
+        } @else {
           <div class="people">
             @for (person of employee.directReports; track person.username) {
               <a class="person-card" [routerLink]="['/people', person.username]">
-                <app-user-avatar [username]="person.username" size="large" />
+                <app-user-avatar [username]="person.username" size="lg" />
                 <strong>{{ person.fullName }}</strong>
                 <span class="muted small">{{ person.position | label }}</span>
               </a>
-            } @empty {
-              <div class="empty-state"><i class="pi pi-users"></i>No direct reports</div>
             }
           </div>
-        </section>
-      </p-tabpanel>
+        }
+      </section>
+    }
+    @case ('claims') {
+      <section class="surface-card">
+        <h3 class="card-title">Assigned claims</h3>
+        <app-claim-table
+          [page]="claims()"
+          [rows]="claimsPageSize"
+          (pageChange)="claimsPage.set($event)"
+        />
+      </section>
+    }
+    @case ('authority') {
+      <section class="surface-card">
+        <h3 class="card-title">Approval limit</h3>
+        @if (employee.approvalAuthority.unlimited) {
+          <div class="unlimited"><span class="ms">all_inclusive</span>Unlimited in all markets</div>
+        } @else if (employee.approvalAuthority.limits.length === 0) {
+          <div class="empty-state"><span class="ms">lock</span>No approval authority</div>
+        } @else {
+          <div class="limits">
+            @for (limit of employee.approvalAuthority.limits; track limit.currency) {
+              <div class="limit">
+                <span class="code">{{ limit.currency }}</span>
+                <strong class="amount">{{
+                  limit.amount | currency: limit.currency : '' : '1.0-0'
+                }}</strong>
+              </div>
+            }
+          </div>
+        }
+      </section>
+    }
+  }
 
-      <p-tabpanel value="claims">
-        <section class="surface-card">
-          <h3 class="card-title">Assigned claims</h3>
-          <app-claim-table
-            [page]="claims()"
-            [rows]="claimsPageSize"
-            (pageChange)="claimsPage.set($event)"
-          />
-        </section>
-      </p-tabpanel>
-
-      <p-tabpanel value="authority">
-        <section class="surface-card">
-          <h3 class="card-title">Approval limit</h3>
-          @if (employee.approvalAuthority.unlimited) {
-            <div class="unlimited"><i class="pi pi-infinity"></i>Unlimited in all markets</div>
-          } @else if (employee.approvalAuthority.limits.length === 0) {
-            <div class="empty-state"><i class="pi pi-lock"></i>No approval authority</div>
-          } @else {
-            <div class="limits">
-              @for (limit of employee.approvalAuthority.limits; track limit.currency) {
-                <div class="limit">
-                  <span class="code">{{ limit.currency }}</span>
-                  <strong class="amount">{{
-                    limit.amount | currency: limit.currency : '' : '1.0-0'
-                  }}</strong>
-                </div>
-              }
-            </div>
-          }
-        </section>
-      </p-tabpanel>
-    </p-tabpanels>
-  </p-tabs>
-
-  <p-dialog
-    header="Edit contact"
-    [visible]="editing()"
-    (onHide)="editing.set(false)"
-    [modal]="true"
-    [draggable]="false"
-    [style]="{ width: '420px' }"
-  >
+  <app-modal title="Edit contact" [open]="editing()" (closed)="editing.set(false)">
     <form class="dialog-form" [formGroup]="contactForm" (ngSubmit)="saveContact()">
       <div class="field">
         <label for="phone">Phone</label>
-        <input pInputText id="phone" formControlName="phone" maxlength="30" />
+        <input class="input" id="phone" type="tel" formControlName="phone" maxlength="30" />
       </div>
       <div class="field">
         <label for="office">Office</label>
-        <input pInputText id="office" formControlName="officeLocation" maxlength="80" />
+        <input class="input" id="office" formControlName="officeLocation" maxlength="80" />
       </div>
       <div class="form-actions">
-        <p-button
-          label="Cancel"
-          severity="secondary"
-          [text]="true"
-          (onClick)="editing.set(false)"
-        />
-        <p-button
-          type="submit"
-          label="Save"
-          [loading]="saving()"
-          [disabled]="contactForm.invalid"
-        />
+        <button type="button" class="btn btn-ghost" (click)="editing.set(false)">Cancel</button>
+        <button type="submit" class="btn btn-primary" [disabled]="contactForm.invalid || saving()">
+          {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
       </div>
     </form>
-  </p-dialog>
+  </app-modal>
+} @else {
+  <div class="empty-state"><span class="ms">sync</span>Loading…</div>
 }

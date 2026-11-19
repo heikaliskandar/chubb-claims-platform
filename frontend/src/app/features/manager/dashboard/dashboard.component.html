@@ -1,6 +1,6 @@
 <app-page-header title="Overview" [crumbs]="[{ label: 'Overview' }]">
   @if (dashboard()?.exposure?.asOf; as asOf) {
-    <span class="updated"><i class="pi pi-sync"></i>{{ asOf | date: 'HH:mm:ss' }}</span>
+    <span class="updated"><span class="ms">sync</span>Updated {{ asOf | date: 'HH:mm:ss' }}</span>
   }
 </app-page-header>
 
@@ -13,21 +13,21 @@
 
         <div class="metrics">
           <div class="metric">
-            <span class="icon sky"><i class="pi pi-inbox"></i></span>
+            <span class="icon-badge sky"><span class="ms">inbox</span></span>
             <div>
               <strong>{{ dashboard.workload.unassignedClaims }}</strong>
               <span class="muted small">Unassigned</span>
             </div>
           </div>
           <div class="metric">
-            <span class="icon amber"><i class="pi pi-user-edit"></i></span>
+            <span class="icon-badge amber"><span class="ms">how_to_reg</span></span>
             <div>
               <strong>{{ pendingApproval() }}</strong>
               <span class="muted small">Awaiting approval</span>
             </div>
           </div>
           <div class="metric">
-            <span class="icon blue"><i class="pi pi-folder-open"></i></span>
+            <span class="icon-badge blue"><span class="ms">folder_open</span></span>
             <div>
               <strong>{{ openClaims() }}</strong>
               <span class="muted small">In progress</span>
@@ -41,7 +41,7 @@
     <section class="surface-card decision">
       <div class="card-title">
         Decision time
-        <span class="icon green"><i class="pi pi-stopwatch"></i></span>
+        <span class="icon-badge green"><span class="ms">timer</span></span>
       </div>
       <div class="big amount">
         {{ averageHours() === null ? '—' : (averageHours() | number: '1.0-1') }}
@@ -60,9 +60,11 @@
             </span>
           </div>
           <div class="team-stats">
-            <span><i class="pi pi-check green-text"></i>{{ team.approved }}</span>
-            <span><i class="pi pi-times red-text"></i>{{ team.rejected }}</span>
-            <span><i class="pi pi-lock muted"></i>{{ team.closed }}</span>
+            <span title="Approved"
+              ><span class="ms green-text">check</span>{{ team.approved }}</span
+            >
+            <span title="Rejected"><span class="ms red-text">close</span>{{ team.rejected }}</span>
+            <span title="Closed"><span class="ms muted">lock</span>{{ team.closed }}</span>
           </div>
         </div>
       }
@@ -81,7 +83,7 @@
           <span class="muted small">{{ total.openClaims }} open</span>
         </div>
       } @empty {
-        <div class="empty-state"><i class="pi pi-check-circle"></i>No exposure</div>
+        <div class="empty-state"><span class="ms">check_circle</span>No exposure</div>
       }
     </div>
   </section>
@@ -89,39 +91,45 @@
   <div class="layout-main-side">
     <section class="surface-card">
       <h3 class="card-title">Workload by officer</h3>
-      <div class="chart">
-        <p-chart type="bar" [data]="chartData()" [options]="chartOptions" height="300px" />
-      </div>
+      <app-bar-chart [data]="chartData()" />
     </section>
 
     <section class="surface-card">
       <h3 class="card-title">Exposure by market</h3>
-      <p-table [value]="dashboard.exposure.lines" [rowHover]="true">
-        <ng-template #header>
-          <tr>
-            <th>Market</th>
-            <th class="right">Reserve</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-line>
-          <tr>
-            <td>
-              <div class="market">{{ marketName(line.market) }}</div>
-              <span class="muted small"
-                >{{ line.claimType | label }} · {{ line.openClaims }} open</span
-              >
-            </td>
-            <td class="right amount">
-              {{ line.outstandingReserve | currency: line.currency : 'code' : '1.0-0' }}
-            </td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="2"><div class="empty-state">No open claims</div></td>
-          </tr>
-        </ng-template>
-      </p-table>
+      @if (dashboard.exposure.lines.length === 0) {
+        <div class="empty-state"><span class="ms">check_circle</span>No open claims</div>
+      } @else {
+        <table class="data-table compact">
+          <thead>
+            <tr>
+              <th>Market</th>
+              <th class="right">Reserve</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (
+              line of dashboard.exposure.lines;
+              track line.market + line.claimType + line.currency
+            ) {
+              <tr>
+                <td>
+                  <div class="primary-cell">
+                    <strong>{{ marketName(line.market) }}</strong>
+                    <span class="muted small"
+                      >{{ line.claimType | label }} · {{ line.openClaims }} open</span
+                    >
+                  </div>
+                </td>
+                <td class="right amount">
+                  {{ line.outstandingReserve | currency: line.currency : 'code' : '1.0-0' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      }
     </section>
   </div>
+} @else {
+  <div class="empty-state"><span class="ms">sync</span>Loading…</div>
 }

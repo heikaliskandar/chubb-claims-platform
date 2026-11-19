@@ -1,14 +1,16 @@
 @if (claim(); as claim) {
   <app-page-header [title]="claim.claimNumber" [crumbs]="crumbs()">
     @for (action of claim.allowedActions; track action) {
-      <p-button
-        [label]="actions[action].label"
-        [icon]="actions[action].icon"
-        [severity]="actions[action].severity"
-        [outlined]="!!actions[action].outlined"
+      <button
+        type="button"
+        class="btn"
+        [class]="'btn ' + actions[action].style"
         [disabled]="busy()"
-        (onClick)="choose(action)"
-      />
+        (click)="choose(action)"
+      >
+        <span class="ms">{{ actions[action].icon }}</span>
+        {{ actions[action].label }}
+      </button>
     }
   </app-page-header>
 
@@ -75,13 +77,11 @@
           <h3 class="card-title">Information requests</h3>
           @for (request of claim.informationRequests; track request.id) {
             <div class="qa">
-              <div class="question">
-                <i class="pi pi-question-circle"></i>{{ request.question }}
-              </div>
+              <div class="question"><span class="ms">help</span>{{ request.question }}</div>
               @if (request.response) {
-                <div class="answer"><i class="pi pi-reply"></i>{{ request.response }}</div>
+                <div class="answer"><span class="ms">reply</span>{{ request.response }}</div>
               } @else {
-                <div class="answer pending"><i class="pi pi-clock"></i>Awaiting answer</div>
+                <div class="answer pending"><span class="ms">schedule</span>Awaiting answer</div>
               }
               <div class="muted small">
                 {{ request.requestedBy }} · {{ request.requestedAt | date: 'd MMM, HH:mm' }}
@@ -118,7 +118,7 @@
       <section class="surface-card status-card">
         <app-status-tag [status]="claim.status" />
         <div class="waiting">
-          <i class="pi pi-clock"></i>
+          <span class="ms">schedule</span>
           <span>{{ claim.waitingOn | label }}</span>
         </div>
         <p class="muted small">{{ claim.nextStep }}</p>
@@ -130,7 +130,7 @@
           <div class="headline amount">
             {{ claim.referral.amount | currency: claim.currency : 'code' }}
           </div>
-          <p>{{ claim.referral.reason }}</p>
+          <p class="reason">{{ claim.referral.reason }}</p>
           <span class="muted small"
             >{{ claim.referral.referredBy }} ·
             {{ claim.referral.referredAt | date: 'd MMM, HH:mm' }}</span
@@ -141,7 +141,7 @@
       @if (claim.decision; as decision) {
         <section class="surface-card">
           <h3 class="card-title">Decision</h3>
-          <p>{{ decision.reason }}</p>
+          <p class="reason">{{ decision.reason }}</p>
           <span class="muted small"
             >{{ decision.decidedBy }} · {{ decision.decidedAt | date: 'd MMM, HH:mm' }}</span
           >
@@ -150,12 +150,9 @@
 
       <section class="surface-card">
         <h3 class="card-title">Activity</h3>
-        <p-timeline [value]="claim.statusHistory" align="left">
-          <ng-template #marker let-change>
-            <span class="marker"></span>
-          </ng-template>
-          <ng-template #content let-change>
-            <div class="event">
+        <ol class="timeline">
+          @for (change of claim.statusHistory; track $index) {
+            <li>
               <strong>{{ change.toStatus | label }}</strong>
               <span class="muted small"
                 >{{ change.changedBy }} · {{ change.changedAt | date: 'd MMM, HH:mm' }}</span
@@ -163,74 +160,71 @@
               @if (change.reason) {
                 <span class="small">{{ change.reason }}</span>
               }
-            </div>
-          </ng-template>
-        </p-timeline>
+            </li>
+          }
+        </ol>
       </section>
     </aside>
   </div>
 
-  <p-dialog
-    [visible]="activeAction() !== null"
-    (onHide)="activeAction.set(null)"
-    [header]="activeAction() ? actions[activeAction()!].label : ''"
-    [modal]="true"
-    [draggable]="false"
-    [style]="{ width: '440px' }"
+  <app-modal
+    [open]="activeAction() !== null"
+    [title]="activeAction() ? actions[activeAction()!].label : ''"
+    (closed)="activeAction.set(null)"
   >
     @if (activeAction(); as action) {
       <form class="dialog-form" (ngSubmit)="run(action)">
         @if (action === 'RESPOND_TO_INFORMATION_REQUEST' && openRequest(); as request) {
-          <div class="question"><i class="pi pi-question-circle"></i>{{ request.question }}</div>
+          <div class="question"><span class="ms">help</span>{{ request.question }}</div>
         }
         @if (actions[action].amount; as amountField) {
           <div class="field">
             <label for="amount">{{ amountField.label }}</label>
-            <p-inputnumber
-              inputId="amount"
-              [formControl]="amount"
-              mode="currency"
-              [currency]="claim.currency"
-              currencyDisplay="code"
-              locale="en-US"
-              [min]="0"
-            />
+            <div class="input-prefix">
+              <span>{{ claim.currency }}</span>
+              <input
+                class="input"
+                id="amount"
+                type="number"
+                inputmode="decimal"
+                min="0"
+                step="0.01"
+                [formControl]="amount"
+              />
+            </div>
           </div>
         }
         @if (actions[action].text; as textField) {
           <div class="field">
-            <label for="text"
-              >{{ textField.label }}
+            <label for="text">
+              {{ textField.label }}
               @if (textField.optional) {
-                <span class="muted"> · optional</span>
+                <span class="muted">· optional</span>
               }
             </label>
             <textarea
-              pTextarea
+              class="textarea"
               id="text"
               rows="4"
               maxlength="1000"
               [formControl]="text"
-              [autoResize]="true"
             ></textarea>
           </div>
         }
         <div class="form-actions">
-          <p-button
-            label="Cancel"
-            severity="secondary"
-            [text]="true"
-            (onClick)="activeAction.set(null)"
-          />
-          <p-button
+          <button type="button" class="btn btn-ghost" (click)="activeAction.set(null)">
+            Cancel
+          </button>
+          <button
             type="submit"
-            [label]="actions[action].label"
-            [severity]="actions[action].severity"
-            [loading]="busy()"
+            class="btn"
+            [class]="'btn ' + actions[action].style"
             [disabled]="!canSubmit(action)"
-          />
+          >
+            {{ busy() ? 'Saving…' : actions[action].label }}
+          </button>
         </div>
       </form>
     }
-  </p-dialog>
+  </app-modal>
 }

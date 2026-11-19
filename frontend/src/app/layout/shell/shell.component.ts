@@ -1,16 +1,22 @@
 import { Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
 import { Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
-import { MenuItem, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { MenuModule } from 'primeng/menu';
 import { AuthService } from '../../core/auth.service';
 import { AvatarService } from '../../core/avatar.service';
 import { BrandingService } from '../../core/branding.service';
 import { Role } from '../../core/models';
 import { ThemeService } from '../../core/theme.service';
+import { ToastService } from '../../core/toast.service';
 import { LabelPipe } from '../../shared/label.pipe';
 import { LogoComponent } from '../../shared/logo/logo.component';
 import { UserAvatarComponent } from '../../shared/user-avatar/user-avatar.component';
+
+interface MenuEntry {
+  label: string;
+  icon: string;
+  run: () => void;
+  disabled?: boolean;
+  separatorBefore?: boolean;
+}
 
 interface NavItem {
   label: string;
@@ -20,19 +26,19 @@ interface NavItem {
 
 const NAV_BY_ROLE: Record<Role, NavItem[]> = {
   CLAIMANT: [
-    { label: 'My claims', icon: 'pi pi-folder', link: '/claimant' },
-    { label: 'New claim', icon: 'pi pi-plus-circle', link: '/claimant/new' },
+    { label: 'My claims', icon: 'folder', link: '/claimant' },
+    { label: 'New claim', icon: 'add_circle', link: '/claimant/new' },
   ],
   OFFICER: [
-    { label: 'Claims', icon: 'pi pi-inbox', link: '/officer' },
-    { label: 'People', icon: 'pi pi-sitemap', link: '/people' },
-    { label: 'My profile', icon: 'pi pi-id-card', link: '/people/me' },
+    { label: 'Claims', icon: 'inbox', link: '/officer' },
+    { label: 'People', icon: 'account_tree', link: '/people' },
+    { label: 'My profile', icon: 'badge', link: '/people/me' },
   ],
   MANAGER: [
-    { label: 'Overview', icon: 'pi pi-chart-bar', link: '/manager' },
-    { label: 'Claims', icon: 'pi pi-inbox', link: '/officer' },
-    { label: 'People', icon: 'pi pi-sitemap', link: '/people' },
-    { label: 'My profile', icon: 'pi pi-id-card', link: '/people/me' },
+    { label: 'Overview', icon: 'bar_chart', link: '/manager' },
+    { label: 'Claims', icon: 'inbox', link: '/officer' },
+    { label: 'People', icon: 'account_tree', link: '/people' },
+    { label: 'My profile', icon: 'badge', link: '/people/me' },
   ],
 };
 
@@ -45,8 +51,6 @@ const TABLET_QUERY = '(max-width: 1279px)';
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
-    ButtonModule,
-    MenuModule,
     LabelPipe,
     LogoComponent,
     UserAvatarComponent,
@@ -54,7 +58,8 @@ const TABLET_QUERY = '(max-width: 1279px)';
   templateUrl: './shell.component.html',
   styleUrl: './shell.component.scss',
   host: {
-    '(document:keydown.escape)': 'mobileOpen.set(false)',
+    '(document:keydown.escape)': 'mobileOpen.set(false); menuOpen.set(false)',
+    '(document:click)': 'closeMenuOnOutsideClick($event)',
     '(window:resize)': 'onResize()',
   },
 })
@@ -63,32 +68,45 @@ export class ShellComponent {
   private readonly avatars = inject(AvatarService);
   private readonly branding = inject(BrandingService);
   private readonly theme = inject(ThemeService);
-  private readonly messages = inject(MessageService);
+  private readonly toasts = inject(ToastService);
   private readonly router = inject(Router);
   private readonly photoInput = viewChild.required<ElementRef<HTMLInputElement>>('photo');
   private readonly loginImageInput = viewChild.required<ElementRef<HTMLInputElement>>('loginImage');
+  private readonly profileArea = viewChild<ElementRef<HTMLElement>>('profileArea');
 
   protected readonly user = this.auth.user;
   protected readonly dark = this.theme.dark;
   protected readonly collapsed = signal(matches(TABLET_QUERY) && !matches(MOBILE_QUERY));
   protected readonly mobileOpen = signal(false);
+  protected readonly menuOpen = signal(false);
   protected readonly navItems = computed(() => {
     const role = this.user()?.role;
     return role ? NAV_BY_ROLE[role] : [];
   });
-  protected readonly userMenu = computed<MenuItem[]>(() => [
+  protected readonly userMenu = computed<MenuEntry[]>(() => [
     ...(this.user()?.role === 'CLAIMANT'
       ? []
-      : [{ label: 'My profile', icon: 'pi pi-id-card', routerLink: '/people/me' }]),
+      : [{ label: 'My profile', icon: 'badge', run: () => this.router.navigate(['/people/me']) }]),
     {
       label: 'Change photo',
-      icon: 'pi pi-camera',
-      command: () => this.photoInput().nativeElement.click(),
+      icon: 'photo_camera',
+      run: () => this.photoInput().nativeElement.click(),
     },
     ...(this.user()?.role === 'MANAGER' ? this.brandingMenu() : []),
-    { separator: true },
-    { label: 'Sign out', icon: 'pi pi-sign-out', command: () => this.logout() },
+    { label: 'Sign out', icon: 'logout', run: () => this.logout(), separatorBefore: true },
   ]);
+
+  protected choose(entry: MenuEntry): void {
+    this.menuOpen.set(false);
+    entry.run();
+  }
+
+  protected closeMenuOnOutsideClick(event: MouseEvent): void {
+    const area = this.profileArea()?.nativeElement;
+    if (this.menuOpen() && area && !area.contains(event.target as Node)) {
+      this.menuOpen.set(false);
+    }
+  }
 
   protected toggleSidebar(): void {
     if (matches(MOBILE_QUERY)) {
@@ -127,13 +145,9 @@ export class ShellComponent {
     }
     try {
       await this.branding.setLoginImage(file);
-      this.messages.add({ severity: 'success', summary: 'Sign-in image updated' });
+      this.toasts.show('success', 'Sign-in image updated');
     } catch {
-      this.messages.add({
-        severity: 'error',
-        summary: 'Could not save image',
-        detail: 'Try a smaller image file.',
-      });
+      this.toasts.show('error', 'Could not save image', 'Try a smaller image file.');
     }
   }
 
@@ -142,21 +156,21 @@ export class ShellComponent {
     this.router.navigate(['/login']);
   }
 
-  private brandingMenu(): MenuItem[] {
+  private brandingMenu(): MenuEntry[] {
     return [
-      { separator: true },
       {
         label: 'Change sign-in image',
-        icon: 'pi pi-image',
-        command: () => this.loginImageInput().nativeElement.click(),
+        icon: 'image',
+        run: () => this.loginImageInput().nativeElement.click(),
+        separatorBefore: true,
       },
       {
         label: 'Reset sign-in image',
-        icon: 'pi pi-refresh',
+        icon: 'refresh',
         disabled: !this.branding.loginImage(),
-        command: () => {
+        run: () => {
           this.branding.resetLoginImage();
-          this.messages.add({ severity: 'info', summary: 'Sign-in image reset to default' });
+          this.toasts.show('info', 'Sign-in image reset to default');
         },
       },
     ];

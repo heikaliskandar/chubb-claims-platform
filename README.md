@@ -17,7 +17,7 @@ A claims platform for motor and property claims across six APAC markets:
 | PostgreSQL 17 | One database and login per service (`claims`, `insights`). | 5432 |
 | Kafka 4.4 (KRaft) | Topic `claims.claim-events.v1`, keyed by claim ID. | 9094 (host) |
 | Kafka UI | Browse topics and messages. | 8090 |
-| `frontend` | Angular 22 + PrimeNG app for all roles (sidebar layout, breadcrumbs, role-based navigation), served by nginx, which also proxies `/api` to the services. | 4200 |
+| `frontend` | Angular 22 app for all roles, with its own small component set (no paid UI library), light and dark themes and a responsive sidebar layout. Served by nginx, which also proxies `/api` to the services. | 4200 |
 
 **REST** is used when a user is waiting for an answer. **Kafka** carries facts that have already happened. Details, diagrams and scaling notes: [docs/architecture.md](docs/architecture.md). Key decisions: [docs/adr](docs/adr).
 

@@ -1,92 +1,103 @@
 <app-page-header title="People" [crumbs]="[{ label: 'People' }]">
-  <p-selectbutton
-    [options]="views"
-    [ngModel]="view()"
-    (ngModelChange)="view.set($event)"
-    optionValue="value"
-    [allowEmpty]="false"
-  >
-    <ng-template #item let-option>
-      <i [class]="option.icon"></i>
-      <span>{{ option.label }}</span>
-    </ng-template>
-  </p-selectbutton>
+  <div class="segmented" role="tablist" aria-label="View">
+    <button
+      type="button"
+      role="tab"
+      [class.active]="view() === 'list'"
+      [attr.aria-selected]="view() === 'list'"
+      (click)="showView('list')"
+    >
+      <span class="ms">list</span>
+      List
+    </button>
+    <button
+      type="button"
+      role="tab"
+      [class.active]="view() === 'chart'"
+      [attr.aria-selected]="view() === 'chart'"
+      (click)="showView('chart')"
+    >
+      <span class="ms">account_tree</span>
+      Org chart
+    </button>
+  </div>
 </app-page-header>
 
 <section class="surface-card">
   @if (view() === 'list') {
     <div class="toolbar">
-      <p-iconfield>
-        <p-inputicon class="pi pi-search" />
+      <div class="input-group search">
+        <span class="ms">search</span>
         <input
-          pInputText
+          class="input"
           type="search"
           placeholder="Search name, email, team"
-          [ngModel]="query()"
-          (ngModelChange)="search($event)"
+          aria-label="Search people"
+          [value]="query()"
+          (input)="search($event)"
         />
-      </p-iconfield>
+      </div>
       <span class="muted small">{{ result()?.totalElements ?? 0 }} people</span>
     </div>
 
-    <p-table
-      [value]="result()?.content ?? []"
-      [lazy]="true"
-      [paginator]="(result()?.totalElements ?? 0) > pageSize"
-      [rows]="pageSize"
-      [first]="(result()?.page ?? 0) * pageSize"
-      [totalRecords]="result()?.totalElements ?? 0"
-      [loading]="result() === null"
-      [rowHover]="true"
-      (onLazyLoad)="onLazyLoad($event)"
-    >
-      <ng-template #header>
-        <tr>
-          <th>Name</th>
-          <th>Position</th>
-          <th>Team</th>
-          <th>Market</th>
-          <th>Joined</th>
-          <th>Status</th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-person>
-        <tr class="clickable-row" (click)="open(person.username)">
-          <td>
-            <span class="person">
-              <app-user-avatar [username]="person.username" />
-              <span>
-                <strong>{{ person.fullName }}</strong>
-                <span class="muted small">{{ person.email }}</span>
-              </span>
-            </span>
-          </td>
-          <td>{{ person.position | label }}</td>
-          <td>{{ person.team }}</td>
-          <td>{{ marketName(person.market) }}</td>
-          <td class="muted">{{ person.joinDate | date: 'd MMM y' }}</td>
-          <td><app-employee-status-tag [status]="person.status" /></td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="6">
-            <div class="empty-state"><i class="pi pi-users"></i>No people found</div>
-          </td>
-        </tr>
-      </ng-template>
-    </p-table>
+    @if (result(); as page) {
+      @if (page.content.length === 0) {
+        <div class="empty-state"><span class="ms">group</span>No people found</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Position</th>
+                <th>Team</th>
+                <th>Market</th>
+                <th>Joined</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (person of page.content; track person.username) {
+                <tr
+                  class="clickable"
+                  tabindex="0"
+                  (click)="open(person.username)"
+                  (keydown.enter)="open(person.username)"
+                >
+                  <td>
+                    <span class="person">
+                      <app-user-avatar [username]="person.username" />
+                      <span class="primary-cell">
+                        <strong>{{ person.fullName }}</strong>
+                        <span class="muted small">{{ person.email }}</span>
+                      </span>
+                    </span>
+                  </td>
+                  <td>{{ person.position | label }}</td>
+                  <td>{{ person.team }}</td>
+                  <td>{{ marketName(person.market) }}</td>
+                  <td class="muted">{{ person.joinDate | date: 'd MMM y' }}</td>
+                  <td><app-employee-status-tag [status]="person.status" /></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+      <app-pager
+        [page]="page.page"
+        [size]="pageSize"
+        [total]="page.totalElements"
+        (pageChange)="pageIndex.set($event)"
+      />
+    } @else {
+      <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+    }
   } @else {
-    <div class="chart">
-      <p-organization-chart [value]="orgChart()">
-        <ng-template #default let-node>
-          <button type="button" class="node" (click)="open(node.data.username)">
-            <app-user-avatar [username]="node.data.username" size="large" />
-            <strong>{{ node.data.fullName }}</strong>
-            <span class="muted small">{{ node.data.position | label }}</span>
-          </button>
-        </ng-template>
-      </p-organization-chart>
-    </div>
+    @if (orgChart().length) {
+      <app-org-tree [nodes]="orgChart()" (selected)="open($event)" />
+    } @else {
+      <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+    }
   }
 </section>

@@ -1,8 +1,7 @@
 import { CurrencyPipe, DatePipe, DecimalPipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ChartModule } from 'primeng/chart';
-import { TableModule } from 'primeng/table';
+import { ChartData } from 'chart.js';
 import { forkJoin } from 'rxjs';
 import { AuthService } from '../../../core/auth.service';
 import { InsightsApiService } from '../../../core/insights-api.service';
@@ -13,6 +12,7 @@ import {
   WorkloadReport,
 } from '../../../core/models';
 import { PageHeaderComponent } from '../../../layout/page-header/page-header.component';
+import { BarChartComponent } from '../../../shared/bar-chart/bar-chart.component';
 import { LabelPipe } from '../../../shared/label.pipe';
 import { marketName } from '../../../shared/markets';
 import { poll } from '../../../shared/polling';
@@ -33,15 +33,7 @@ const CHART_STATUSES: { status: ClaimStatus; color: string }[] = [
 
 @Component({
   selector: 'app-dashboard',
-  imports: [
-    ChartModule,
-    TableModule,
-    CurrencyPipe,
-    DatePipe,
-    DecimalPipe,
-    LabelPipe,
-    PageHeaderComponent,
-  ],
+  imports: [BarChartComponent, CurrencyPipe, DatePipe, DecimalPipe, LabelPipe, PageHeaderComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss',
 })
@@ -65,7 +57,7 @@ export class DashboardComponent {
     return decided === 0 ? null : hours / decided;
   });
 
-  protected readonly chartData = computed(() => {
+  protected readonly chartData = computed<ChartData<'bar'>>(() => {
     const officers = this.dashboard()?.workload.teams.flatMap((team) => team.officers) ?? [];
     return {
       labels: officers.map((officer) => officer.officerId),
@@ -78,22 +70,6 @@ export class DashboardComponent {
       })),
     };
   });
-
-  protected readonly chartOptions = {
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { position: 'bottom' as const, labels: { usePointStyle: true, boxWidth: 8 } },
-    },
-    scales: {
-      x: { stacked: true, grid: { display: false } },
-      y: {
-        stacked: true,
-        beginAtZero: true,
-        ticks: { precision: 0 },
-        grid: { color: 'rgba(127, 135, 155, 0.15)' },
-      },
-    },
-  };
 
   constructor() {
     const api = inject(InsightsApiService);

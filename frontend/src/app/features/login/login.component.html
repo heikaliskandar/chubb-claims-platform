@@ -26,14 +26,14 @@
     <section class="panel">
       <header class="panel-top">
         <app-logo class="brand" product="Claims" />
-        <p-button
-          [icon]="dark() ? 'pi pi-sun' : 'pi pi-moon'"
-          [text]="true"
-          [rounded]="true"
-          severity="secondary"
-          [ariaLabel]="dark() ? 'Switch to light mode' : 'Switch to dark mode'"
-          (onClick)="toggleTheme()"
-        />
+        <button
+          type="button"
+          class="btn btn-ghost btn-icon"
+          [attr.aria-label]="dark() ? 'Switch to light mode' : 'Switch to dark mode'"
+          (click)="toggleTheme()"
+        >
+          <span class="ms">{{ dark() ? 'light_mode' : 'dark_mode' }}</span>
+        </button>
       </header>
 
       <form class="form" [formGroup]="form" (ngSubmit)="submit()">
@@ -44,59 +44,55 @@
 
         <div class="field">
           <label for="username">Username</label>
-          <p-iconfield>
-            <p-inputicon class="pi pi-user" />
+          <div class="input-group">
+            <span class="ms">person</span>
             <input
-              pInputText
+              class="input"
               id="username"
               formControlName="username"
               autocomplete="username"
               placeholder="e.g. officer1"
             />
-          </p-iconfield>
+          </div>
         </div>
 
         <div class="field">
           <label for="password">Password</label>
-          <p-iconfield>
-            <p-inputicon class="pi pi-lock" />
+          <div class="input-group">
+            <span class="ms">lock</span>
             <input
-              pInputText
+              class="input"
               id="password"
               [type]="showPassword() ? 'text' : 'password'"
               formControlName="password"
               autocomplete="current-password"
               placeholder="Your password"
             />
-            <p-inputicon>
-              <button
-                type="button"
-                class="reveal"
-                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
-                (click)="showPassword.update((shown) => !shown)"
-              >
-                <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
-              </button>
-            </p-inputicon>
-          </p-iconfield>
+            <button
+              type="button"
+              class="btn btn-ghost btn-icon trailing"
+              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+              (click)="showPassword.update((shown) => !shown)"
+            >
+              <span class="ms">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+            </button>
+          </div>
         </div>
 
-        <p-button
+        <button
           type="submit"
-          label="Login"
-          styleClass="login-button"
-          [fluid]="true"
-          [rounded]="true"
-          [loading]="busy()"
-          [disabled]="form.invalid"
-        />
+          class="btn btn-dark btn-lg btn-block"
+          [disabled]="form.invalid || busy()"
+        >
+          {{ busy() ? 'Signing in…' : 'Login' }}
+        </button>
 
         <div class="demo">
           <span class="demo-title">Demo accounts</span>
           <div class="demo-list">
             @for (account of demoAccounts; track account.username) {
               <button type="button" class="demo-account" (click)="useDemo(account.username)">
-                <i [class]="account.icon"></i>
+                <span class="ms">{{ account.icon }}</span>
                 <span>{{ account.label }}</span>
               </button>
             }

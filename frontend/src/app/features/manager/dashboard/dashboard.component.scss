@@ -8,6 +8,11 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
+
+  .ms {
+    font-size: 16px;
+  }
+
   color: var(--app-muted);
   font-size: 12px;
 }
@@ -86,31 +91,6 @@
   }
 }
 
-.icon {
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 12px;
-  font-size: 18px;
-}
-
-.blue {
-  background: color-mix(in srgb, #4f7df3 14%, transparent);
-  color: #4f7df3;
-}
-.sky {
-  background: color-mix(in srgb, #1aa3e8 14%, transparent);
-  color: #1aa3e8;
-}
-.amber {
-  background: color-mix(in srgb, #e8920c 14%, transparent);
-  color: #e8920c;
-}
-.green {
-  background: color-mix(in srgb, #0fa57c 14%, transparent);
-  color: #0fa57c;
-}
 .green-text {
   color: var(--app-success);
 }
@@ -144,10 +124,6 @@
   }
 }
 
-.chart {
-  height: 300px;
-}
-
 .team + .team {
   margin-top: 14px;
   padding-top: 14px;
@@ -165,11 +141,31 @@
   gap: 18px;
   font-weight: 600;
 
-  i {
-    margin-right: 6px;
+  > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .ms {
+    font-size: 18px;
   }
 }
 
-.right {
-  text-align: right;
+.team-head {
+  gap: 12px;
+}
+
+@media (max-width: 640px) {
+  .welcome h2 {
+    font-size: 19px;
+  }
+
+  .metrics {
+    margin-top: 20px;
+  }
+
+  .decision .big {
+    font-size: 28px;
+  }
 }

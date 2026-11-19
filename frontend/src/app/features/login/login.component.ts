@@ -1,20 +1,16 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
-import { ButtonModule } from 'primeng/button';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
 import { AuthService } from '../../core/auth.service';
 import { BrandingService } from '../../core/branding.service';
 import { ThemeService } from '../../core/theme.service';
 import { LogoComponent } from '../../shared/logo/logo.component';
 
 const DEMO_ACCOUNTS = [
-  { label: 'Claimant', username: 'claimant1', icon: 'pi pi-user' },
-  { label: 'Officer', username: 'officer1', icon: 'pi pi-briefcase' },
-  { label: 'Team lead', username: 'lead1', icon: 'pi pi-users' },
-  { label: 'Manager', username: 'manager1', icon: 'pi pi-chart-bar' },
+  { label: 'Claimant', username: 'claimant1', icon: 'person' },
+  { label: 'Officer', username: 'officer1', icon: 'work' },
+  { label: 'Team lead', username: 'lead1', icon: 'group' },
+  { label: 'Manager', username: 'manager1', icon: 'bar_chart' },
 ];
 
 const GREETINGS = ['Welcome', 'Selamat datang', 'Maligayang pagdating', 'ยินดีต้อนรับ', '歡迎'];
@@ -24,14 +20,7 @@ const HOLD_MS = 2200;
 
 @Component({
   selector: 'app-login',
-  imports: [
-    ReactiveFormsModule,
-    ButtonModule,
-    InputTextModule,
-    IconFieldModule,
-    InputIconModule,
-    LogoComponent,
-  ],
+  imports: [ReactiveFormsModule, LogoComponent],
   templateUrl: './login.component.html',
   styleUrl: './login.component.scss',
 })

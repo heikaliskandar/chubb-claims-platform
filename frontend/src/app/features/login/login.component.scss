@@ -193,62 +193,22 @@
   }
 }
 
-p-iconfield {
-  display: block;
-}
-
-input[pInputText] {
-  width: 100%;
+.input {
   height: 48px;
-  padding-right: 44px;
-  border-color: transparent;
-  border-radius: 12px;
-  background: var(--app-input-bg);
   font-size: 15px;
-
-  &:focus {
-    border-color: var(--app-primary);
-    background: var(--app-surface);
-  }
 }
 
-.reveal {
-  display: grid;
-  place-items: center;
-  padding: 4px;
-  border: 0;
-  background: none;
-  color: var(--app-muted);
-  cursor: pointer;
-  pointer-events: auto;
-
-  &:hover {
-    color: var(--app-text);
-  }
+#password {
+  padding-right: 52px;
 }
 
-:host ::ng-deep .login-button {
-  height: 50px;
+.trailing {
+  width: 36px;
+  height: 36px;
+}
+
+.btn-lg {
   margin-top: 4px;
-  border: 0;
-  background: var(--app-cta);
-  color: #fff;
-  font-size: 15px;
-  font-weight: 600;
-
-  &:not(:disabled):hover {
-    background: var(--app-cta-hover);
-  }
-
-  &:disabled {
-    background: var(--app-cta);
-    color: #fff;
-    opacity: 0.6;
-  }
-}
-
-p-button.p-disabled {
-  opacity: 1;
 }
 
 .demo {
@@ -287,8 +247,8 @@ p-button.p-disabled {
     border-color 0.15s,
     color 0.15s;
 
-  i {
-    font-size: 15px;
+  .ms {
+    font-size: 20px;
   }
 
   &:hover {

@@ -2,92 +2,75 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { MenuItem, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { TextareaModule } from 'primeng/textarea';
-import { TimelineModule } from 'primeng/timeline';
 import { Observable, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth.service';
 import { ClaimsApiService } from '../../../core/claims-api.service';
 import { ClaimAction, ClaimDetail } from '../../../core/models';
-import { PageHeaderComponent } from '../../../layout/page-header/page-header.component';
+import { ToastService } from '../../../core/toast.service';
+import { Crumb, PageHeaderComponent } from '../../../layout/page-header/page-header.component';
 import { LabelPipe } from '../../../shared/label.pipe';
 import { marketName } from '../../../shared/markets';
+import { ModalComponent } from '../../../shared/modal/modal.component';
 import { poll } from '../../../shared/polling';
 import { StatusTagComponent } from '../../../shared/status-tag/status-tag.component';
-
-type ButtonSeverity = 'primary' | 'secondary' | 'success' | 'danger' | 'contrast';
 
 interface ActionConfig {
   label: string;
   icon: string;
-  severity: ButtonSeverity;
-  outlined?: boolean;
+  style: 'btn-primary' | 'btn-success' | 'btn-outline' | 'btn-danger';
   text?: { label: string; optional?: boolean };
   amount?: { label: string; allowZero?: boolean };
 }
 
 const ACTIONS: Record<ClaimAction, ActionConfig> = {
-  ASSIGN_TO_ME: { label: 'Assign to me', icon: 'pi pi-user-plus', severity: 'primary' },
-  START_REVIEW: { label: 'Start review', icon: 'pi pi-play', severity: 'primary' },
+  ASSIGN_TO_ME: { label: 'Assign to me', icon: 'person_add', style: 'btn-primary' },
+  START_REVIEW: { label: 'Start review', icon: 'play_arrow', style: 'btn-primary' },
   REQUEST_INFORMATION: {
     label: 'Request info',
-    icon: 'pi pi-question-circle',
-    severity: 'secondary',
-    outlined: true,
+    icon: 'help',
+    style: 'btn-outline',
     text: { label: 'Question' },
   },
   RESPOND_TO_INFORMATION_REQUEST: {
     label: 'Respond',
-    icon: 'pi pi-reply',
-    severity: 'primary',
+    icon: 'reply',
+    style: 'btn-primary',
     text: { label: 'Answer' },
   },
   ASSESS: {
     label: 'Assess',
-    icon: 'pi pi-calculator',
-    severity: 'secondary',
-    outlined: true,
+    icon: 'calculate',
+    style: 'btn-outline',
     amount: { label: 'Reserve', allowZero: true },
     text: { label: 'Notes', optional: true },
   },
   APPROVE: {
     label: 'Approve',
-    icon: 'pi pi-check',
-    severity: 'success',
+    icon: 'check',
+    style: 'btn-success',
     amount: { label: 'Approved amount' },
     text: { label: 'Reason' },
   },
-  REJECT: {
-    label: 'Reject',
-    icon: 'pi pi-times',
-    severity: 'danger',
-    outlined: true,
-    text: { label: 'Reason' },
-  },
+  REJECT: { label: 'Reject', icon: 'close', style: 'btn-danger', text: { label: 'Reason' } },
   APPROVE_REFERRAL: {
     label: 'Approve',
-    icon: 'pi pi-check-circle',
-    severity: 'success',
+    icon: 'check_circle',
+    style: 'btn-success',
     text: { label: 'Comment', optional: true },
   },
   RETURN_REFERRAL: {
     label: 'Return',
-    icon: 'pi pi-undo',
-    severity: 'secondary',
-    outlined: true,
+    icon: 'undo',
+    style: 'btn-outline',
     text: { label: 'What needs to change' },
   },
   REJECT_REFERRAL: {
     label: 'Reject',
-    icon: 'pi pi-ban',
-    severity: 'danger',
-    outlined: true,
+    icon: 'block',
+    style: 'btn-danger',
     text: { label: 'Reason' },
   },
-  SETTLE: { label: 'Mark settled', icon: 'pi pi-wallet', severity: 'success' },
+  SETTLE: { label: 'Mark settled', icon: 'account_balance_wallet', style: 'btn-success' },
 };
 
 @Component({
@@ -96,12 +79,8 @@ const ACTIONS: Record<ClaimAction, ActionConfig> = {
     ReactiveFormsModule,
     CurrencyPipe,
     DatePipe,
-    ButtonModule,
-    DialogModule,
-    InputNumberModule,
-    TextareaModule,
-    TimelineModule,
     LabelPipe,
+    ModalComponent,
     PageHeaderComponent,
     StatusTagComponent,
   ],
@@ -111,7 +90,7 @@ const ACTIONS: Record<ClaimAction, ActionConfig> = {
 export class ClaimDetailComponent {
   private readonly api = inject(ClaimsApiService);
   private readonly auth = inject(AuthService);
-  private readonly messages = inject(MessageService);
+  private readonly toasts = inject(ToastService);
 
   readonly id = input.required<string>();
 
@@ -126,7 +105,7 @@ export class ClaimDetailComponent {
   protected readonly openRequest = computed(() =>
     this.claim()?.informationRequests.find((request) => request.status === 'OPEN'),
   );
-  protected readonly crumbs = computed<MenuItem[]>(() => {
+  protected readonly crumbs = computed<Crumb[]>(() => {
     const isClaimant = this.auth.user()?.role === 'CLAIMANT';
     return [
       isClaimant
@@ -176,7 +155,7 @@ export class ClaimDetailComponent {
         this.claim.set(updated);
         this.activeAction.set(null);
         this.busy.set(false);
-        this.messages.add({ severity: 'success', summary: ACTIONS[action].label, life: 3000 });
+        this.toasts.show('success', ACTIONS[action].label, updated.nextStep);
       },
       error: () => this.busy.set(false),
     });

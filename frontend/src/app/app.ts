@@ -1,14 +1,14 @@
 import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
-import { ToastModule } from 'primeng/toast';
 import { ThemeService } from './core/theme.service';
+import { ToastHostComponent } from './shared/toast-host/toast-host.component';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, ToastModule],
+  imports: [RouterOutlet, ToastHostComponent],
   template: `
     <router-outlet />
-    <p-toast position="top-right" />
+    <app-toast-host />
   `,
 })
 export class App {

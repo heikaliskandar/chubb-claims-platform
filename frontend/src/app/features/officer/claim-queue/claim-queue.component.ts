@@ -1,7 +1,5 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
-import { SelectButtonModule } from 'primeng/selectbutton';
 import { switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth.service';
 import { ClaimsApiService, QueueFilter } from '../../../core/claims-api.service';
@@ -14,26 +12,39 @@ type View = 'unassigned' | 'mine' | 'approvals' | 'all';
 
 const PAGE_SIZE = 10;
 
+const VIEWS: { value: View; label: string; icon: string; officerOnly: boolean }[] = [
+  { value: 'unassigned', label: 'Unassigned', icon: 'inbox', officerOnly: true },
+  { value: 'mine', label: 'Mine', icon: 'person', officerOnly: true },
+  { value: 'approvals', label: 'Awaiting approval', icon: 'how_to_reg', officerOnly: false },
+  { value: 'all', label: 'All', icon: 'list', officerOnly: false },
+];
+
 @Component({
   selector: 'app-claim-queue',
-  imports: [FormsModule, SelectButtonModule, PageHeaderComponent, ClaimTableComponent],
+  imports: [PageHeaderComponent, ClaimTableComponent],
   template: `
     <app-page-header title="Claims" [crumbs]="[{ label: 'Claims' }]" />
 
-    <div class="surface-card">
+    <section class="surface-card">
       <div class="toolbar">
-        <p-selectbutton
-          [options]="views()"
-          [ngModel]="view()"
-          (ngModelChange)="show($event)"
-          optionLabel="label"
-          optionValue="value"
-          [allowEmpty]="false"
-        />
+        <div class="segmented" role="tablist" aria-label="Queue">
+          @for (option of views; track option.value) {
+            <button
+              type="button"
+              role="tab"
+              [class.active]="view() === option.value"
+              [attr.aria-selected]="view() === option.value"
+              (click)="show(option.value)"
+            >
+              <span class="ms">{{ option.icon }}</span>
+              {{ option.label }}
+            </button>
+          }
+        </div>
         <span class="muted small">{{ result()?.totalElements ?? 0 }} claims</span>
       </div>
       <app-claim-table [page]="result()" [rows]="pageSize" (pageChange)="pageIndex.set($event)" />
-    </div>
+    </section>
   `,
   styles: `
     .toolbar {
@@ -52,14 +63,7 @@ export class ClaimQueueComponent {
   private readonly isOfficer = this.auth.user()?.role === 'OFFICER';
 
   protected readonly pageSize = PAGE_SIZE;
-  protected readonly views = signal(
-    [
-      { label: 'Unassigned', value: 'unassigned' as View, officerOnly: true },
-      { label: 'Mine', value: 'mine' as View, officerOnly: true },
-      { label: 'Awaiting approval', value: 'approvals' as View, officerOnly: false },
-      { label: 'All', value: 'all' as View, officerOnly: false },
-    ].filter((view) => this.isOfficer || !view.officerOnly),
-  );
+  protected readonly views = VIEWS.filter((view) => this.isOfficer || !view.officerOnly);
   protected readonly view = signal<View>(this.isOfficer ? 'unassigned' : 'approvals');
   protected readonly pageIndex = signal(0);
   protected readonly result = signal<PageResponse<ClaimSummary> | null>(null);

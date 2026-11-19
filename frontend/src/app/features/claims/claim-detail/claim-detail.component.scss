@@ -1,6 +1,6 @@
 .summary {
   display: flex;
-  gap: 40px;
+  gap: 16px 40px;
   flex-wrap: wrap;
   padding-bottom: 20px;
   margin-bottom: 20px;
@@ -71,24 +71,65 @@
 }
 
 .highlight {
-  border-color: color-mix(in srgb, #f5b82e 60%, transparent);
-  background: color-mix(in srgb, #f5b82e 10%, var(--app-surface));
+  background: color-mix(in srgb, var(--app-warning) 7%, var(--app-surface));
 }
 
-.marker {
-  display: block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: var(--app-primary);
-  box-shadow: 0 0 0 4px var(--app-primary-soft);
+.timeline {
+  position: relative;
+  margin: 0;
+  padding: 0 0 0 22px;
+  list-style: none;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 6px;
+    bottom: 6px;
+    left: 4px;
+    border-left: 2px solid var(--app-border);
+  }
+
+  li {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding-bottom: 16px;
+
+    &:last-child {
+      padding-bottom: 0;
+    }
+
+    &::before {
+      content: '';
+      position: absolute;
+      top: 5px;
+      left: -22px;
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--app-primary);
+      box-shadow: 0 0 0 4px var(--app-primary-soft);
+    }
+  }
 }
 
-.event {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  padding-bottom: 12px;
+.reason {
+  margin-bottom: 8px;
+  overflow-wrap: anywhere;
+}
+
+.question .ms,
+.answer .ms,
+.waiting .ms {
+  font-size: 18px;
+  transform: translateY(3px);
+}
+
+.highlight {
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--app-warning) 45%, transparent),
+    var(--app-shadow);
 }
 
 .dialog-form {
@@ -98,5 +139,16 @@
 
   .form-actions {
     margin-top: 4px;
+  }
+}
+
+@media (max-width: 640px) {
+  .row-item {
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .headline {
+    font-size: 19px;
   }
 }

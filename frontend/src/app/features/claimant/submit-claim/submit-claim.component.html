@@ -6,91 +6,83 @@
 <form class="surface-card form-card" [formGroup]="form" (ngSubmit)="submit()">
   <div class="form-grid">
     <div class="field full">
-      <label>Claim type</label>
-      <p-selectbutton
-        [options]="claimTypes"
-        formControlName="claimType"
-        optionLabel="label"
-        optionValue="value"
-        [allowEmpty]="false"
-      >
-        <ng-template #item let-option>
-          <i [class]="option.icon"></i>
-          <span>{{ option.label }}</span>
-        </ng-template>
-      </p-selectbutton>
+      <label id="type-label">Claim type</label>
+      <div class="type-options" role="radiogroup" aria-labelledby="type-label">
+        @for (type of claimTypes; track type.value) {
+          <button
+            type="button"
+            role="radio"
+            class="type-option"
+            [class.selected]="claimType() === type.value"
+            [attr.aria-checked]="claimType() === type.value"
+            (click)="form.controls.claimType.setValue(type.value)"
+          >
+            <span class="ms">{{ type.icon }}</span>
+            {{ type.label }}
+          </button>
+        }
+      </div>
     </div>
 
     <div class="field">
       <label for="market">Market</label>
-      <p-select
-        inputId="market"
-        [options]="markets"
-        formControlName="market"
-        optionValue="code"
-        optionLabel="name"
-      >
-        <ng-template #item let-market>
-          {{ market.name }} <span class="muted small">{{ market.currency }}</span>
-        </ng-template>
-      </p-select>
+      <select class="select" id="market" formControlName="market">
+        @for (market of markets; track market.code) {
+          <option [value]="market.code">{{ market.name }} · {{ market.currency }}</option>
+        }
+      </select>
     </div>
 
     <div class="field">
       <label for="policy">Policy number</label>
-      <input pInputText id="policy" formControlName="policyNumber" maxlength="50" />
+      <input
+        class="input"
+        id="policy"
+        formControlName="policyNumber"
+        maxlength="50"
+        placeholder="e.g. POL-SG-1001"
+      />
     </div>
 
     <div class="field">
       <label for="date">Incident date</label>
-      <p-datepicker
-        inputId="date"
-        formControlName="incidentDate"
-        [maxDate]="today"
-        [showIcon]="true"
-        dateFormat="d M yy"
-      />
+      <input class="input" id="date" type="date" formControlName="incidentDate" [max]="today" />
     </div>
 
     <div class="field">
       <label for="amount">Claimed amount</label>
-      <p-inputnumber
-        inputId="amount"
-        formControlName="claimedAmount"
-        mode="currency"
-        [currency]="currency()"
-        currencyDisplay="code"
-        locale="en-US"
-        [min]="0"
-      />
+      <div class="input-prefix">
+        <span>{{ currency() }}</span>
+        <input
+          class="input"
+          id="amount"
+          type="number"
+          inputmode="decimal"
+          min="0.01"
+          step="0.01"
+          formControlName="claimedAmount"
+          placeholder="0.00"
+        />
+      </div>
     </div>
 
     <div class="field full">
       <label for="description">What happened</label>
       <textarea
-        pTextarea
+        class="textarea"
         id="description"
         rows="5"
         formControlName="incidentDescription"
         maxlength="2000"
-        [autoResize]="true"
       ></textarea>
     </div>
   </div>
 
   <div class="form-actions">
-    <p-button
-      label="Cancel"
-      severity="secondary"
-      [text]="true"
-      (onClick)="router.navigate(['/claimant'])"
-    />
-    <p-button
-      type="submit"
-      label="Submit claim"
-      icon="pi pi-send"
-      [loading]="busy()"
-      [disabled]="form.invalid"
-    />
+    <a class="btn btn-ghost" routerLink="/claimant">Cancel</a>
+    <button type="submit" class="btn btn-primary" [disabled]="form.invalid || busy()">
+      <span class="ms">send</span>
+      {{ busy() ? 'Submitting…' : 'Submit claim' }}
+    </button>
   </div>
 </form>

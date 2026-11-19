@@ -7,7 +7,7 @@
         <app-logo [product]="collapsed() ? undefined : 'Claims'" />
       </a>
       <button type="button" class="close" aria-label="Close menu" (click)="mobileOpen.set(false)">
-        <i class="pi pi-times"></i>
+        <span class="ms">close</span>
       </button>
     </div>
 
@@ -22,7 +22,7 @@
           [attr.title]="collapsed() ? item.label : null"
           (click)="mobileOpen.set(false)"
         >
-          <i [class]="item.icon"></i>
+          <span class="ms">{{ item.icon }}</span>
           <span class="label">{{ item.label }}</span>
         </a>
       }
@@ -42,7 +42,7 @@
           [attr.title]="collapsed() ? 'Sign out' : null"
           (click)="logout()"
         >
-          <i class="pi pi-sign-out"></i>
+          <span class="ms">logout</span>
         </button>
       </div>
     }
@@ -52,34 +52,59 @@
 
   <div class="main">
     <header class="topbar">
-      <p-button
-        icon="pi pi-bars"
-        [text]="true"
-        [rounded]="true"
-        severity="secondary"
-        ariaLabel="Toggle menu"
-        (onClick)="toggleSidebar()"
-      />
+      <button
+        type="button"
+        class="btn btn-ghost btn-icon"
+        aria-label="Toggle menu"
+        (click)="toggleSidebar()"
+      >
+        <span class="ms">menu</span>
+      </button>
       <app-logo class="mobile-brand" product="Claims" />
       <span class="spacer"></span>
-      <p-button
-        [icon]="dark() ? 'pi pi-sun' : 'pi pi-moon'"
-        [text]="true"
-        [rounded]="true"
-        severity="secondary"
-        [ariaLabel]="dark() ? 'Switch to light mode' : 'Switch to dark mode'"
-        (onClick)="toggleTheme()"
-      />
+      <button
+        type="button"
+        class="btn btn-ghost btn-icon"
+        [attr.aria-label]="dark() ? 'Switch to light mode' : 'Switch to dark mode'"
+        (click)="toggleTheme()"
+      >
+        <span class="ms">{{ dark() ? 'light_mode' : 'dark_mode' }}</span>
+      </button>
       @if (user(); as user) {
-        <button type="button" class="profile" (click)="menu.toggle($event)">
-          <app-user-avatar [username]="user.username" size="large" />
-          <span class="who">
-            <strong>{{ user.username }}</strong>
-            <span>{{ user.position ?? user.role | label }}</span>
-          </span>
-          <i class="pi pi-angle-down chevron"></i>
-        </button>
-        <p-menu #menu [model]="userMenu()" [popup]="true" appendTo="body" />
+        <div class="profile-area" #profileArea>
+          <button
+            type="button"
+            class="profile"
+            aria-haspopup="menu"
+            [attr.aria-expanded]="menuOpen()"
+            (click)="menuOpen.update((open) => !open)"
+          >
+            <app-user-avatar [username]="user.username" size="lg" />
+            <span class="who">
+              <strong>{{ user.username }}</strong>
+              <span>{{ user.position ?? user.role | label }}</span>
+            </span>
+            <span class="ms chevron">expand_more</span>
+          </button>
+          @if (menuOpen()) {
+            <div class="menu" role="menu">
+              @for (entry of userMenu(); track entry.label) {
+                @if (entry.separatorBefore) {
+                  <hr />
+                }
+                <button
+                  type="button"
+                  role="menuitem"
+                  [disabled]="entry.disabled"
+                  (click)="choose(entry)"
+                >
+                  <span class="ms">{{ entry.icon }}</span>
+                  {{ entry.label }}
+                </button>
+              }
+            </div>
+          }
+        </div>
         <input #photo type="file" accept="image/*" hidden (change)="onPhotoSelected($event)" />
         <input
           #loginImage

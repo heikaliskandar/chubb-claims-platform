@@ -1,19 +1,6 @@
-.claim-number {
-  font-weight: 600;
-}
-
-.right {
-  text-align: right;
-}
-
 .officer {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-}
-
-th {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  white-space: nowrap;
 }

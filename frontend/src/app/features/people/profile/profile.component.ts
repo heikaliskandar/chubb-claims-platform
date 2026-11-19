@@ -2,22 +2,28 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { MenuItem, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { TabsModule } from 'primeng/tabs';
+import { RouterLink } from '@angular/router';
 import { filter, switchMap } from 'rxjs';
 import { ClaimsApiService } from '../../../core/claims-api.service';
 import { EmployeesApiService } from '../../../core/employees-api.service';
 import { ClaimSummary, EmployeeDetail, PageResponse } from '../../../core/models';
-import { PageHeaderComponent } from '../../../layout/page-header/page-header.component';
+import { ToastService } from '../../../core/toast.service';
+import { Crumb, PageHeaderComponent } from '../../../layout/page-header/page-header.component';
 import { ClaimTableComponent } from '../../../shared/claim-table/claim-table.component';
 import { EmployeeStatusTagComponent } from '../../../shared/employee-status-tag/employee-status-tag.component';
 import { LabelPipe } from '../../../shared/label.pipe';
 import { marketName } from '../../../shared/markets';
+import { ModalComponent } from '../../../shared/modal/modal.component';
 import { UserAvatarComponent } from '../../../shared/user-avatar/user-avatar.component';
+
+type Tab = 'overview' | 'team' | 'claims' | 'authority';
+
+const TABS: { value: Tab; label: string; icon: string }[] = [
+  { value: 'overview', label: 'Overview', icon: 'person' },
+  { value: 'team', label: 'Team', icon: 'group' },
+  { value: 'claims', label: 'Claims', icon: 'inbox' },
+  { value: 'authority', label: 'Authority', icon: 'shield' },
+];
 
 const CLAIMS_PAGE_SIZE = 5;
 
@@ -28,14 +34,11 @@ const CLAIMS_PAGE_SIZE = 5;
     DatePipe,
     ReactiveFormsModule,
     RouterLink,
-    ButtonModule,
-    DialogModule,
-    InputTextModule,
-    TabsModule,
     LabelPipe,
     PageHeaderComponent,
     ClaimTableComponent,
     EmployeeStatusTagComponent,
+    ModalComponent,
     UserAvatarComponent,
   ],
   templateUrl: './profile.component.html',
@@ -44,13 +47,14 @@ const CLAIMS_PAGE_SIZE = 5;
 export class ProfileComponent {
   private readonly employees = inject(EmployeesApiService);
   private readonly claimsApi = inject(ClaimsApiService);
-  private readonly messages = inject(MessageService);
-  protected readonly router = inject(Router);
+  private readonly toasts = inject(ToastService);
 
   readonly username = input.required<string>();
 
+  protected readonly tabs = TABS;
   protected readonly claimsPageSize = CLAIMS_PAGE_SIZE;
   protected readonly marketName = marketName;
+  protected readonly tab = signal<Tab>('overview');
   protected readonly employee = signal<EmployeeDetail | null>(null);
   protected readonly claims = signal<PageResponse<ClaimSummary> | null>(null);
   protected readonly claimsPage = signal(0);
@@ -61,7 +65,7 @@ export class ProfileComponent {
     officeLocation: ['', Validators.maxLength(80)],
   });
 
-  protected readonly crumbs = computed<MenuItem[]>(() => {
+  protected readonly crumbs = computed<Crumb[]>(() => {
     const employee = this.employee();
     return employee?.self
       ? [{ label: 'My profile' }]
@@ -90,6 +94,7 @@ export class ProfileComponent {
       .subscribe((employee) => {
         this.employee.set(employee);
         this.claimsPage.set(0);
+        this.tab.set('overview');
       });
 
     toObservable(computed(() => ({ employee: this.employee()?.username, page: this.claimsPage() })))
@@ -119,7 +124,7 @@ export class ProfileComponent {
         this.employee.set(employee);
         this.editing.set(false);
         this.saving.set(false);
-        this.messages.add({ severity: 'success', summary: 'Contact details saved', life: 3000 });
+        this.toasts.show('success', 'Contact details saved');
       },
       error: () => this.saving.set(false),
     });

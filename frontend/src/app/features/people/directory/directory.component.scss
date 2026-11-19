@@ -5,43 +5,14 @@
   gap: 12px;
   flex-wrap: wrap;
   margin-bottom: 16px;
+}
 
-  input {
-    width: min(320px, 70vw);
-  }
+.search {
+  width: min(340px, 100%);
 }
 
 .person {
   display: inline-flex;
   align-items: center;
   gap: 12px;
-
-  > span {
-    display: flex;
-    flex-direction: column;
-  }
-}
-
-th {
-  font-size: 12px;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.chart {
-  overflow-x: auto;
-  padding: 8px 0 16px;
-}
-
-.node {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  min-width: 150px;
-  padding: 6px 10px;
-  border: 0;
-  background: transparent;
-  color: inherit;
-  cursor: pointer;
 }

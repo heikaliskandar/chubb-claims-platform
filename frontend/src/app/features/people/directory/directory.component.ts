@@ -1,15 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { TreeNode } from 'primeng/api';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
-import { OrganizationChartModule } from 'primeng/organizationchart';
-import { SelectButtonModule } from 'primeng/selectbutton';
-import { TableLazyLoadEvent, TableModule } from 'primeng/table';
 import { combineLatest, debounceTime, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth.service';
 import { EmployeesApiService } from '../../../core/employees-api.service';
@@ -18,6 +10,8 @@ import { PageHeaderComponent } from '../../../layout/page-header/page-header.com
 import { EmployeeStatusTagComponent } from '../../../shared/employee-status-tag/employee-status-tag.component';
 import { LabelPipe } from '../../../shared/label.pipe';
 import { marketName } from '../../../shared/markets';
+import { OrgNode, OrgTreeComponent } from '../../../shared/org-tree/org-tree.component';
+import { PagerComponent } from '../../../shared/pager/pager.component';
 import { UserAvatarComponent } from '../../../shared/user-avatar/user-avatar.component';
 
 type View = 'list' | 'chart';
@@ -29,16 +23,11 @@ const CHART_SIZE = 100;
   selector: 'app-directory',
   imports: [
     DatePipe,
-    FormsModule,
-    IconFieldModule,
-    InputIconModule,
-    InputTextModule,
-    OrganizationChartModule,
-    SelectButtonModule,
-    TableModule,
     LabelPipe,
     PageHeaderComponent,
     EmployeeStatusTagComponent,
+    OrgTreeComponent,
+    PagerComponent,
     UserAvatarComponent,
   ],
   templateUrl: './directory.component.html',
@@ -51,16 +40,12 @@ export class DirectoryComponent {
 
   protected readonly pageSize = PAGE_SIZE;
   protected readonly marketName = marketName;
-  protected readonly views = [
-    { value: 'list' as View, icon: 'pi pi-list', label: 'List' },
-    { value: 'chart' as View, icon: 'pi pi-sitemap', label: 'Org chart' },
-  ];
   protected readonly view = signal<View>('list');
   protected readonly query = signal('');
   protected readonly pageIndex = signal(0);
   protected readonly result = signal<PageResponse<EmployeeSummary> | null>(null);
 
-  protected readonly orgChart = computed<TreeNode[]>(() => {
+  protected readonly orgChart = computed<OrgNode[]>(() => {
     const people = this.result()?.content ?? [];
     const root = people.find((person) => person.username === this.auth.user()?.username);
     return root && this.view() === 'chart' ? [toNode(root, people)] : [];
@@ -83,13 +68,14 @@ export class DirectoryComponent {
       .subscribe((result) => this.result.set(result));
   }
 
-  protected search(query: string): void {
-    this.query.set(query);
-    this.pageIndex.set(0);
+  protected showView(view: View): void {
+    this.result.set(null);
+    this.view.set(view);
   }
 
-  protected onLazyLoad(event: TableLazyLoadEvent): void {
-    this.pageIndex.set(Math.floor((event.first ?? 0) / PAGE_SIZE));
+  protected search(event: Event): void {
+    this.query.set((event.target as HTMLInputElement).value);
+    this.pageIndex.set(0);
   }
 
   protected open(username: string): void {
@@ -97,10 +83,9 @@ export class DirectoryComponent {
   }
 }
 
-function toNode(person: EmployeeSummary, people: EmployeeSummary[]): TreeNode {
+function toNode(person: EmployeeSummary, people: EmployeeSummary[]): OrgNode {
   return {
-    expanded: true,
-    data: person,
+    person,
     children: people
       .filter((candidate) => candidate.managerUsername === person.username)
       .map((report) => toNode(report, people)),

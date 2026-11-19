@@ -83,10 +83,16 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 ## Phase 6b: UI redesign
 
 - ❓ The first UI (Angular Material defaults) looked unfinished. I asked for a modern, consistent admin layout: sidebar, breadcrumbs, minimal text.
-- ✅ Rebuilt on **PrimeNG 22** with a customised Aura theme (custom royal-blue palette with teal, amber and coral accents; Plus Jakarta Sans), a shared shell (sidebar, top bar, user menu) and one page-header component (breadcrumb, title, actions), so every page has the same structure. Tables are lazy-paged with PrimeNG `p-table`, actions that need input open a dialog, the claim history uses a timeline, and the dashboard has stat cards and a stacked workload chart.
+- ✅ Rebuilt on a component library with a customised theme (later replaced, see Phase 9) (custom royal-blue palette with teal, amber and coral accents; Plus Jakarta Sans), a shared shell (sidebar, top bar, user menu) and one page-header component (breadcrumb, title, actions), so every page has the same structure. Tables are lazy-paged with PrimeNG `p-table`, actions that need input open a dialog, the claim history uses a timeline, and the dashboard has stat cards and a stacked workload chart.
 - ✅ Second pass on the shell: the sidebar and top bar are floating rounded cards, the active menu item is a soft blue pill, a profile card sits at the bottom of the sidebar, and the sidebar collapses to icons. Users can upload a profile photo (resized in the browser, stored locally per user). The dashboard has a welcome card with an original SVG illustration drawn in code.
 - ❌ I asked the AI to copy a commercial admin template I had downloaded. It refused because of licensing and because presenting it as my own work would misrepresent the assessment, and built an original layout on PrimeNG instead.
 - ⚠️ The initial bundle grew to 660 kB raw / 151 kB transferred because of the theme engine. I raised the warning budget to 750 kB instead of hiding the warning; the hard limit stays at 1 MB.
+
+## Phase 9: Removing the paid UI library
+
+- ⚠️ The running app showed an "Invalid PrimeUI License" banner. The AI found that PrimeNG 22 and PrimeIcons are no longer open source: they need a PrimeUI licence key. It corrected its own earlier claim that PrimeNG was free to use, and refused to hide or bypass the licence check.
+- ✅ I chose to remove the dependency entirely. The UI now uses a small set of in-repo components (buttons, inputs, select, tabs, modal, menu, toasts, table, pager, tags, avatar, breadcrumb, timeline, org tree) in the spirit of shadcn, plus chart.js (MIT) and Google Material Symbols (Apache-2.0) for icons. Every colour comes from one set of light/dark design tokens, and there is one font.
+- ✅ Result: no licence risk, and the initial bundle dropped from 660 kB to 310 kB, so the default 500 kB budget is restored. Trade-off: we own the accessibility details (Esc to close, focus rings, ARIA roles on tabs, menus and dialogs), which are built in.
 
 ## Phase 8: Employees module
 
