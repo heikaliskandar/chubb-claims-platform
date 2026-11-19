@@ -69,13 +69,15 @@ public class ClaimController {
 
     @GetMapping
     @PreAuthorize("hasAnyRole('OFFICER', 'MANAGER')")
-    @Operation(summary = "Claims queue, oldest first, optionally filtered by status and assigned officer")
+    @Operation(summary = "Claims queue, oldest first, optionally filtered by status and assigned officer",
+            description = "Shows unassigned claims plus claims assigned to the user or anyone in their reporting line.")
     public PageResponse<ClaimSummaryResponse> findClaims(
             @RequestParam(required = false) ClaimStatus status,
             @RequestParam(required = false) String assignedTo,
             @RequestParam(defaultValue = "0") @PositiveOrZero int page,
-            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size) {
-        return claimService.findClaims(status, assignedTo, page, size);
+            @RequestParam(defaultValue = "20") @Min(1) @Max(100) int size,
+            Authentication authentication) {
+        return claimService.findClaims(CurrentUser.from(authentication), status, assignedTo, page, size);
     }
 
     @GetMapping("/mine")

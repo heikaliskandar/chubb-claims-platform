@@ -88,6 +88,12 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ❌ I asked the AI to copy a commercial admin template I had downloaded. It refused because of licensing and because presenting it as my own work would misrepresent the assessment, and built an original layout on PrimeNG instead.
 - ⚠️ The initial bundle grew to 660 kB raw / 151 kB transferred because of the theme engine. I raised the warning budget to 750 kB instead of hiding the warning; the hard limit stays at 1 MB.
 
+## Phase 8: Employees module
+
+- ❓ I asked for an employees module with positions, a hierarchy (see people below you, not above), and profiles with join date and other standard HR fields. ⚠️ The AI pushed back that a staff directory is only defensible in a claims platform if the hierarchy drives the claims workflow, and asked me three questions. I decided: the hierarchy **drives claims** (approvals and visibility), employees see their **manager's name only**, and the data lives **in claims-service**, not a new service, to protect the time cap.
+- ✅ Built: an `employee` table with a self-referencing reporting line, a recursive SQL query for everyone below a person (`UNION` so a bad cycle can't loop), directory/profile/update-contact endpoints, positions loaded from the directory at login, People pages (searchable list, org chart) and a tabbed profile (Overview, Team, Claims, Authority).
+- ✅ Claims now follow the hierarchy: staff see unassigned claims plus those of themselves and their reports, and a referral can only be reviewed by someone above the recommending officer with enough authority. This closed the earlier "approver not restricted to team" limitation. Tests cover a peer lead being blocked, and a manager above with too low a limit being blocked.
+
 ## Phase 7: Docs & polish
 
 - ✅ The AI wrote `docs/architecture.md` (component, state and sequence diagrams in Mermaid, REST vs Kafka table, reliability matrix, scaling at 10x/100x) and five ADRs, including one for the approval-authority scope I added.

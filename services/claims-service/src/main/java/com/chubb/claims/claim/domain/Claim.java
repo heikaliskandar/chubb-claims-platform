@@ -170,17 +170,20 @@ public class Claim {
         recordRejection(reason, officerId, now);
     }
 
-    public void reviewReferral(String approverId, ApprovalLimit authority, Referral.Outcome outcome,
-                               String comment, Instant now) {
+    public void reviewReferral(Actor approver, Referral.Outcome outcome, String comment, Instant now) {
         if (status != ClaimStatus.PENDING_APPROVAL) {
             throw new InvalidClaimStateException("Claim is not awaiting approval");
         }
-        if (referral.referredBy().equals(approverId)) {
+        if (referral.referredBy().equals(approver.userId())) {
             throw new ClaimAccessDeniedException("Four-eyes rule: you cannot approve your own recommendation");
         }
-        if (!authority.covers(referral.amount())) {
+        if (!approver.manages(referral.referredBy())) {
+            throw new ClaimAccessDeniedException("Only a manager above the recommending officer can review this referral");
+        }
+        if (!approver.approvalLimit().covers(referral.amount())) {
             throw new ClaimAccessDeniedException("The recommended amount exceeds your approval authority");
         }
+        String approverId = approver.userId();
         switch (outcome) {
             case APPROVE -> {
                 transitionTo(ClaimStatus.APPROVED, approverId, comment, now);
@@ -228,7 +231,7 @@ public class Claim {
     }
 
     private boolean isEligibleApprover(Actor actor) {
-        return !referral.referredBy().equals(actor.userId()) && actor.approvalLimit().covers(referral.amount());
+        return actor.manages(referral.referredBy()) && actor.approvalLimit().covers(referral.amount());
     }
 
     private static void addIf(Set<ClaimAction> actions, boolean condition, ClaimAction action) {

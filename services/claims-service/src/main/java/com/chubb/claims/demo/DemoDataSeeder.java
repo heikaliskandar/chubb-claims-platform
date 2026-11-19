@@ -9,6 +9,8 @@ import com.chubb.claims.claim.infrastructure.ClaimRepository;
 import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.common.security.Position;
 import com.chubb.claims.common.security.Role;
+import com.chubb.claims.employee.domain.Employee;
+import com.chubb.claims.employee.infrastructure.EmployeeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.ApplicationArguments;
@@ -35,14 +37,19 @@ public class DemoDataSeeder implements ApplicationRunner {
 
     private final ClaimService claimService;
     private final ClaimRepository claims;
+    private final EmployeeRepository employees;
 
-    public DemoDataSeeder(ClaimService claimService, ClaimRepository claims) {
+    public DemoDataSeeder(ClaimService claimService, ClaimRepository claims, EmployeeRepository employees) {
         this.claimService = claimService;
         this.claims = claims;
+        this.employees = employees;
     }
 
     @Override
     public void run(ApplicationArguments args) {
+        if (employees.count() == 0) {
+            seedEmployees();
+        }
         if (claims.count() > 0) {
             return;
         }
@@ -79,6 +86,30 @@ public class DemoDataSeeder implements ApplicationRunner {
         claimService.settle(settled, OFFICER_3);
 
         log.info("Seeded {} demo claims", claims.count());
+    }
+
+    private void seedEmployees() {
+        employees.save(employee("manager1", "EMP-0001", "Grace Tan", Position.CLAIMS_MANAGER, "Claims Leadership",
+                Market.SG, "Singapore HQ", null, "2015-03-02"));
+        employees.save(employee("lead1", "EMP-0014", "Arjun Mehta", Position.TEAM_LEAD, "Motor Claims",
+                Market.SG, "Singapore HQ", "manager1", "2018-07-16"));
+        employees.save(employee("lead2", "EMP-0021", "Siti Rahman", Position.TEAM_LEAD, "Property Claims",
+                Market.MY, "Kuala Lumpur", "manager1", "2019-01-07"));
+        employees.save(employee("officer1", "EMP-0108", "Daniel Lim", Position.CLAIMS_OFFICER, "Motor Claims",
+                Market.SG, "Singapore HQ", "lead1", "2022-04-11"));
+        employees.save(employee("officer2", "EMP-0077", "Mei Ling Wong", Position.SENIOR_CLAIMS_OFFICER,
+                "Motor Claims", Market.HK, "Hong Kong", "lead1", "2020-09-01"));
+        employees.save(employee("officer3", "EMP-0132", "Rizal Santos", Position.CLAIMS_OFFICER, "Property Claims",
+                Market.PH, "Manila", "lead2", "2023-02-20"));
+        log.info("Seeded {} demo employees", employees.count());
+    }
+
+    private static Employee employee(String username, String number, String name, Position position, String team,
+                                     Market market, String office, String manager, String joinDate) {
+        String email = name.toLowerCase().replace(" ", ".") + "@apac-claims.example";
+        return new Employee(username, number, name, email, "+65 6100 " + number.substring(4), position, "Claims",
+                team, market, office, manager, LocalDate.parse(joinDate), Employee.EmploymentType.FULL_TIME,
+                Employee.Status.ACTIVE);
     }
 
     private UUID submit(CurrentUser claimant, Market market, ClaimType type, String amount, String description) {

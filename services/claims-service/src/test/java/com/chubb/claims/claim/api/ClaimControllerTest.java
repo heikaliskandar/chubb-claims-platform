@@ -13,6 +13,7 @@ import com.chubb.claims.common.config.SecurityConfig;
 import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.common.security.Position;
 import com.chubb.claims.common.web.PageResponse;
+import com.chubb.claims.employee.application.EmployeeService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -27,6 +28,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -66,6 +68,9 @@ class ClaimControllerTest {
 
     @MockitoBean
     private ClaimService claimService;
+
+    @MockitoBean
+    private EmployeeService employeeService;
 
     private static CurrentUser user(String username) {
         return argThat(user -> user != null && user.username().equals(username));
@@ -234,7 +239,8 @@ class ClaimControllerTest {
     }
 
     @Test
-    void managersReviewReferralsWithTheirPositionFromTheLogin() throws Exception {
+    void managersReviewReferralsWithTheirPositionFromTheDirectory() throws Exception {
+        given(employeeService.positionOf("manager1")).willReturn(Optional.of(Position.CLAIMS_MANAGER));
         given(claimService.reviewReferral(eq(CLAIM_ID),
                 argThat(user -> user.position() == Position.CLAIMS_MANAGER), eq(Referral.Outcome.APPROVE), any()))
                 .willReturn(claim(ClaimStatus.APPROVED));

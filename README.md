@@ -64,16 +64,19 @@ To reset the database (the init script only runs on an empty volume): `docker co
 
 HTTP Basic, all with the password `password` (set with `DEMO_USER_PASSWORD`). Production would use OIDC/SSO (e.g. Azure AD or Keycloak) instead.
 
-| User | Role | Position | Team |
-|---|---|---|---|
-| `claimant1`, `claimant2` | CLAIMANT | — | — |
-| `officer1` | OFFICER | Claims Officer (L1) | Motor Claims |
-| `officer2` | OFFICER | Senior Claims Officer (L2) | Motor Claims |
-| `officer3` | OFFICER | Claims Officer (L1) | Property Claims |
-| `lead1` | OFFICER | Team Lead (L3) | Motor Claims |
-| `manager1` | MANAGER | Claims Manager (L4) | — |
+| User | Name | Role | Position | Team | Reports to |
+|---|---|---|---|---|---|
+| `claimant1`, `claimant2` | — | CLAIMANT | — | — | — |
+| `manager1` | Grace Tan | MANAGER | Claims Manager (L4) | Claims Leadership | — |
+| `lead1` | Arjun Mehta | OFFICER | Team Lead (L3) | Motor Claims | manager1 |
+| `lead2` | Siti Rahman | OFFICER | Team Lead (L3) | Property Claims | manager1 |
+| `officer1` | Daniel Lim | OFFICER | Claims Officer (L1) | Motor Claims | lead1 |
+| `officer2` | Mei Ling Wong | OFFICER | Senior Claims Officer (L2) | Motor Claims | lead1 |
+| `officer3` | Rizal Santos | OFFICER | Claims Officer (L1) | Property Claims | lead2 |
 
-With `DEMO_DATA_ENABLED=true` (the Compose default), the first start seeds eight claims in different states. One of them, `CLM-SG-…` for SGD 78,000 recommended by officer1, is waiting for approval: try approving it as `officer1` (blocked by the four-eyes rule), `officer2` (limit too low) and `lead1` (allowed).
+Logins (username, password, role) come from configuration. Positions, teams and the reporting line come from the **employee directory** (`employee` table), the way an identity provider would sync them from HR.
+
+With `DEMO_DATA_ENABLED=true` (the Compose default), the first start seeds eight claims in different states. One of them, `CLM-SG-…` for SGD 78,000 recommended by officer1, is waiting for approval: try approving it as `officer1` (blocked by the four-eyes rule), `lead2` (not above officer1 in the reporting line) and `lead1` (allowed).
 
 ## Approval authority
 
@@ -90,7 +93,7 @@ Each position can approve up to a limit **per currency** (`app.authority.limits`
 UNDER_REVIEW ── assigned officer approves amount X (POST /decision)
    ├─ X within the officer's limit → APPROVED
    └─ X above the limit           → PENDING_APPROVAL (referred)
-         POST /approval by someone else (four-eyes) whose limit covers X:
+         POST /approval by someone above the officer in the reporting line whose limit covers X:
          ├─ APPROVE → APPROVED     ├─ RETURN (comment) → UNDER_REVIEW     └─ REJECT (comment) → REJECTED
 ```
 
@@ -112,9 +115,15 @@ Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log i
 | POST | `/api/v1/claims/{id}/information-requests/{requestId}/response` | CLAIMANT (owner) |
 | POST | `/api/v1/claims/{id}/assessment` | OFFICER (assigned) |
 | POST | `/api/v1/claims/{id}/decision` | OFFICER (assigned) |
-| POST | `/api/v1/claims/{id}/approval` | OFFICER, MANAGER (not the recommender, enough authority) |
+| POST | `/api/v1/claims/{id}/approval` | OFFICER, MANAGER (above the recommender, enough authority) |
 | POST | `/api/v1/claims/{id}/settlement` | OFFICER (assigned) |
 | GET | `/api/v1/me` | any |
+| GET | `/api/v1/employees?q=&page=&size=` | OFFICER, MANAGER (yourself and everyone below you) |
+| GET | `/api/v1/employees/me` | OFFICER, MANAGER |
+| PATCH | `/api/v1/employees/me` (phone, office) | OFFICER, MANAGER |
+| GET | `/api/v1/employees/{username}` | OFFICER, MANAGER (only people below you; others return 404) |
+
+**Who sees what.** Staff see unassigned claims plus claims assigned to themselves or anyone below them in the reporting line; the same rule hides people above or beside you in the directory. Your own profile shows your direct manager's name only.
 
 insights-service (Swagger UI: http://localhost:8082/swagger-ui.html). Read-only and eventually consistent: each report carries `asOf`, the time of the latest event applied.
 
@@ -159,11 +168,11 @@ cd services/insights-service && ./mvnw test    # 12 unit + web-layer tests
 1. The six markets are SG, MY, HK, TH, ID and PH, with currencies SGD, MYR, HKD, THB, IDR and PHP.
 2. Policy numbers are not validated (no policy admin system integration).
 3. Claimants answer information requests with text only. No document uploads.
-4. Only the assigned officer works a claim. Any officer can pick up an unassigned one. Approvers of referrals can be any officer or manager with enough authority; they are not restricted to the officer's own team.
+4. Only the assigned officer works a claim. Any officer can pick up an unassigned one. A referral can only be reviewed by someone above the recommending officer in the reporting line, with enough authority.
 5. Approving a claim requires an assessment first, and the approved amount can't exceed the claimed amount.
 6. Exposure is reported per currency. Amounts in different currencies are never summed.
 7. Officers can reject within their own review without referral. Senior sign-off for high-value rejections is a documented next step.
-8. Positions and teams come from configuration here. In production they would arrive as identity-provider group claims; approval limits stay in the claims system because they are audited business rules, not identity data.
+8. Employee records are seeded with the demo data. In production they would be synced from the HR system (e.g. Workday) and identity from the identity provider; approval limits stay in the claims system because they are audited business rules, not identity data.
 
 ## Out of scope
 
@@ -185,7 +194,7 @@ Most important first:
 
 1. **Run the integration tests and the full stack.** The Testcontainers tests and `docker compose up` were written but not executed on the development machine, which had no Docker. Unit and web-layer tests (135) were run.
 2. **OIDC resource servers** in both services instead of HTTP Basic and duplicated security config.
-3. **Workflow:** SLA timers and escalation, automatic triage and assignment by market and line of business, senior sign-off for high-value rejections, approvers scoped to team or market, reopening claims.
+3. **Workflow:** SLA timers and escalation, automatic triage and assignment by market and line of business, senior sign-off for high-value rejections, reopening claims. Insights dashboards are not yet filtered by reporting line.
 4. **Contract:** generate the frontend models from `/v3/api-docs`, and detect an `Idempotency-Key` reused with a different request body.
 5. **Operations:** outbox retention job, structured JSON logs with correlation IDs, metrics and alerts on outbox lag and DLT depth, a DLT replay tool.
 6. **UI:** Server-Sent Events instead of polling, frontend component tests, dashboard time filters. Profile photos are resized in the browser and kept in that browser's local storage; storing them server-side needs a file-storage service.

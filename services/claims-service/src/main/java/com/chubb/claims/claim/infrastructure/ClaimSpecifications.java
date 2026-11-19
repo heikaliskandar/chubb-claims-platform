@@ -6,6 +6,7 @@ import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 public final class ClaimSpecifications {
@@ -24,5 +25,11 @@ public final class ClaimSpecifications {
             }
             return builder.and(predicates.toArray(Predicate[]::new));
         };
+    }
+
+    public static Specification<Claim> unassignedOrAssignedTo(Collection<String> officerIds) {
+        return (root, query, builder) -> builder.or(
+                builder.isNull(root.get("assignedOfficerId")),
+                root.get("assignedOfficerId").in(officerIds));
     }
 }

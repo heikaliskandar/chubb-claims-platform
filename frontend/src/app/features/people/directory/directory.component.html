@@ -1,0 +1,92 @@
+<app-page-header title="People" [crumbs]="[{ label: 'People' }]">
+  <p-selectbutton
+    [options]="views"
+    [ngModel]="view()"
+    (ngModelChange)="view.set($event)"
+    optionValue="value"
+    [allowEmpty]="false"
+  >
+    <ng-template #item let-option>
+      <i [class]="option.icon"></i>
+      <span>{{ option.label }}</span>
+    </ng-template>
+  </p-selectbutton>
+</app-page-header>
+
+<section class="surface-card">
+  @if (view() === 'list') {
+    <div class="toolbar">
+      <p-iconfield>
+        <p-inputicon class="pi pi-search" />
+        <input
+          pInputText
+          type="search"
+          placeholder="Search name, email, team"
+          [ngModel]="query()"
+          (ngModelChange)="search($event)"
+        />
+      </p-iconfield>
+      <span class="muted small">{{ result()?.totalElements ?? 0 }} people</span>
+    </div>
+
+    <p-table
+      [value]="result()?.content ?? []"
+      [lazy]="true"
+      [paginator]="(result()?.totalElements ?? 0) > pageSize"
+      [rows]="pageSize"
+      [first]="(result()?.page ?? 0) * pageSize"
+      [totalRecords]="result()?.totalElements ?? 0"
+      [loading]="result() === null"
+      [rowHover]="true"
+      (onLazyLoad)="onLazyLoad($event)"
+    >
+      <ng-template #header>
+        <tr>
+          <th>Name</th>
+          <th>Position</th>
+          <th>Team</th>
+          <th>Market</th>
+          <th>Joined</th>
+          <th>Status</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-person>
+        <tr class="clickable-row" (click)="open(person.username)">
+          <td>
+            <span class="person">
+              <app-user-avatar [username]="person.username" />
+              <span>
+                <strong>{{ person.fullName }}</strong>
+                <span class="muted small">{{ person.email }}</span>
+              </span>
+            </span>
+          </td>
+          <td>{{ person.position | label }}</td>
+          <td>{{ person.team }}</td>
+          <td>{{ marketName(person.market) }}</td>
+          <td class="muted">{{ person.joinDate | date: 'd MMM y' }}</td>
+          <td><app-employee-status-tag [status]="person.status" /></td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="6">
+            <div class="empty-state"><i class="pi pi-users"></i>No people found</div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  } @else {
+    <div class="chart">
+      <p-organization-chart [value]="orgChart()">
+        <ng-template #default let-node>
+          <button type="button" class="node" (click)="open(node.data.username)">
+            <app-user-avatar [username]="node.data.username" size="large" />
+            <strong>{{ node.data.fullName }}</strong>
+            <span class="muted small">{{ node.data.position | label }}</span>
+          </button>
+        </ng-template>
+      </p-organization-chart>
+    </div>
+  }
+</section>

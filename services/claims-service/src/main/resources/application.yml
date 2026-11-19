@@ -48,8 +48,9 @@ app:
       users:
         claimant1: { role: CLAIMANT }
         claimant2: { role: CLAIMANT }
-        officer1: { role: OFFICER, position: CLAIMS_OFFICER }
-        officer2: { role: OFFICER, position: SENIOR_CLAIMS_OFFICER }
-        officer3: { role: OFFICER, position: CLAIMS_OFFICER }
-        lead1: { role: OFFICER, position: TEAM_LEAD }
-        manager1: { role: MANAGER, position: CLAIMS_MANAGER }
+        officer1: { role: OFFICER }
+        officer2: { role: OFFICER }
+        officer3: { role: OFFICER }
+        lead1: { role: OFFICER }
+        lead2: { role: OFFICER }
+        manager1: { role: MANAGER }

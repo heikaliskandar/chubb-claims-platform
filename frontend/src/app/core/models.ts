@@ -153,3 +153,38 @@ export interface ProblemDetail {
   detail?: string;
   errors?: Record<string, string>;
 }
+
+export type Position = 'CLAIMS_OFFICER' | 'SENIOR_CLAIMS_OFFICER' | 'TEAM_LEAD' | 'CLAIMS_MANAGER';
+
+export type EmployeeStatus = 'ACTIVE' | 'ON_LEAVE' | 'INACTIVE';
+
+export interface EmployeeSummary {
+  username: string;
+  employeeNumber: string;
+  fullName: string;
+  email: string;
+  position: Position;
+  team: string;
+  market: Market;
+  managerUsername: string | null;
+  joinDate: string;
+  status: EmployeeStatus;
+}
+
+export interface Person {
+  username: string;
+  fullName: string;
+  position: Position;
+}
+
+export interface EmployeeDetail extends Omit<EmployeeSummary, 'managerUsername'> {
+  phone: string | null;
+  department: string;
+  officeLocation: string | null;
+  employmentType: 'FULL_TIME' | 'PART_TIME' | 'CONTRACT';
+  manager: Person | null;
+  directReports: Person[];
+  totalReports: number;
+  approvalAuthority: { unlimited: boolean; limits: { currency: string; amount: number }[] };
+  self: boolean;
+}

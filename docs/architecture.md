@@ -164,6 +164,7 @@ The services are stateless, so the first lever at any volume is more instances b
 - The integration tests (Testcontainers) and the full `docker compose up` run were written but not executed on the development machine, which had no Docker. The unit and web-layer tests (135) were run.
 - Security configuration is duplicated across the two services. A shared OIDC resource-server setup would replace it.
 - An `Idempotency-Key` reused with a different request body is not detected (that would need a stored request hash).
-- Approvers are not restricted to the recommending officer's team or market.
+- insights-service dashboards are not filtered by reporting line; workload and performance are visible to all officers.
+- Employee records are maintained by seed data, not synced from an HR system.
 - No pagination or time filter on dashboards; performance is all-time.
 - Frontend models are hand-written to match the OpenAPI contract instead of generated from it.

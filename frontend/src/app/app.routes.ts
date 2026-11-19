@@ -55,6 +55,20 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'people',
+        canActivate: [roleGuard('OFFICER', 'MANAGER')],
+        loadComponent: () =>
+          import('./features/people/directory/directory.component').then(
+            (m) => m.DirectoryComponent,
+          ),
+      },
+      {
+        path: 'people/:username',
+        canActivate: [roleGuard('OFFICER', 'MANAGER')],
+        loadComponent: () =>
+          import('./features/people/profile/profile.component').then((m) => m.ProfileComponent),
+      },
+      {
         path: 'claims/:id',
         loadComponent: () =>
           import('./features/claims/claim-detail/claim-detail.component').then(

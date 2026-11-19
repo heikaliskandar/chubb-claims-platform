@@ -5,6 +5,7 @@ import com.chubb.claims.claim.domain.ClaimAccessDeniedException;
 import com.chubb.claims.claim.domain.ClaimRuleViolationException;
 import com.chubb.claims.claim.domain.InformationRequestNotFoundException;
 import com.chubb.claims.claim.domain.InvalidClaimStateException;
+import com.chubb.claims.employee.application.EmployeeNotFoundException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.http.HttpHeaders;
@@ -30,7 +31,8 @@ import java.util.Map;
 @RestControllerAdvice
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
-    @ExceptionHandler({ClaimNotFoundException.class, InformationRequestNotFoundException.class})
+    @ExceptionHandler({ClaimNotFoundException.class, InformationRequestNotFoundException.class,
+            EmployeeNotFoundException.class})
     ProblemDetail handleNotFound(RuntimeException exception) {
         return problem(HttpStatus.NOT_FOUND, "Not found", exception.getMessage());
     }

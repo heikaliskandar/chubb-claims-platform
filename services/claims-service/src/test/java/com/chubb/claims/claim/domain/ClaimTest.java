@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.chubb.claims.claim.domain.ClaimStatus.APPROVED;
@@ -31,6 +32,8 @@ class ClaimTest {
     private static final ApprovalLimit ANY_AMOUNT = ApprovalLimit.UNLIMITED;
     private static final ApprovalLimit UP_TO_10K = ApprovalLimit.upTo(new BigDecimal("10000"));
     private static final ApprovalLimit UP_TO_100K = ApprovalLimit.upTo(new BigDecimal("100000"));
+    private static final Actor LEAD_OF_OFFICERS =
+            new Actor(TEAM_LEAD, true, UP_TO_100K, Set.of(OFFICER, OTHER_OFFICER));
 
     private static Claim submittedClaim(String claimedAmount) {
         ClaimDetails details = new ClaimDetails("POL-MY-778812", Market.MY, ClaimType.MOTOR,
@@ -345,7 +348,7 @@ class ClaimTest {
         void anApproverWithEnoughAuthorityApprovesTheReferredAmount() {
             Claim claim = referredClaim();
 
-            claim.reviewReferral(TEAM_LEAD, UP_TO_100K, Referral.Outcome.APPROVE, "Agreed", NOW);
+            claim.reviewReferral(LEAD_OF_OFFICERS, Referral.Outcome.APPROVE, "Agreed", NOW);
 
             assertThat(claim.getStatus()).isEqualTo(APPROVED);
             assertThat(claim.getDecision().decidedBy()).isEqualTo(TEAM_LEAD);
@@ -357,18 +360,32 @@ class ClaimTest {
         void fourEyesRuleStopsTheRecommenderApprovingTheirOwnReferral() {
             Claim claim = referredClaim();
 
-            assertThatThrownBy(() -> claim.reviewReferral(OFFICER, ANY_AMOUNT, Referral.Outcome.APPROVE, null, NOW))
+            Actor recommender = new Actor(OFFICER, true, ANY_AMOUNT, Set.of());
+
+            assertThatThrownBy(() -> claim.reviewReferral(recommender, Referral.Outcome.APPROVE, null, NOW))
                     .isInstanceOf(ClaimAccessDeniedException.class)
                     .hasMessageContaining("Four-eyes");
         }
 
         @Test
-        void anApproverWithoutEnoughAuthorityCannotApprove() {
+        void onlySomeoneAboveTheRecommenderInTheReportingLineCanReview() {
             Claim claim = referredClaim();
+            Actor leadOfAnotherTeam = new Actor("lead2", true, ANY_AMOUNT, Set.of("officer3"));
 
-            assertThatThrownBy(() ->
-                    claim.reviewReferral(OTHER_OFFICER, UP_TO_10K, Referral.Outcome.APPROVE, null, NOW))
-                    .isInstanceOf(ClaimAccessDeniedException.class);
+            assertThatThrownBy(() -> claim.reviewReferral(leadOfAnotherTeam, Referral.Outcome.APPROVE, null, NOW))
+                    .isInstanceOf(ClaimAccessDeniedException.class)
+                    .hasMessageContaining("manager above");
+            assertThat(claim.getStatus()).isEqualTo(PENDING_APPROVAL);
+        }
+
+        @Test
+        void aManagerAboveWithoutEnoughAuthorityCannotApprove() {
+            Claim claim = referredClaim();
+            Actor leadWithLowLimit = new Actor(TEAM_LEAD, true, UP_TO_10K, Set.of(OFFICER));
+
+            assertThatThrownBy(() -> claim.reviewReferral(leadWithLowLimit, Referral.Outcome.APPROVE, null, NOW))
+                    .isInstanceOf(ClaimAccessDeniedException.class)
+                    .hasMessageContaining("authority");
             assertThat(claim.getStatus()).isEqualTo(PENDING_APPROVAL);
         }
 
@@ -376,7 +393,7 @@ class ClaimTest {
         void returningAReferralSendsTheClaimBackToReviewWithTheApproversComment() {
             Claim claim = referredClaim();
 
-            claim.reviewReferral(TEAM_LEAD, UP_TO_100K, Referral.Outcome.RETURN, "Get a second quote", NOW);
+            claim.reviewReferral(LEAD_OF_OFFICERS, Referral.Outcome.RETURN, "Get a second quote", NOW);
 
             assertThat(claim.getStatus()).isEqualTo(UNDER_REVIEW);
             assertThat(claim.getStatusHistory().getLast().getReason()).isEqualTo("Get a second quote");
@@ -386,7 +403,7 @@ class ClaimTest {
         void anApproverCanRejectAReferral() {
             Claim claim = referredClaim();
 
-            claim.reviewReferral(TEAM_LEAD, UP_TO_100K, Referral.Outcome.REJECT, "Excluded peril", NOW);
+            claim.reviewReferral(LEAD_OF_OFFICERS, Referral.Outcome.REJECT, "Excluded peril", NOW);
 
             assertThat(claim.getStatus()).isEqualTo(REJECTED);
             assertThat(claim.getDecision().decidedBy()).isEqualTo(TEAM_LEAD);
@@ -407,10 +424,11 @@ class ClaimTest {
     @Nested
     class AvailableActions {
 
-        private final Actor officer = new Actor(OFFICER, true, UP_TO_10K);
-        private final Actor otherOfficer = new Actor(OTHER_OFFICER, true, UP_TO_10K);
-        private final Actor teamLead = new Actor(TEAM_LEAD, true, UP_TO_100K);
-        private final Actor claimant = new Actor(CLAIMANT, false, ApprovalLimit.NONE);
+        private final Actor officer = new Actor(OFFICER, true, UP_TO_10K, Set.of());
+        private final Actor otherOfficer = new Actor(OTHER_OFFICER, true, UP_TO_10K, Set.of());
+        private final Actor teamLead = LEAD_OF_OFFICERS;
+        private final Actor leadOfAnotherTeam = new Actor("lead2", true, UP_TO_100K, Set.of("officer3"));
+        private final Actor claimant = new Actor(CLAIMANT, false, ApprovalLimit.NONE, Set.of());
 
         @Test
         void anyOfficerCanPickUpASubmittedClaimButTheClaimantCannot() {
@@ -449,6 +467,7 @@ class ClaimTest {
                     ClaimAction.APPROVE_REFERRAL, ClaimAction.RETURN_REFERRAL, ClaimAction.REJECT_REFERRAL);
             assertThat(claim.availableActions(officer)).isEmpty();
             assertThat(claim.availableActions(otherOfficer)).isEmpty();
+            assertThat(claim.availableActions(leadOfAnotherTeam)).isEmpty();
         }
 
         @Test
