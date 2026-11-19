@@ -12,17 +12,17 @@ import { errorInterceptor } from './core/error.interceptor';
 const ClaimsTheme = definePreset(Aura, {
   semantic: {
     primary: {
-      50: '{indigo.50}',
-      100: '{indigo.100}',
-      200: '{indigo.200}',
-      300: '{indigo.300}',
-      400: '{indigo.400}',
-      500: '{indigo.500}',
-      600: '{indigo.600}',
-      700: '{indigo.700}',
-      800: '{indigo.800}',
-      900: '{indigo.900}',
-      950: '{indigo.950}',
+      50: '#eef4ff',
+      100: '#dce7fe',
+      200: '#bfd3fe',
+      300: '#93b4fd',
+      400: '#6f97f8',
+      500: '#4f7df3',
+      600: '#3a63e0',
+      700: '#2f4fc0',
+      800: '#2a439b',
+      900: '#283c7a',
+      950: '#1b254b',
     },
   },
 });

@@ -83,7 +83,7 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 ## Phase 6b: UI redesign
 
 - ❓ The first UI (Angular Material defaults) looked unfinished. I asked for a modern, consistent admin layout: sidebar, breadcrumbs, minimal text.
-- ✅ Rebuilt on **PrimeNG 22** with a customised Aura theme (indigo primary, Plus Jakarta Sans), a shared shell (sidebar, top bar, user menu) and one page-header component (breadcrumb, title, actions), so every page has the same structure. Tables are lazy-paged with PrimeNG `p-table`, actions that need input open a dialog, the claim history uses a timeline, and the dashboard has stat cards and a stacked workload chart.
+- ✅ Rebuilt on **PrimeNG 22** with a customised Aura theme (custom royal-blue palette with teal, amber and coral accents; Plus Jakarta Sans), a shared shell (sidebar, top bar, user menu) and one page-header component (breadcrumb, title, actions), so every page has the same structure. Tables are lazy-paged with PrimeNG `p-table`, actions that need input open a dialog, the claim history uses a timeline, and the dashboard has stat cards and a stacked workload chart.
 - ⚠️ The initial bundle grew to 660 kB raw / 151 kB transferred because of the theme engine. I raised the warning budget to 750 kB instead of hiding the warning; the hard limit stays at 1 MB.
 
 ## Phase 7: Docs & polish

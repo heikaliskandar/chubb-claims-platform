@@ -23,11 +23,11 @@ interface Dashboard {
 }
 
 const CHART_STATUSES: { status: ClaimStatus; color: string }[] = [
-  { status: 'ASSIGNED', color: '#a5b4fc' },
-  { status: 'UNDER_REVIEW', color: '#4f46e5' },
-  { status: 'INFO_REQUESTED', color: '#f59e0b' },
-  { status: 'PENDING_APPROVAL', color: '#ef4444' },
-  { status: 'APPROVED', color: '#10b981' },
+  { status: 'ASSIGNED', color: '#bfd3fe' },
+  { status: 'UNDER_REVIEW', color: '#4f7df3' },
+  { status: 'INFO_REQUESTED', color: '#f5a524' },
+  { status: 'PENDING_APPROVAL', color: '#f2706b' },
+  { status: 'APPROVED', color: '#12b886' },
 ];
 
 @Component({
