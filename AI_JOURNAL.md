@@ -88,23 +88,10 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ❌ I asked the AI to copy a commercial admin template I had downloaded. It refused because of licensing and because presenting it as my own work would misrepresent the assessment, and built an original layout on PrimeNG instead.
 - ⚠️ The initial bundle grew to 660 kB raw / 151 kB transferred because of the theme engine. I raised the warning budget to 750 kB instead of hiding the warning; the hard limit stays at 1 MB.
 
-## Phase 11: Requirements check and navigation
+## Phase 7: Docs & polish
 
-- ❓ I asked the AI to check every line of the brief against what we had. It found two real gaps: officers had **no screen** for team workload and performance (only the API), and approvers had no single place to see referral statuses. Claimants also had nothing pointing them to claims needing their action.
-- ✅ Added: grouped sidebar menus (Claims, Approvals, Team, Account); separate Queue, Assigned to me, All open and History views; an **Approvals** page whose tabs depend on whether you manage anyone (To review, Decided, My referrals) with a Review button only where the domain rules allow it; a **Team performance** page; an "action needed" banner for claimants; and a requirements traceability table in the README.
-- ✅ Approval status (pending, approved, returned, rejected) is derived from the claim's own audit trail, not stored twice, and is unit-tested, including a returned referral that is referred again.
-
-## Phase 10: Chasing the 502
-
-- ❓ Sign-in returned 502 in the Codespace, and I could not share the container logs at the time. The AI booted both services locally against a real embedded PostgreSQL 17 (a temporary test, removed afterwards) and called the main endpoints over HTTP. Migrations, seeding, positions from the directory, reporting-line visibility, contact updates and claim submission all worked, so the code was not the cause.
-- ✅ Hardened the environment instead: nginx re-resolves service addresses, the backends restart on failure, the JVMs and Kafka have memory caps for small machines, and the frontend waits for both backends to accept connections before starting.
-- ⚠️ The smoke run also caught a contract leak: `/api/v1/me` returned two helper flags (`claimant`, `officer`) as JSON fields. Fixed with `@JsonIgnore`.
-
-## Phase 9: Removing the paid UI library
-
-- ⚠️ The running app showed an "Invalid PrimeUI License" banner. The AI found that PrimeNG 22 and PrimeIcons are no longer open source: they need a PrimeUI licence key. It corrected its own earlier claim that PrimeNG was free to use, and refused to hide or bypass the licence check.
-- ✅ I chose to remove the dependency entirely. The UI now uses a small set of in-repo components (buttons, inputs, select, tabs, modal, menu, toasts, table, pager, tags, avatar, breadcrumb, timeline, org tree) in the spirit of shadcn, plus chart.js (MIT) and Google Material Symbols (Apache-2.0) for icons. Every colour comes from one set of light/dark design tokens, and there is one font.
-- ✅ Result: no licence risk, and the initial bundle dropped from 660 kB to 310 kB, so the default 500 kB budget is restored. Trade-off: we own the accessibility details (Esc to close, focus rings, ARIA roles on tabs, menus and dialogs), which are built in.
+- ✅ The AI wrote `docs/architecture.md` (component, state and sequence diagrams in Mermaid, REST vs Kafka table, reliability matrix, scaling at 10x/100x) and five ADRs, including one for the approval-authority scope I added.
+- ⚠️ I made sure the docs say plainly what was **not** verified (integration tests and the full Compose stack) rather than implying everything ran.
 
 ## Phase 8: Employees module
 
@@ -112,13 +99,52 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✅ Built: an `employee` table with a self-referencing reporting line, a recursive SQL query for everyone below a person (`UNION` so a bad cycle can't loop), directory/profile/update-contact endpoints, positions loaded from the directory at login, People pages (searchable list, org chart) and a tabbed profile (Overview, Team, Claims, Authority).
 - ✅ Claims now follow the hierarchy: staff see unassigned claims plus those of themselves and their reports, and a referral can only be reviewed by someone above the recommending officer with enough authority. This closed the earlier "approver not restricted to team" limitation. Tests cover a peer lead being blocked, and a manager above with too low a limit being blocked.
 
-## Phase 7: Docs & polish
+## Phase 9: Removing the paid UI library
 
-- ✅ The AI wrote `docs/architecture.md` (component, state and sequence diagrams in Mermaid, REST vs Kafka table, reliability matrix, scaling at 10x/100x) and five ADRs, including one for the approval-authority scope I added.
-- ⚠️ I made sure the docs say plainly what was **not** verified (integration tests and the full Compose stack) rather than implying everything ran.
+- ⚠️ The running app showed an "Invalid PrimeUI License" banner. The AI found that PrimeNG 22 and PrimeIcons are no longer open source: they need a PrimeUI licence key. It corrected its own earlier claim that PrimeNG was free to use, and refused to hide or bypass the licence check.
+- ✅ I chose to remove the dependency entirely. The UI now uses a small set of in-repo components (buttons, inputs, select, tabs, modal, menu, toasts, table, pager, tags, avatar, breadcrumb, timeline, org tree) in the spirit of shadcn, plus chart.js (MIT) and Google Material Symbols (Apache-2.0) for icons. Every colour comes from one set of light/dark design tokens, and there is one font.
+- ✅ Result: no licence risk, and the initial bundle dropped from 660 kB to 310 kB, so the default 500 kB budget is restored. Trade-off: we own the accessibility details (Esc to close, focus rings, ARIA roles on tabs, menus and dialogs), which are built in.
+
+## Phase 10: Chasing the 502
+
+- ❓ Sign-in returned 502 in the Codespace, and I could not share the container logs at the time. The AI booted both services locally against a real embedded PostgreSQL 17 (a temporary test, removed afterwards) and called the main endpoints over HTTP. Migrations, seeding, positions from the directory, reporting-line visibility, contact updates and claim submission all worked, so the code was not the cause.
+- ✅ Hardened the environment instead: nginx re-resolves service addresses, the backends restart on failure, the JVMs and Kafka have memory caps for small machines, and the frontend waits for both backends to accept connections before starting.
+- ⚠️ The smoke run also caught a contract leak: `/api/v1/me` returned two helper flags (`claimant`, `officer`) as JSON fields. Fixed with `@JsonIgnore`.
+
+## Phase 11: Requirements check and navigation
+
+- ❓ I asked the AI to check every line of the brief against what we had. It found two real gaps: officers had **no screen** for team workload and performance (only the API), and approvers had no single place to see referral statuses. Claimants also had nothing pointing them to claims needing their action.
+- ✅ Added: grouped sidebar menus (Claims, Approvals, Team, Account); separate Queue, Assigned to me, All open and History views; an **Approvals** page whose tabs depend on whether you manage anyone (To review, Decided, My referrals) with a Review button only where the domain rules allow it; a **Team performance** page; an "action needed" banner for claimants; and a requirements traceability table in the README.
+- ✅ Approval status (pending, approved, returned, rejected) is derived from the claim's own audit trail, not stored twice, and is unit-tested, including a returned referral that is referred again.
+
+## Phase 12: Running it for real
+
+- ❓ The development machine could not run Docker (CPU virtualization was off in the BIOS). The AI first started a no-Docker setup script, then helped install WSL2 and Docker Desktop once I enabled SVM; I dropped the half-tested script rather than commit it.
+- ✅ First full run of the Testcontainers integration tests against real PostgreSQL and Kafka. One test was wrong, not the code: it expected a state error where the reporting-line rules correctly return 404.
+
+## Phase 13: Security headers, caching and accessibility
+
+- ✅ nginx: strict CSP (inline scripts pinned by hash), frame/sniff/referrer/permissions headers, gzip, immutable caching for hashed bundles.
+- ✅ Ran Lighthouse with the demo logins on 11 signed-in pages; fixed light-theme contrast and heading order until accessibility and best practices were 100 everywhere.
+- ❌ I rejected building sign-up, a superadmin, SMTP and push notifications this late. They are written up as a path to production instead; half-built features would cost more than they show.
+
+## Phase 14: End-to-end tests
+
+- ✅ Chose Playwright over Cypress (multi-user tests in one run, free parallelism) and wrote 36 tests mapped to the brief, on desktop and mobile, including axe-core accessibility checks.
+- 🐞 The suite found a real bug that 148 unit tests missed: every claim dialog used `(ngSubmit)` without a form directive, so the browser did a native submit, reloaded, and signed the user out. Also found icon ligatures being read by screen readers.
+
+## Phase 15: Backend review for PDPA
+
+- ✅ Asked for a review against banking/insurance expectations. Added an audit trail for reads of personal data, login lockout, database CHECK constraints for every code column, hidden health details and API docs by default, and ADR 0007 listing what production still needs (encryption, least-privilege DB roles, retention, residency).
+- ✏️ Kept Kafka events and the read model free of personal data, which the original design already did; documented it as the main PDPA control.
+
+## Phase 16: Curated demo data and user flows
+
+- ✅ Test runs had filled the demo database with around 100 claims. Reset it and rewrote the seed as nine claims, one per lifecycle stage across all six markets, each with a realistic story.
+- ✅ Added docs/user-flows.md: diagrams per role (claimant, officer, team lead, manager), the demo data and what to try with each, and a ten-minute walkthrough.
 
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.
 - **Where I had to step in:** scope (cutting the frontend first, then deliberately adding approval authority), style (comments), and keeping honest about what was and wasn't verified.
-- **What I'd do next:** run the integration suite and the Compose stack, then OIDC, then SLA and escalation rules.
+- **What I'd do next:** OIDC with MFA, the PDPA production items in ADR 0007, then SLA and escalation rules.

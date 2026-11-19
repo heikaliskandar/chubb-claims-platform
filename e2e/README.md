@@ -14,6 +14,8 @@ npx playwright test --ui              # interactive runner with time-travel debu
 npx playwright show-report            # HTML report; failures include trace, screenshot and video
 ```
 
+Each test creates its own claims, so a run adds data to the database. Reset to the curated demo data afterwards with `docker compose down -v && docker compose up --build -d`, or point the suite at a separate environment.
+
 `E2E_BASE_URL` (default `http://localhost:4200`) and `E2E_PASSWORD` (default `password`) point the suite at another environment.
 
 ## Requirement coverage

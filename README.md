@@ -10,6 +10,8 @@ A claims platform for motor and property claims across six APAC markets:
 
 ## How the brief is covered
 
+Step-by-step flows for every user type, with diagrams, the demo data and a ten-minute walkthrough: **[docs/user-flows.md](docs/user-flows.md)**.
+
 | Brief requirement | Where it lives |
 |---|---|
 | Claimants report an incident | **Claims → New claim** (`POST /claims`, with `Idempotency-Key` so a double submit can't create two claims) |
@@ -82,6 +84,8 @@ To reset the database (the init script only runs on an empty volume): `docker co
 ## Demo users
 
 HTTP Basic, all with the password `password` (set with `DEMO_USER_PASSWORD`). Production would use OIDC/SSO (e.g. Azure AD or Keycloak) instead.
+
+A fresh stack is seeded with **nine claims, one at each stage of the lifecycle** across all six markets, so every screen has something to act on. The list, and what to try with each, is in [docs/user-flows.md](docs/user-flows.md#demo-data-one-claim-per-stage). To return to that state: `docker compose down -v && docker compose up --build -d`.
 
 | User | Name | Role | Position | Team | Reports to |
 |---|---|---|---|---|---|
