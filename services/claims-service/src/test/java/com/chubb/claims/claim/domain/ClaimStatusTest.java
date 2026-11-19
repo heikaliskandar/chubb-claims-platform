@@ -11,12 +11,14 @@ import java.util.stream.Stream;
 
 import static com.chubb.claims.claim.domain.ClaimStatus.REJECTED;
 import static com.chubb.claims.claim.domain.ClaimStatus.SETTLED;
+import static com.chubb.claims.claim.domain.ClaimStatus.WITHDRAWN;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ClaimStatusTest {
 
     private static final Set<String> ALLOWED_TRANSITIONS = Set.of(
             "SUBMITTED -> ASSIGNED",
+            "SUBMITTED -> WITHDRAWN",
             "ASSIGNED -> UNDER_REVIEW",
             "UNDER_REVIEW -> INFO_REQUESTED",
             "INFO_REQUESTED -> UNDER_REVIEW",
@@ -42,8 +44,8 @@ class ClaimStatusTest {
     }
 
     @Test
-    void onlyRejectedAndSettledAreTerminal() {
+    void onlyRejectedSettledAndWithdrawnAreTerminal() {
         assertThat(Arrays.stream(ClaimStatus.values()).filter(ClaimStatus::isTerminal))
-                .containsExactlyInAnyOrder(REJECTED, SETTLED);
+                .containsExactlyInAnyOrder(REJECTED, SETTLED, WITHDRAWN);
     }
 }

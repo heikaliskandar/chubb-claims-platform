@@ -103,6 +103,45 @@ public class Claim {
         return claim;
     }
 
+    public void updateDetails(String claimantId, ClaimDetails details, Instant now) {
+        requireClaimantBeforePickup(claimantId, "edited");
+        if (details.market() != market) {
+            throw new ClaimRuleViolationException(
+                    "The market can't be changed because it sets the claim number and currency. "
+                            + "Withdraw this claim and submit a new one instead.");
+        }
+        this.policyNumber = Objects.requireNonNull(details.policyNumber());
+        this.claimType = Objects.requireNonNull(details.claimType());
+        this.incidentDate = Objects.requireNonNull(details.incidentDate());
+        this.incidentDescription = Objects.requireNonNull(details.incidentDescription());
+        this.claimedAmount = requirePositive(toMoney(details.claimedAmount(), "claimedAmount"), "claimedAmount");
+        statusHistory.add(new ClaimStatusHistory(this, status, status, claimantId, "Claim details updated", now));
+        this.updatedAt = now;
+    }
+
+    public void withdraw(String claimantId, String reason, Instant now) {
+        requireClaimantBeforePickup(claimantId, "withdrawn");
+        transitionTo(ClaimStatus.WITHDRAWN, claimantId, reason, now);
+    }
+
+    public boolean allowsDocumentRemoval(String userId, String uploadedBy) {
+        return isChangeableBy(userId) && uploadedBy.equals(userId);
+    }
+
+    public boolean isChangeableBy(String userId) {
+        return status == ClaimStatus.SUBMITTED && claimantId.equals(userId);
+    }
+
+    private void requireClaimantBeforePickup(String userId, String change) {
+        if (!claimantId.equals(userId)) {
+            throw new ClaimAccessDeniedException("Only the claimant can change this claim");
+        }
+        if (status != ClaimStatus.SUBMITTED) {
+            throw new InvalidClaimStateException("A claim can only be " + change
+                    + " before a claims officer picks it up. It is now " + status + ".");
+        }
+    }
+
     public void assignTo(String officerId, Instant now) {
         transitionTo(ClaimStatus.ASSIGNED, officerId, null, now);
         this.assignedOfficerId = officerId;
@@ -203,6 +242,9 @@ public class Claim {
 
     public Set<ClaimAction> availableActions(Actor actor) {
         Set<ClaimAction> actions = EnumSet.noneOf(ClaimAction.class);
+        if (isChangeableBy(actor.userId())) {
+            actions.addAll(EnumSet.of(ClaimAction.EDIT_DETAILS, ClaimAction.WITHDRAW));
+        }
         if (status == ClaimStatus.INFO_REQUESTED && claimantId.equals(actor.userId())) {
             actions.add(ClaimAction.RESPOND_TO_INFORMATION_REQUEST);
         }

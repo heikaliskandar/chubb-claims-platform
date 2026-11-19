@@ -31,6 +31,7 @@ Each test creates its own claims, so a run adds data to the database. Reset to t
 | `08-navigation` | Role-based visibility | As each of the 8 demo users: every sidebar link and the My profile entry opens a page with no refused API call; every row on every list and tab (claims, approvals, people) opens without a 401, 403 or 404. Nothing a user can see is a dead end. |
 | `09-documents` | Supporting documents | Attach files while reporting a claim; the assigned officer downloads a file the claimant added; a file pretending to be an image is refused; documents follow the claim's visibility; closed claims accept no more |
 | `10-api-docs` | Live API documentation | `/api/docs` shows both services; every operation in both specs has a summary and documents 401; specs and try-it-out use the same origin and authentication as the app |
+| `11-claimant-changes` | Claimants change their mind | Edit a submitted claim (market fixed, "Details updated" in history); remove a duplicate document; withdraw (status Withdrawn, listed in History); after an officer picks it up, no edit, withdraw or remove in the UI, and 409/403 from the API |
 | `07-accessibility` | WCAG 2.1 AA | axe-core finds no violations on sign-in and on claimant, officer and manager pages |
 
 ## Conventions

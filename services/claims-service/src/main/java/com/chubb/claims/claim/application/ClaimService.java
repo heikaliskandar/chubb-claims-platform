@@ -128,6 +128,20 @@ public class ClaimService {
         return loadFor(claimId, user, reportsOf(user));
     }
 
+    public ClaimDetailResponse updateDetails(UUID claimId, CurrentUser claimant, ClaimDetails details) {
+        return act(claimId, claimant, (claim, actor) -> {
+            claim.updateDetails(claimant.username(), details, clock.instant());
+            return ClaimEventType.CLAIM_DETAILS_UPDATED;
+        });
+    }
+
+    public ClaimDetailResponse withdraw(UUID claimId, CurrentUser claimant, String reason) {
+        return act(claimId, claimant, (claim, actor) -> {
+            claim.withdraw(claimant.username(), reason, clock.instant());
+            return ClaimEventType.CLAIM_WITHDRAWN;
+        });
+    }
+
     public ClaimDetailResponse assign(UUID claimId, CurrentUser officer) {
         return act(claimId, officer, (claim, actor) -> {
             claim.assignTo(officer.username(), clock.instant());

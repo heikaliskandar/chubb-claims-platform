@@ -14,6 +14,8 @@ import com.chubb.claims.document.infrastructure.DocumentStorage;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -43,7 +45,7 @@ public class DocumentService {
     }
 
     @Transactional
-    public ClaimDocument upload(UUID claimId, CurrentUser user, DocumentCategory category, String originalName,
+    public ListedDocument upload(UUID claimId, CurrentUser user, DocumentCategory category, String originalName,
                                 byte[] content) {
         Claim claim = claims.findVisibleClaim(claimId, user);
         if (!claim.acceptsDocumentsFrom(user.username())) {
@@ -71,13 +73,43 @@ public class DocumentService {
             throw exception;
         }
         AccessAudit.changed(user, "claim-document", documentId, "upload claim=" + claimId);
-        return document;
+        return new ListedDocument(document, claim.allowsDocumentRemoval(user.username(), user.username()));
     }
 
     @Transactional(readOnly = true)
-    public List<ClaimDocument> list(UUID claimId, CurrentUser user) {
-        claims.findVisibleClaim(claimId, user);
-        return documents.findByClaimIdOrderByUploadedAt(claimId);
+    public List<ListedDocument> list(UUID claimId, CurrentUser user) {
+        Claim claim = claims.findVisibleClaim(claimId, user);
+        return documents.findByClaimIdOrderByUploadedAt(claimId).stream()
+                .map(document -> new ListedDocument(document,
+                        claim.allowsDocumentRemoval(user.username(), document.getUploadedBy())))
+                .toList();
+    }
+
+    @Transactional
+    public void remove(UUID claimId, UUID documentId, CurrentUser user) {
+        Claim claim = claims.findVisibleClaim(claimId, user);
+        ClaimDocument document = documents.findByIdAndClaimId(documentId, claimId)
+                .orElseThrow(() -> new DocumentNotFoundException(documentId));
+        if (!claim.allowsDocumentRemoval(user.username(), document.getUploadedBy())) {
+            throw new ClaimAccessDeniedException("A document can only be removed by whoever added it, "
+                    + "and only before a claims officer picks up the claim");
+        }
+        documents.delete(document);
+        afterCommit(() -> storage.delete(document.getStorageKey()));
+        AccessAudit.changed(user, "claim-document", documentId, "remove claim=" + claimId);
+    }
+
+    private static void afterCommit(Runnable action) {
+        if (!TransactionSynchronizationManager.isSynchronizationActive()) {
+            action.run();
+            return;
+        }
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                action.run();
+            }
+        });
     }
 
     @Transactional(readOnly = true)

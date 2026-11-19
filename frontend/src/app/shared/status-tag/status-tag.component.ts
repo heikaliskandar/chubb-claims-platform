@@ -11,6 +11,7 @@ const TONE: Record<ClaimStatus, string> = {
   APPROVED: 'tag-success',
   REJECTED: 'tag-danger',
   SETTLED: 'tag-success',
+  WITHDRAWN: '',
 };
 
 @Component({

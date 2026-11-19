@@ -15,7 +15,8 @@ public class ClaimantNotifier {
             "INFORMATION_REQUESTED", "We need more information about your claim.",
             "CLAIM_APPROVED", "Your claim has been approved.",
             "CLAIM_REJECTED", "Your claim has been rejected.",
-            "CLAIM_SETTLED", "Your claim has been settled.");
+            "CLAIM_SETTLED", "Your claim has been settled.",
+            "CLAIM_WITHDRAWN", "Your claim has been withdrawn.");
 
     public void notifyClaimant(ClaimEvent event) {
         String message = MESSAGES.get(event.eventType());

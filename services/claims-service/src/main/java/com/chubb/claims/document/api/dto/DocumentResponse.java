@@ -1,5 +1,6 @@
 package com.chubb.claims.document.api.dto;
 
+import com.chubb.claims.document.application.ListedDocument;
 import com.chubb.claims.document.domain.ClaimDocument;
 import com.chubb.claims.document.domain.DocumentCategory;
 import io.swagger.v3.oas.annotations.media.Schema;
@@ -19,11 +20,15 @@ public record DocumentResponse(
         @Schema(description = "SHA-256 of the content, for integrity checks.")
         String sha256,
         String uploadedBy,
-        Instant uploadedAt) {
+        Instant uploadedAt,
+        @Schema(description = "Whether the caller can remove it: only whoever added it, before an officer picks up "
+                + "the claim.")
+        boolean canRemove) {
 
-    public static DocumentResponse from(ClaimDocument document) {
+    public static DocumentResponse from(ListedDocument listed) {
+        ClaimDocument document = listed.document();
         return new DocumentResponse(document.getId(), document.getCategory(), document.getFileName(),
                 document.getContentType(), document.getSizeBytes(), document.getSha256(), document.getUploadedBy(),
-                document.getUploadedAt());
+                document.getUploadedAt(), listed.removable());
     }
 }

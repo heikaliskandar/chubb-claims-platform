@@ -19,6 +19,7 @@ import static com.chubb.claims.claim.domain.ClaimStatus.REJECTED;
 import static com.chubb.claims.claim.domain.ClaimStatus.SETTLED;
 import static com.chubb.claims.claim.domain.ClaimStatus.SUBMITTED;
 import static com.chubb.claims.claim.domain.ClaimStatus.UNDER_REVIEW;
+import static com.chubb.claims.claim.domain.ClaimStatus.WITHDRAWN;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -421,6 +422,89 @@ class ClaimTest {
         }
     }
 
+@Nested
+    class ClaimantChangesBeforePickup {
+
+        private final Actor claimant = new Actor(CLAIMANT, false, ApprovalLimit.NONE, Set.of());
+
+        private ClaimDetails edited(Market market) {
+            return new ClaimDetails("POL-MY-778899", market, ClaimType.PROPERTY, LocalDate.of(2026, 10, 30),
+                    "Water damage from the unit above", new BigDecimal("7250.5"));
+        }
+
+        @Test
+        void theClaimantCanEditEverythingButTheMarketWhileItIsSubmitted() {
+            Claim claim = submittedClaim();
+
+            claim.updateDetails(CLAIMANT, edited(Market.MY), NOW.plusSeconds(60));
+
+            assertThat(claim.getPolicyNumber()).isEqualTo("POL-MY-778899");
+            assertThat(claim.getClaimType()).isEqualTo(ClaimType.PROPERTY);
+            assertThat(claim.getClaimedAmount()).isEqualByComparingTo("7250.50");
+            assertThat(claim.getStatus()).isEqualTo(SUBMITTED);
+            assertThat(claim.getStatusHistory()).last().satisfies(entry -> {
+                assertThat(entry.getFromStatus()).isEqualTo(SUBMITTED);
+                assertThat(entry.getToStatus()).isEqualTo(SUBMITTED);
+                assertThat(entry.getReason()).isEqualTo("Claim details updated");
+            });
+        }
+
+        @Test
+        void theMarketCannotChangeBecauseItSetsTheClaimNumberAndCurrency() {
+            assertThatThrownBy(() -> submittedClaim().updateDetails(CLAIMANT, edited(Market.SG), NOW))
+                    .isInstanceOf(ClaimRuleViolationException.class)
+                    .hasMessageContaining("market");
+        }
+
+        @Test
+        void theClaimantCanWithdrawWhileItIsSubmitted() {
+            Claim claim = submittedClaim();
+
+            claim.withdraw(CLAIMANT, "Settled privately with the other driver", NOW);
+
+            assertThat(claim.getStatus()).isEqualTo(WITHDRAWN);
+            assertThat(claim.availableActions(claimant)).isEmpty();
+            assertThat(claim.acceptsDocumentsFrom(CLAIMANT)).isFalse();
+        }
+
+        @Test
+        void editAndWithdrawAreOfferedOnlyToTheClaimantBeforePickup() {
+            Claim claim = submittedClaim();
+            assertThat(claim.availableActions(claimant))
+                    .containsExactlyInAnyOrder(ClaimAction.EDIT_DETAILS, ClaimAction.WITHDRAW);
+            assertThat(claim.availableActions(new Actor(OFFICER, true, UP_TO_10K, Set.of())))
+                    .doesNotContain(ClaimAction.EDIT_DETAILS, ClaimAction.WITHDRAW);
+
+            claim.assignTo(OFFICER, NOW);
+            assertThat(claim.availableActions(claimant)).isEmpty();
+        }
+
+        @Test
+        void onceAnOfficerPicksItUpTheClaimIsLocked() {
+            Claim claim = submittedClaim();
+            claim.assignTo(OFFICER, NOW);
+
+            assertThatThrownBy(() -> claim.updateDetails(CLAIMANT, edited(Market.MY), NOW))
+                    .isInstanceOf(InvalidClaimStateException.class)
+                    .hasMessageContaining("before a claims officer picks it up");
+            assertThatThrownBy(() -> claim.withdraw(CLAIMANT, null, NOW))
+                    .isInstanceOf(InvalidClaimStateException.class);
+            assertThat(claim.allowsDocumentRemoval(CLAIMANT, CLAIMANT)).isFalse();
+        }
+
+        @Test
+        void nobodyElseCanChangeTheClaimantsClaim() {
+            Claim claim = submittedClaim();
+
+            assertThatThrownBy(() -> claim.updateDetails("claimant2", edited(Market.MY), NOW))
+                    .isInstanceOf(ClaimAccessDeniedException.class);
+            assertThatThrownBy(() -> claim.withdraw(OFFICER, null, NOW))
+                    .isInstanceOf(ClaimAccessDeniedException.class);
+            assertThat(claim.allowsDocumentRemoval(CLAIMANT, "claimant2")).isFalse();
+            assertThat(claim.allowsDocumentRemoval(CLAIMANT, CLAIMANT)).isTrue();
+        }
+    }
+
     @Nested
     class AvailableActions {
 
@@ -431,11 +515,12 @@ class ClaimTest {
         private final Actor claimant = new Actor(CLAIMANT, false, ApprovalLimit.NONE, Set.of());
 
         @Test
-        void anyOfficerCanPickUpASubmittedClaimButTheClaimantCannot() {
+        void anyOfficerCanPickUpASubmittedClaimAndTheClaimantCanOnlyEditOrWithdrawIt() {
             Claim claim = submittedClaim();
 
             assertThat(claim.availableActions(otherOfficer)).containsExactly(ClaimAction.ASSIGN_TO_ME);
-            assertThat(claim.availableActions(claimant)).isEmpty();
+            assertThat(claim.availableActions(claimant))
+                    .containsExactlyInAnyOrder(ClaimAction.EDIT_DETAILS, ClaimAction.WITHDRAW);
         }
 
         @Test

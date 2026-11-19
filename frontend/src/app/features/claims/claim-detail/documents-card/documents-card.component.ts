@@ -3,6 +3,7 @@ import { HttpEventType } from '@angular/common/http';
 import { Component, DestroyRef, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
+import { ModalComponent } from '../../../../shared/modal/modal.component';
 import { Subject, merge, switchMap } from 'rxjs';
 import { AuthService } from '../../../../core/auth.service';
 import { ClaimsApiService } from '../../../../core/claims-api.service';
@@ -21,7 +22,7 @@ import {
 
 @Component({
   selector: 'app-documents-card',
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, ModalComponent],
   templateUrl: './documents-card.component.html',
   styleUrl: './documents-card.component.scss',
 })
@@ -50,12 +51,14 @@ export class DocumentsCardComponent {
   protected readonly progress = signal<number | null>(null);
   protected readonly problem = signal<string | null>(null);
   protected readonly dragging = signal(false);
+  protected readonly removing = signal<ClaimDocument | null>(null);
+  protected readonly busy = signal(false);
 
   private readonly refresh = new Subject<void>();
   private readonly objectUrls: string[] = [];
 
   constructor() {
-    merge(toObservable(this.claimId), this.refresh)
+    merge(toObservable(this.claimId), toObservable(this.canUpload), this.refresh)
       .pipe(
         switchMap(() => this.api.documents(this.claimId())),
         takeUntilDestroyed(),
@@ -98,6 +101,27 @@ export class DocumentsCardComponent {
         }
       },
       error: () => this.progress.set(null),
+    });
+  }
+
+  protected confirmRemove(): void {
+    const document = this.removing();
+    if (!document) {
+      return;
+    }
+    this.busy.set(true);
+    this.api.removeDocument(this.claimId(), document.id).subscribe({
+      next: () => {
+        this.busy.set(false);
+        this.removing.set(null);
+        this.toasts.show('success', 'Document removed', document.fileName);
+        this.refresh.next();
+      },
+      error: () => {
+        this.busy.set(false);
+        this.removing.set(null);
+        this.refresh.next();
+      },
     });
   }
 

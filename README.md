@@ -62,6 +62,7 @@ Step-by-step flows for every user type, with diagrams, the demo data and a ten-m
 | Brief requirement | Where it lives |
 |---|---|
 | Claimants report an incident ([doc](docs/features/claim-submission-and-tracking.md)) | **Claims → New claim** (`POST /claims`, with `Idempotency-Key` so a double submit can't create two claims) |
+| Claimants change their mind ([doc](docs/features/claim-submission-and-tracking.md#changing-a-claim-before-it-is-picked-up)) | **Edit claim**, remove a document they added, or **Withdraw claim**, until a claims officer picks it up; then the claim is locked |
 | Claimants track their claim | **Claims → My claims / History**; claim page with status, "waiting on", next step and full activity timeline; refreshes every 10 s |
 | Claimants provide information when asked ([documents](docs/features/supporting-documents.md)) | "We need more information" banner on My claims; **Respond** on the claim page; **supporting documents** (photos, police report, quotes) attached when reporting or at any time while the claim is open |
 | Claimants receive decisions | Decision card with outcome, amount and reason; event-driven notification stub in insights-service |
@@ -74,7 +75,7 @@ Step-by-step flows for every user type, with diagrams, the demo data and a ten-m
 | REST and Kafka, with a reason for each ([doc](docs/features/events-and-messaging.md)) | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
 | Async processing across both tiers | Outbox → Kafka → read model; the UI polls and shows "Updated hh:mm:ss" on dashboards |
 
-**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 171 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 69 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
+**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 200 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 73 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
 
 ## Architecture at a glance
 
@@ -181,6 +182,8 @@ Every claim response includes `allowedActions` for the current user, `waitingOn`
 | GET | `/api/v1/claims/approvals?view=TO_REVIEW\|DECIDED\|MY_REFERRALS` | OFFICER, MANAGER |
 | GET | `/api/v1/claims/mine?closed=` | CLAIMANT |
 | GET | `/api/v1/claims/{id}` | any (claimants: own claims only) |
+| PUT | `/api/v1/claims/{id}` | CLAIMANT (owner), until an officer picks it up |
+| POST | `/api/v1/claims/{id}/withdrawal` | CLAIMANT (owner), until an officer picks it up |
 | POST | `/api/v1/claims/{id}/assignment` | OFFICER |
 | POST | `/api/v1/claims/{id}/review` | OFFICER (assigned) |
 | POST | `/api/v1/claims/{id}/information-requests` | OFFICER (assigned) |
@@ -192,6 +195,7 @@ Every claim response includes `allowedActions` for the current user, `waitingOn`
 | GET | `/api/v1/claims/{id}/documents` | anyone who can see the claim |
 | POST | `/api/v1/claims/{id}/documents` (multipart `file`, `category`) | claimant (owner) or assigned officer, while the claim is open |
 | GET | `/api/v1/claims/{id}/documents/{documentId}/content` | anyone who can see the claim |
+| DELETE | `/api/v1/claims/{id}/documents/{documentId}` | whoever added it, until an officer picks up the claim |
 | GET | `/api/v1/me` | any |
 | GET | `/api/v1/employees?q=&page=&size=` | OFFICER, MANAGER (yourself and everyone below you) |
 | GET | `/api/v1/employees/me` | OFFICER, MANAGER |
@@ -225,11 +229,11 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 ## Tests
 
 ```bash
-cd services/claims-service && ./mvnw test      # 158 unit + web-layer tests, no Docker needed
+cd services/claims-service && ./mvnw test      # 187 unit + web-layer tests, no Docker needed
 cd services/insights-service && ./mvnw test    # 13 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
 cd frontend && npm test -- --watch=false       # 16 frontend unit tests (Vitest)
-cd e2e && npm ci && npx playwright test        # 69 end-to-end tests against the running stack
+cd e2e && npm ci && npx playwright test        # 73 end-to-end tests against the running stack
 ```
 
 Every push runs all of these in **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.yml)): both services' unit and Testcontainers suites, frontend formatting, unit tests and production build, then the full stack in Docker Compose with the Playwright suite. On failure the Playwright report, traces and service logs are uploaded.
@@ -276,7 +280,7 @@ Deliberately not built, to keep the scope honest. The design already leaves room
 
 1. The six markets are SG, MY, HK, TH, ID and PH, with currencies SGD, MYR, HKD, THB, IDR and PHP.
 2. Policy numbers are not validated (no policy admin system integration).
-3. Supporting documents are PDF, JPEG, PNG or WebP, up to 10 MB each and 20 per claim, and cannot be deleted once added.
+3. Supporting documents are PDF, JPEG, PNG or WebP, up to 10 MB each and 20 per claim. Until an officer picks up the claim, the claimant can edit it, remove documents they added, or withdraw it; after that the claim and its documents are locked and changes go through the officer. The market cannot be edited because it sets the claim number and currency.
 4. Only the assigned officer works a claim. Any officer can pick up an unassigned one. A referral can only be reviewed by someone above the recommending officer in the reporting line, with enough authority.
 5. Approving a claim requires an assessment first, and the approved amount can't exceed the claimed amount.
 6. Exposure is reported per currency. Amounts in different currencies are never summed.

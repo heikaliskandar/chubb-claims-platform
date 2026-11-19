@@ -20,6 +20,19 @@
         <app-approval-panel [claim]="claim" (decide)="choose($event)" />
       }
 
+      @if (changeableByClaimant()) {
+        <section class="surface-card editable" role="note">
+          <span class="ms" aria-hidden="true">edit_note</span>
+          <div>
+            <strong>You can still change this claim</strong>
+            <span class="muted">
+              Until a claims officer picks it up, you can edit the details, remove documents you
+              added, or withdraw it.
+            </span>
+          </div>
+        </section>
+      }
+
       <section class="surface-card">
         <div class="summary">
           <div>
@@ -152,11 +165,15 @@
         <ol class="timeline">
           @for (change of claim.statusHistory; track $index) {
             <li>
-              <strong>{{ change.toStatus | label }}</strong>
+              <strong>{{
+                change.fromStatus === change.toStatus
+                  ? 'Details updated'
+                  : (change.toStatus | label)
+              }}</strong>
               <span class="muted small"
                 >{{ change.changedBy }} · {{ change.changedAt | date: 'd MMM, HH:mm' }}</span
               >
-              @if (change.reason) {
+              @if (change.reason && change.fromStatus !== change.toStatus) {
                 <span class="small">{{ change.reason }}</span>
               }
             </li>

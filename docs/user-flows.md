@@ -22,6 +22,8 @@ Limits are per currency (see the README), so no FX conversion is involved.
 ```mermaid
 stateDiagram-v2
     [*] --> SUBMITTED: Claimant reports an incident
+    SUBMITTED --> SUBMITTED: Claimant edits details or removes a document
+    SUBMITTED --> WITHDRAWN: Claimant withdraws
     SUBMITTED --> ASSIGNED: Officer picks it up from the queue
     ASSIGNED --> UNDER_REVIEW: Officer starts the review
     UNDER_REVIEW --> INFO_REQUESTED: Officer asks a question
@@ -35,6 +37,7 @@ stateDiagram-v2
     APPROVED --> SETTLED: Officer marks payment made
     REJECTED --> [*]
     SETTLED --> [*]
+    WITHDRAWN --> [*]
 ```
 
 Every claim screen shows the status, **who it is waiting on** (claims team, assigned officer, claimant, approver or nobody) and the **next step** in plain language. Buttons appear only when the current user is allowed to take that action.
@@ -91,6 +94,7 @@ flowchart LR
 | Step | Screen | What the claimant sees |
 |---|---|---|
 | Report an incident | **Claims → New claim** | Form with validation; a double click cannot create two claims (`Idempotency-Key`). Optional **supporting documents** (photos, police report, quote). Lands on the new claim's page. |
+| Change their mind | Claim page: **Edit claim**, bin icon on a document, **Withdraw claim** | Allowed until an officer picks up the claim; a banner says so. Withdrawn claims move to History. |
 | Track | **Claims → My claims** | Active claims with status and who they are waiting on. Updates every 10 seconds. |
 | Provide information | Banner **We need more information** → claim → **Respond** | The officer's question and an answer box; files go under **Supporting documents** on the same page. |
 | Receive the decision | **Claims → History** → claim | Outcome, approved amount and reason, plus the full activity timeline. |

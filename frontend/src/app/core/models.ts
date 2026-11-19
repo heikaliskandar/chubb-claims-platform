@@ -12,7 +12,8 @@ export type ClaimStatus =
   | 'PENDING_APPROVAL'
   | 'APPROVED'
   | 'REJECTED'
-  | 'SETTLED';
+  | 'SETTLED'
+  | 'WITHDRAWN';
 
 export type Party = 'CLAIMS_TEAM' | 'ASSIGNED_OFFICER' | 'CLAIMANT' | 'APPROVER' | 'NOBODY';
 
@@ -27,7 +28,9 @@ export type ClaimAction =
   | 'APPROVE_REFERRAL'
   | 'RETURN_REFERRAL'
   | 'REJECT_REFERRAL'
-  | 'SETTLE';
+  | 'SETTLE'
+  | 'EDIT_DETAILS'
+  | 'WITHDRAW';
 
 export interface CurrentUser {
   username: string;
@@ -229,4 +232,5 @@ export interface ClaimDocument {
   sha256: string;
   uploadedBy: string;
   uploadedAt: string;
+  canRemove: boolean;
 }

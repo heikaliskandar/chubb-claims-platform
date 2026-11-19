@@ -123,5 +123,6 @@ erDiagram
 | V4 | Employee directory |
 | V5 | Domain CHECK constraints and the approvals index |
 | V6 | Supporting documents (metadata; content in `DocumentStorage`) |
+| V7 | `WITHDRAWN` status |
 
 Migrations are append-only. Once committed, a migration is never edited; a fix is a new version.

@@ -78,6 +78,7 @@ final class ClaimMapper {
             case APPROVED -> "Approved. Waiting for settlement to be recorded.";
             case REJECTED -> "Closed: the claim was rejected.";
             case SETTLED -> "Closed: the claim has been settled.";
+            case WITHDRAWN -> "Closed: the claimant withdrew the claim.";
         };
     }
 

@@ -43,6 +43,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -281,5 +282,36 @@ class ClaimControllerTest {
         mvc.perform(post("/api/v1/claims").with(as("claimant1"))
                         .contentType(MediaType.APPLICATION_JSON).content(VALID_CLAIM))
                 .andExpect(status().isCreated());
+    }
+
+    @Test
+    void theClaimantCanEditTheirSubmittedClaim() throws Exception {
+        given(claimService.updateDetails(eq(CLAIM_ID), user("claimant1"), any())).willReturn(claim(ClaimStatus.SUBMITTED));
+
+        mvc.perform(put("/api/v1/claims/" + CLAIM_ID).with(as("claimant1"))
+                        .contentType(MediaType.APPLICATION_JSON).content(VALID_CLAIM))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void staffCannotEditOrWithdrawAClaimantsClaim() throws Exception {
+        mvc.perform(put("/api/v1/claims/" + CLAIM_ID).with(as("officer1"))
+                        .contentType(MediaType.APPLICATION_JSON).content(VALID_CLAIM))
+                .andExpect(status().isForbidden());
+        mvc.perform(post("/api/v1/claims/" + CLAIM_ID + "/withdrawal").with(as("officer1"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden());
+        verifyNoInteractions(claimService);
+    }
+
+    @Test
+    void editingAfterPickupIsAConflict() throws Exception {
+        given(claimService.withdraw(eq(CLAIM_ID), user("claimant1"), isNull()))
+                .willThrow(new InvalidClaimStateException("A claim can only be withdrawn before a claims officer picks it up."));
+
+        mvc.perform(post("/api/v1/claims/" + CLAIM_ID + "/withdrawal").with(as("claimant1"))
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value(org.hamcrest.Matchers.containsString("before a claims officer")));
     }
 }

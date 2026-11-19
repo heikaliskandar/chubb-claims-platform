@@ -7,6 +7,8 @@ import com.chubb.claims.claim.api.dto.DecideClaimRequest;
 import com.chubb.claims.claim.api.dto.ProvideInformationRequest;
 import com.chubb.claims.claim.api.dto.RequestInformationRequest;
 import com.chubb.claims.claim.api.dto.SubmitClaimRequest;
+import com.chubb.claims.claim.api.dto.UpdateClaimRequest;
+import com.chubb.claims.claim.api.dto.WithdrawClaimRequest;
 import com.chubb.claims.claim.application.ClaimService;
 import com.chubb.claims.claim.application.ClaimSubmission;
 import com.chubb.claims.claim.domain.ClaimStatus;
@@ -26,6 +28,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -99,6 +102,32 @@ public class ClaimController {
     @Operation(summary = "Claim detail", description = "Claimants can only see their own claims.")
     public ClaimDetailResponse getClaim(@PathVariable UUID claimId, Authentication authentication) {
         return claimService.getClaim(claimId, CurrentUser.from(authentication));
+    }
+
+    @PutMapping("/{claimId}")
+    @PreAuthorize("hasRole('CLAIMANT')")
+    @Operation(summary = "Edit a claim before it is picked up",
+            description = "Only the claimant, and only while the claim is SUBMITTED (no officer has picked it up). "
+                    + "The market cannot change because it sets the claim number and currency. The change is "
+                    + "recorded in the activity history and published as CLAIM_DETAILS_UPDATED.")
+    @ApiResponse(responseCode = "200", description = "Updated")
+    @ApiResponse(responseCode = "409", description = "An officer has already picked up the claim")
+    @ApiResponse(responseCode = "422", description = "The market was changed")
+    public ClaimDetailResponse updateDetails(@PathVariable UUID claimId, @Valid @RequestBody UpdateClaimRequest request,
+                                             Authentication authentication) {
+        return claimService.updateDetails(claimId, CurrentUser.from(authentication), request.toClaimDetails());
+    }
+
+    @PostMapping("/{claimId}/withdrawal")
+    @PreAuthorize("hasRole('CLAIMANT')")
+    @Operation(summary = "Withdraw a claim before it is picked up",
+            description = "Only the claimant, and only while the claim is SUBMITTED. Moves it to WITHDRAWN, a final "
+                    + "status.")
+    @ApiResponse(responseCode = "200", description = "Withdrawn")
+    @ApiResponse(responseCode = "409", description = "An officer has already picked up the claim")
+    public ClaimDetailResponse withdraw(@PathVariable UUID claimId, @Valid @RequestBody WithdrawClaimRequest request,
+                                        Authentication authentication) {
+        return claimService.withdraw(claimId, CurrentUser.from(authentication), request.reason());
     }
 
     @PostMapping("/{claimId}/assignment")

@@ -8,6 +8,7 @@
 stateDiagram-v2
     [*] --> SUBMITTED
     SUBMITTED --> ASSIGNED: assign
+    SUBMITTED --> WITHDRAWN: claimant withdraws
     ASSIGNED --> UNDER_REVIEW: review
     UNDER_REVIEW --> INFO_REQUESTED: request information
     INFO_REQUESTED --> UNDER_REVIEW: claimant responds

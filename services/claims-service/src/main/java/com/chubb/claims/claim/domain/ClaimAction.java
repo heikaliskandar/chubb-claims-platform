@@ -11,5 +11,7 @@ public enum ClaimAction {
     APPROVE_REFERRAL,
     RETURN_REFERRAL,
     REJECT_REFERRAL,
-    SETTLE
+    SETTLE,
+    EDIT_DETAILS,
+    WITHDRAW
 }

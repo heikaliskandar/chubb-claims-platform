@@ -11,7 +11,7 @@
 | Assigned officer | Claim page | Add evidence such as a loss adjuster's report |
 | Anyone who can see the claim | Claim page | See every file with type, size, who added it and when; view or download it |
 
-Images show as thumbnails. PDFs open in a new tab. A file can't be deleted, because an insurer has to keep the evidence trail.
+Images show as thumbnails. PDFs open in a new tab. **Whoever added a document can remove it until a claims officer picks up the claim** (for example a duplicate upload). After that, documents are part of the evidence trail and can't be removed.
 
 ## Rules
 
@@ -21,7 +21,8 @@ Images show as thumbnails. PDFs open in a new tab. A file can't be deleted, beca
 | Up to **10 MB** per file (413) and **20** per claim (422) | Protects storage and keeps claims reviewable |
 | Upload: the claimant who owns the claim, or the assigned officer, **while the claim is open** (otherwise 403) | Matches who works the claim; a decided claim's evidence is frozen |
 | View and download: anyone who can see the claim; anyone else gets **404** | Same visibility as the claim itself |
-| Every upload and download is written to the `AUDIT` log | PDPA accountability |
+| Remove: only whoever added it, and only before an officer picks up the claim (otherwise 403) | Mistakes can be fixed early; the evidence is frozen once someone works on it |
+| Every upload, download and removal is written to the `AUDIT` log | PDPA accountability |
 
 The browser checks size and type first, for instant feedback. The server checks again; it never trusts the browser.
 
@@ -32,6 +33,7 @@ The browser checks size and type first, for instant feedback. The server checks 
 | GET | `/api/v1/claims/{claimId}/documents` | List, oldest first |
 | POST | `/api/v1/claims/{claimId}/documents` | Multipart: `file` and `category`; returns 201 with `Location` |
 | GET | `/api/v1/claims/{claimId}/documents/{documentId}/content` | The file |
+| DELETE | `/api/v1/claims/{claimId}/documents/{documentId}` | Remove; 204 |
 
 Categories: `PHOTO`, `POLICE_REPORT`, `REPAIR_QUOTE`, `INVOICE`, `PROOF_OF_OWNERSHIP`, `ADJUSTER_REPORT` (offered to staff), `OTHER`.
 

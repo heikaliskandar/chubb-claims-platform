@@ -11,7 +11,7 @@ import java.util.List;
 
 public final class ClaimSpecifications {
 
-    private static final List<ClaimStatus> CLOSED = List.of(ClaimStatus.REJECTED, ClaimStatus.SETTLED);
+    private static final List<ClaimStatus> CLOSED = List.of(ClaimStatus.REJECTED, ClaimStatus.SETTLED, ClaimStatus.WITHDRAWN);
 
     private ClaimSpecifications() {
     }

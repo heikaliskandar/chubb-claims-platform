@@ -4,6 +4,7 @@ import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.document.api.dto.DocumentResponse;
 import com.chubb.claims.document.application.DocumentContent;
 import com.chubb.claims.document.application.DocumentService;
+import com.chubb.claims.document.application.ListedDocument;
 import com.chubb.claims.document.domain.ClaimDocument;
 import com.chubb.claims.document.domain.DocumentCategory;
 import io.swagger.v3.oas.annotations.Operation;
@@ -19,6 +20,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -37,8 +39,8 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/v1/claims/{claimId}/documents")
 @Tag(name = "Documents", description = "Supporting documents attached to a claim: photos, police reports, quotes, "
-        + "invoices. Visible to anyone who can see the claim; uploads are limited to the claimant and the "
-        + "assigned officer while the claim is open. Documents cannot be deleted.")
+        + "invoices. Visible to anyone who can see the claim. The claimant and the assigned officer can add them while "
+        + "the claim is open; whoever added a document can remove it until a claims officer picks up the claim.")
 public class DocumentController {
 
     private final DocumentService documents;
@@ -76,12 +78,25 @@ public class DocumentController {
             @Parameter(description = "The file") @RequestPart("file") MultipartFile file,
             @Parameter(description = "What the document is") @RequestParam DocumentCategory category,
             Authentication authentication) throws IOException {
-        ClaimDocument document = documents.upload(claimId, CurrentUser.from(authentication), category,
+        ListedDocument listed = documents.upload(claimId, CurrentUser.from(authentication), category,
                 file.getOriginalFilename(), file.getBytes());
         return ResponseEntity
                 .created(ServletUriComponentsBuilder.fromCurrentRequest()
-                        .path("/{id}/content").buildAndExpand(document.getId()).toUri())
-                .body(DocumentResponse.from(document));
+                        .path("/{id}/content").buildAndExpand(listed.document().getId()).toUri())
+                .body(DocumentResponse.from(listed));
+    }
+
+    @DeleteMapping("/{documentId}")
+    @Operation(summary = "Remove a document",
+            description = "Only whoever added it, and only before a claims officer picks up the claim. After that, "
+                    + "documents are part of the claim's evidence and cannot be removed.")
+    @ApiResponse(responseCode = "204", description = "Removed")
+    @ApiResponse(responseCode = "403", description = "Not added by you, or the claim has been picked up",
+            content = @Content(schema = @Schema(implementation = ProblemDetail.class)))
+    public ResponseEntity<Void> remove(@PathVariable UUID claimId, @PathVariable UUID documentId,
+                                       Authentication authentication) {
+        documents.remove(claimId, documentId, CurrentUser.from(authentication));
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{documentId}/content")

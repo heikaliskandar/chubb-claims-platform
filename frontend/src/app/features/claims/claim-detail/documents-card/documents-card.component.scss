@@ -142,3 +142,24 @@
   color: var(--app-danger);
   font-size: 14px;
 }
+
+.remove:hover .ms,
+.remove:focus-visible .ms {
+  color: var(--app-danger);
+}
+
+.confirm {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  p {
+    margin: 0;
+  }
+}
+
+.form-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}

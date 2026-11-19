@@ -1,232 +1,267 @@
 <app-page-header
-  title="New claim"
-  [crumbs]="[{ label: 'My claims', routerLink: '/claims/active' }, { label: 'New claim' }]"
+  [title]="title()"
+  [crumbs]="[
+    { label: 'My claims', routerLink: '/claims/active' },
+    { label: editing() ? 'Edit claim' : 'New claim' },
+  ]"
 />
 
-<form class="surface-card claim-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
-  <p class="intro">Fields marked <span class="req">*</span> are required.</p>
+@if (locked()) {
+  <section class="surface-card locked" role="alert">
+    <strong>This claim can no longer be edited</strong>
+    <span>
+      A claims officer has picked it up. If something needs to change, the officer will ask you, or
+      you can answer through the claim page.
+    </span>
+    <a class="btn btn-primary" [routerLink]="['/claims', id()]">Back to the claim</a>
+  </section>
+} @else {
+  <form class="surface-card claim-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <p class="intro">Fields marked <span class="req">*</span> are required.</p>
 
-  @if (showSummary() && problems().length) {
-    <div class="summary" role="alert" tabindex="-1" #summary>
-      <strong>
-        {{ problems().length === 1 ? 'Fix 1 field' : 'Fix ' + problems().length + ' fields' }}
-        to submit your claim
-      </strong>
-      <ul>
-        @for (problem of problems(); track problem.id) {
-          <li>
-            <a [href]="'#' + problem.id" (click)="focusField($event, problem.id)">{{
-              problem.message
-            }}</a>
-          </li>
-        }
-      </ul>
-    </div>
-  }
-
-  <fieldset class="row">
-    <legend>Claim type <span class="req" aria-hidden="true">*</span></legend>
-    <div class="types" role="radiogroup" aria-required="true">
-      @for (type of claimTypes; track type.value) {
-        <label class="type" [class.selected]="claimType() === type.value">
-          <input type="radio" formControlName="claimType" [value]="type.value" />
-          <span class="type-text">
-            <strong>{{ type.label }}</strong>
-            <span>{{ type.description }}</span>
-          </span>
-        </label>
-      }
-    </div>
-  </fieldset>
-
-  <div class="grid">
-    <div class="row">
-      <label for="market">Market <span class="req" aria-hidden="true">*</span></label>
-      <select
-        class="control"
-        id="market"
-        formControlName="market"
-        aria-required="true"
-        aria-describedby="market-hint"
-      >
-        @for (market of markets; track market.code) {
-          <option [value]="market.code">{{ market.name }} ({{ market.currency }})</option>
-        }
-      </select>
-      <span class="hint" id="market-hint">Sets the claim currency and handling team.</span>
-    </div>
-
-    <div class="row">
-      <label for="policyNumber">Policy number <span class="req" aria-hidden="true">*</span></label>
-      <input
-        class="control"
-        id="policyNumber"
-        formControlName="policyNumber"
-        aria-required="true"
-        autocomplete="off"
-        spellcheck="false"
-        [attr.aria-invalid]="!!error('policyNumber')"
-        aria-describedby="policyNumber-message"
-        (blur)="normalisePolicyNumber()"
-      />
-      <span class="hint" id="policyNumber-message" [class.error]="error('policyNumber')">
-        {{ error('policyNumber') ?? 'From your policy schedule, e.g. POL-SG-1001.' }}
-      </span>
-    </div>
-
-    <div class="row">
-      <label for="incidentDate">Incident date <span class="req" aria-hidden="true">*</span></label>
-      <input
-        class="control"
-        id="incidentDate"
-        type="date"
-        formControlName="incidentDate"
-        aria-required="true"
-        [max]="today"
-        [attr.aria-invalid]="!!error('incidentDate')"
-        aria-describedby="incidentDate-message"
-      />
-      <span class="hint" id="incidentDate-message" [class.error]="error('incidentDate')">
-        {{ error('incidentDate') ?? 'The day the loss or damage happened.' }}
-      </span>
-    </div>
-
-    <div class="row">
-      <label for="claimedAmount"
-        >Claimed amount <span class="req" aria-hidden="true">*</span></label
-      >
-      <div class="money" [class.invalid]="error('claimedAmount')">
-        <span class="currency" aria-hidden="true">{{ currency() }}</span>
-        <input
-          class="control"
-          id="claimedAmount"
-          type="text"
-          inputmode="decimal"
-          formControlName="claimedAmount"
-          aria-required="true"
-          autocomplete="off"
-          [attr.aria-invalid]="!!error('claimedAmount')"
-          aria-describedby="claimedAmount-message"
-          (blur)="normaliseAmount()"
-        />
+    @if (showSummary() && problems().length) {
+      <div class="summary" role="alert" tabindex="-1" #summary>
+        <strong>
+          {{ problems().length === 1 ? 'Fix 1 field' : 'Fix ' + problems().length + ' fields' }}
+          to submit your claim
+        </strong>
+        <ul>
+          @for (problem of problems(); track problem.id) {
+            <li>
+              <a [href]="'#' + problem.id" (click)="focusField($event, problem.id)">{{
+                problem.message
+              }}</a>
+            </li>
+          }
+        </ul>
       </div>
-      <span class="hint" id="claimedAmount-message" [class.error]="error('claimedAmount')">
-        {{
-          error('claimedAmount') ??
-            'Your estimate in ' + currency() + '. The final amount is assessed.'
-        }}
-      </span>
-    </div>
+    }
 
-    <div class="row full">
-      <div class="label-line">
-        <label for="incidentDescription"
-          >What happened <span class="req" aria-hidden="true">*</span></label
+    <fieldset class="row">
+      <legend>Claim type <span class="req" aria-hidden="true">*</span></legend>
+      <div class="types" role="radiogroup" aria-required="true">
+        @for (type of claimTypes; track type.value) {
+          <label class="type" [class.selected]="claimType() === type.value">
+            <input type="radio" formControlName="claimType" [value]="type.value" />
+            <span class="type-text">
+              <strong>{{ type.label }}</strong>
+              <span>{{ type.description }}</span>
+            </span>
+          </label>
+        }
+      </div>
+    </fieldset>
+
+    <div class="grid">
+      <div class="row">
+        <label for="market">Market <span class="req" aria-hidden="true">*</span></label>
+        <select
+          class="control"
+          id="market"
+          formControlName="market"
+          aria-required="true"
+          aria-describedby="market-hint"
         >
-        <span class="count" [class.over]="descriptionLength() > maxDescription">
-          {{ descriptionLength() }} / {{ maxDescription }}
+          @for (market of markets; track market.code) {
+            <option [value]="market.code">{{ market.name }} ({{ market.currency }})</option>
+          }
+        </select>
+        <span class="hint" id="market-hint">
+          @if (editing()) {
+            The market can't be changed because it sets the claim number and currency. To claim in
+            another market, withdraw this claim and submit a new one.
+          } @else {
+            Sets the claim currency and handling team.
+          }
         </span>
       </div>
-      <textarea
-        class="control"
-        id="incidentDescription"
-        rows="4"
-        formControlName="incidentDescription"
-        aria-required="true"
-        [attr.aria-invalid]="!!error('incidentDescription')"
-        aria-describedby="incidentDescription-message"
-      ></textarea>
-      <span
-        class="hint"
-        id="incidentDescription-message"
-        [class.error]="error('incidentDescription')"
-      >
-        {{
-          error('incidentDescription') ??
-            'Where and how it happened, what was damaged, and anyone else involved.'
-        }}
-      </span>
-    </div>
-  </div>
 
-  <section class="attachments" aria-labelledby="attachments-title">
-    <div class="label-line">
-      <h2 id="attachments-title" class="attachments-title">Supporting documents</h2>
-      <span class="count">Optional</span>
-    </div>
-    <p class="hint">
-      Photos of the damage, a police report or a repair quote help us decide faster. You can also
-      add them later.
-    </p>
+      <div class="row">
+        <label for="policyNumber"
+          >Policy number <span class="req" aria-hidden="true">*</span></label
+        >
+        <input
+          class="control"
+          id="policyNumber"
+          formControlName="policyNumber"
+          aria-required="true"
+          autocomplete="off"
+          spellcheck="false"
+          [attr.aria-invalid]="!!error('policyNumber')"
+          aria-describedby="policyNumber-message"
+          (blur)="normalisePolicyNumber()"
+        />
+        <span class="hint" id="policyNumber-message" [class.error]="error('policyNumber')">
+          {{ error('policyNumber') ?? 'From your policy schedule, e.g. POL-SG-1001.' }}
+        </span>
+      </div>
 
-    @if (attachments().length) {
-      <ul class="attachment-list">
-        @for (item of attachments(); track $index) {
-          <li>
-            <span class="ms" aria-hidden="true">{{
-              item.file.type === 'application/pdf' ? 'picture_as_pdf' : 'image'
-            }}</span>
-            <span class="attachment-name">
-              <strong>{{ item.file.name }}</strong>
-              <span class="hint">{{ formatBytes(item.file.size) }}</span>
-            </span>
-            <select
-              class="control attachment-category"
-              [attr.aria-label]="'Type of document for ' + item.file.name"
-              [value]="item.category"
-              (change)="setAttachmentCategory($index, $any($event.target).value)"
-            >
-              @for (option of documentCategories; track option.value) {
-                <option [value]="option.value" [selected]="option.value === item.category">
-                  {{ option.label }}
-                </option>
-              }
-            </select>
-            <button
-              type="button"
-              class="remove"
-              [attr.aria-label]="'Remove ' + item.file.name"
-              (click)="removeAttachment($index)"
-            >
-              <span class="ms" aria-hidden="true">close</span>
-            </button>
-          </li>
+      <div class="row">
+        <label for="incidentDate"
+          >Incident date <span class="req" aria-hidden="true">*</span></label
+        >
+        <input
+          class="control"
+          id="incidentDate"
+          type="date"
+          formControlName="incidentDate"
+          aria-required="true"
+          [max]="today"
+          [attr.aria-invalid]="!!error('incidentDate')"
+          aria-describedby="incidentDate-message"
+        />
+        <span class="hint" id="incidentDate-message" [class.error]="error('incidentDate')">
+          {{ error('incidentDate') ?? 'The day the loss or damage happened.' }}
+        </span>
+      </div>
+
+      <div class="row">
+        <label for="claimedAmount"
+          >Claimed amount <span class="req" aria-hidden="true">*</span></label
+        >
+        <div class="money" [class.invalid]="error('claimedAmount')">
+          <span class="currency" aria-hidden="true">{{ currency() }}</span>
+          <input
+            class="control"
+            id="claimedAmount"
+            type="text"
+            inputmode="decimal"
+            formControlName="claimedAmount"
+            aria-required="true"
+            autocomplete="off"
+            [attr.aria-invalid]="!!error('claimedAmount')"
+            aria-describedby="claimedAmount-message"
+            (blur)="normaliseAmount()"
+          />
+        </div>
+        <span class="hint" id="claimedAmount-message" [class.error]="error('claimedAmount')">
+          {{
+            error('claimedAmount') ??
+              'Your estimate in ' + currency() + '. The final amount is assessed.'
+          }}
+        </span>
+      </div>
+
+      <div class="row full">
+        <div class="label-line">
+          <label for="incidentDescription"
+            >What happened <span class="req" aria-hidden="true">*</span></label
+          >
+          <span class="count" [class.over]="descriptionLength() > maxDescription">
+            {{ descriptionLength() }} / {{ maxDescription }}
+          </span>
+        </div>
+        <textarea
+          class="control"
+          id="incidentDescription"
+          rows="4"
+          formControlName="incidentDescription"
+          aria-required="true"
+          [attr.aria-invalid]="!!error('incidentDescription')"
+          aria-describedby="incidentDescription-message"
+        ></textarea>
+        <span
+          class="hint"
+          id="incidentDescription-message"
+          [class.error]="error('incidentDescription')"
+        >
+          {{
+            error('incidentDescription') ??
+              'Where and how it happened, what was damaged, and anyone else involved.'
+          }}
+        </span>
+      </div>
+    </div>
+
+    @if (editing()) {
+      <p class="hint edit-note">
+        To add or remove documents, use <strong>Supporting documents</strong> on the claim page.
+      </p>
+    } @else {
+      <section class="attachments" aria-labelledby="attachments-title">
+        <div class="label-line">
+          <h2 id="attachments-title" class="attachments-title">Supporting documents</h2>
+          <span class="count">Optional</span>
+        </div>
+        <p class="hint">
+          Photos of the damage, a police report or a repair quote help us decide faster. You can
+          also add them later.
+        </p>
+
+        @if (attachments().length) {
+          <ul class="attachment-list">
+            @for (item of attachments(); track $index) {
+              <li>
+                <span class="ms" aria-hidden="true">{{
+                  item.file.type === 'application/pdf' ? 'picture_as_pdf' : 'image'
+                }}</span>
+                <span class="attachment-name">
+                  <strong>{{ item.file.name }}</strong>
+                  <span class="hint">{{ formatBytes(item.file.size) }}</span>
+                </span>
+                <select
+                  class="control attachment-category"
+                  [attr.aria-label]="'Type of document for ' + item.file.name"
+                  [value]="item.category"
+                  (change)="setAttachmentCategory($index, $any($event.target).value)"
+                >
+                  @for (option of documentCategories; track option.value) {
+                    <option [value]="option.value" [selected]="option.value === item.category">
+                      {{ option.label }}
+                    </option>
+                  }
+                </select>
+                <button
+                  type="button"
+                  class="remove"
+                  [attr.aria-label]="'Remove ' + item.file.name"
+                  (click)="removeAttachment($index)"
+                >
+                  <span class="ms" aria-hidden="true">close</span>
+                </button>
+              </li>
+            }
+          </ul>
         }
-      </ul>
+
+        <label
+          class="drop"
+          (dragover)="$event.preventDefault()"
+          (drop)="$event.preventDefault(); addFiles($event.dataTransfer?.files ?? null)"
+        >
+          <input
+            class="visually-hidden"
+            type="file"
+            multiple
+            [accept]="accept"
+            (change)="addFiles($any($event.target).files); $any($event.target).value = ''"
+          />
+          <span class="ms" aria-hidden="true">attach_file</span>
+          <span
+            ><strong>Add files</strong> or drag them here · PDF, JPEG, PNG or WebP, up to 10 MB
+            each</span
+          >
+        </label>
+        @for (message of attachmentProblems(); track message) {
+          <p class="hint error" role="alert">{{ message }}</p>
+        }
+      </section>
     }
 
-    <label
-      class="drop"
-      (dragover)="$event.preventDefault()"
-      (drop)="$event.preventDefault(); addFiles($event.dataTransfer?.files ?? null)"
-    >
-      <input
-        class="visually-hidden"
-        type="file"
-        multiple
-        [accept]="accept"
-        (change)="addFiles($any($event.target).files); $any($event.target).value = ''"
-      />
-      <span class="ms" aria-hidden="true">attach_file</span>
-      <span
-        ><strong>Add files</strong> or drag them here · PDF, JPEG, PNG or WebP, up to 10 MB
-        each</span
-      >
-    </label>
-    @for (message of attachmentProblems(); track message) {
-      <p class="hint error" role="alert">{{ message }}</p>
-    }
-  </section>
-
-  <div class="actions">
-    <a class="cancel" routerLink="/claims/active">Cancel</a>
-    <button type="submit" class="submit" [disabled]="busy()">
-      @if (uploading(); as state) {
-        Uploading {{ state.done + 1 > state.total ? state.total : state.done + 1 }} of
-        {{ state.total }}…
-      } @else {
-        {{ busy() ? 'Submitting…' : 'Submit claim' }}
-      }
-    </button>
-  </div>
-</form>
+    <div class="actions">
+      <a class="cancel" [routerLink]="editing() ? ['/claims', id()] : '/claims/active'">Cancel</a>
+      <button type="submit" class="submit" [disabled]="busy()">
+        @if (uploading(); as state) {
+          Uploading {{ state.done + 1 > state.total ? state.total : state.done + 1 }} of
+          {{ state.total }}…
+        } @else {
+          @if (editing()) {
+            {{ busy() ? 'Saving…' : 'Save changes' }}
+          } @else {
+            {{ busy() ? 'Submitting…' : 'Submit claim' }}
+          }
+        }
+      </button>
+    </div>
+  </form>
+}

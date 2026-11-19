@@ -109,6 +109,18 @@ export class ClaimsApiService {
     return this.http.post<ClaimDetail>(`${BASE}/${id}/settlement`, null);
   }
 
+  update(id: string, request: SubmitClaimRequest): Observable<ClaimDetail> {
+    return this.http.put<ClaimDetail>(`${BASE}/${id}`, request);
+  }
+
+  withdraw(id: string, reason: string): Observable<ClaimDetail> {
+    return this.http.post<ClaimDetail>(`${BASE}/${id}/withdrawal`, { reason: reason || null });
+  }
+
+  removeDocument(claimId: string, documentId: string): Observable<void> {
+    return this.http.delete<void>(`${BASE}/${claimId}/documents/${documentId}`);
+  }
+
   documents(claimId: string): Observable<ClaimDocument[]> {
     return this.http.get<ClaimDocument[]>(`${BASE}/${claimId}/documents`);
   }

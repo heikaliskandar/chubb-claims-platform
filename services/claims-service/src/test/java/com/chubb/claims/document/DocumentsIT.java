@@ -64,9 +64,11 @@ class DocumentsIT {
     void aDocumentIsStoredListedAndReturnedByteForByte() {
         UUID claimId = submitClaim();
 
-        ClaimDocument stored = documentService.upload(claimId, OWNER, DocumentCategory.REPAIR_QUOTE, "quote.pdf", PDF);
+        ClaimDocument stored = documentService.upload(claimId, OWNER, DocumentCategory.REPAIR_QUOTE, "quote.pdf", PDF)
+                .document();
 
-        assertThat(documentService.list(claimId, OWNER)).extracting(ClaimDocument::getId).containsExactly(stored.getId());
+        assertThat(documentService.list(claimId, OWNER)).extracting(listed -> listed.document().getId())
+                .containsExactly(stored.getId());
         assertThat(documentService.download(claimId, stored.getId(), OWNER).bytes()).isEqualTo(PDF);
         assertThat(storage.resolve(claimId.toString()).resolve(stored.getId().toString())).exists();
     }
@@ -74,7 +76,7 @@ class DocumentsIT {
     @Test
     void anotherClaimantCannotSeeOrAddDocuments() {
         UUID claimId = submitClaim();
-        ClaimDocument stored = documentService.upload(claimId, OWNER, DocumentCategory.PHOTO, "a.pdf", PDF);
+        ClaimDocument stored = documentService.upload(claimId, OWNER, DocumentCategory.PHOTO, "a.pdf", PDF).document();
 
         assertThatThrownBy(() -> documentService.list(claimId, OTHER_CLAIMANT))
                 .isInstanceOf(ClaimNotFoundException.class);
@@ -82,6 +84,17 @@ class DocumentsIT {
                 .isInstanceOf(ClaimNotFoundException.class);
         assertThatThrownBy(() -> documentService.upload(claimId, OTHER_CLAIMANT, DocumentCategory.PHOTO, "b.pdf", PDF))
                 .isInstanceOf(ClaimNotFoundException.class);
+    }
+
+    @Test
+    void aRemovedDocumentLeavesNoRecordAndNoFile() {
+        UUID claimId = submitClaim();
+        ClaimDocument stored = documentService.upload(claimId, OWNER, DocumentCategory.PHOTO, "dup.pdf", PDF).document();
+
+        documentService.remove(claimId, stored.getId(), OWNER);
+
+        assertThat(documentService.list(claimId, OWNER)).isEmpty();
+        assertThat(storage.resolve(claimId.toString()).resolve(stored.getId().toString())).doesNotExist();
     }
 
     @Test

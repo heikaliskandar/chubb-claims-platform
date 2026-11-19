@@ -63,8 +63,10 @@ class DocumentServiceTest {
 
     @Test
     void storesTheFileUnderAGeneratedKeyAndRecordsItsDetectedTypeAndHash() {
-        ClaimDocument document =
+        ListedDocument listed =
                 service.upload(claim.getId(), CLAIMANT, DocumentCategory.REPAIR_QUOTE, "C:\\fakepath\\quote.pdf", PDF);
+        ClaimDocument document = listed.document();
+        assertThat(listed.removable()).as("the claim is already with an officer").isFalse();
 
         assertThat(document.getFileName()).isEqualTo("quote.pdf");
         assertThat(document.getContentType()).isEqualTo("application/pdf");
@@ -132,6 +134,39 @@ class DocumentServiceTest {
 
         assertThatThrownBy(() -> service.download(claim.getId(), documentId, CLAIMANT))
                 .isInstanceOf(DocumentNotFoundException.class);
+    }
+
+    @Test
+    void theClaimantCanRemoveTheirOwnDocumentUntilTheClaimIsPickedUp() {
+        Claim fresh = Claim.submit("CLM-SG-2026-000002", "claimant1", new ClaimDetails("POL-2", Market.SG,
+                ClaimType.MOTOR, LocalDate.of(2026, 11, 1), "Mirror", new BigDecimal("300.00")), null, NOW);
+        when(claims.findVisibleClaim(eq(fresh.getId()), any())).thenReturn(fresh);
+        ClaimDocument mine = new ClaimDocument(UUID.randomUUID(), fresh.getId(), DocumentCategory.PHOTO, "dup.pdf",
+                DocumentType.PDF, 10, "a".repeat(64), fresh.getId() + "/x", "claimant1", NOW);
+        when(documents.findByIdAndClaimId(mine.getId(), fresh.getId())).thenReturn(java.util.Optional.of(mine));
+
+        service.remove(fresh.getId(), mine.getId(), CLAIMANT);
+
+        verify(documents).delete(mine);
+        verify(storage).delete(mine.getStorageKey());
+
+        fresh.assignTo("officer1", NOW);
+        assertThatThrownBy(() -> service.remove(fresh.getId(), mine.getId(), CLAIMANT))
+                .isInstanceOf(ClaimAccessDeniedException.class);
+    }
+
+    @Test
+    void nobodyCanRemoveSomeoneElsesDocument() {
+        Claim fresh = Claim.submit("CLM-SG-2026-000003", "claimant1", new ClaimDetails("POL-3", Market.SG,
+                ClaimType.MOTOR, LocalDate.of(2026, 11, 1), "Mirror", new BigDecimal("300.00")), null, NOW);
+        when(claims.findVisibleClaim(eq(fresh.getId()), any())).thenReturn(fresh);
+        ClaimDocument officers = new ClaimDocument(UUID.randomUUID(), fresh.getId(), DocumentCategory.OTHER, "x.pdf",
+                DocumentType.PDF, 10, "a".repeat(64), fresh.getId() + "/y", "officer1", NOW);
+        when(documents.findByIdAndClaimId(officers.getId(), fresh.getId())).thenReturn(java.util.Optional.of(officers));
+
+        assertThatThrownBy(() -> service.remove(fresh.getId(), officers.getId(), CLAIMANT))
+                .isInstanceOf(ClaimAccessDeniedException.class);
+        verify(documents, never()).delete(any());
     }
 
     @Test

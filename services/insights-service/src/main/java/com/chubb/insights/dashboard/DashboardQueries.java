@@ -12,7 +12,7 @@ import java.util.Optional;
 @Repository
 public class DashboardQueries {
 
-    private static final List<String> CLOSED_STATUSES = List.of("REJECTED", "SETTLED");
+    private static final List<String> CLOSED_STATUSES = List.of("REJECTED", "SETTLED", "WITHDRAWN");
 
     private final JdbcClient jdbc;
 

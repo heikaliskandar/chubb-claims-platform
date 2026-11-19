@@ -16,14 +16,14 @@
     "description" : "Directory and profiles, scoped to yourself and the people below you.",
     "name" : "Employees"
   }, {
-    "description" : "Supporting documents attached to a claim: photos, police reports, quotes, invoices. Visible to anyone who can see the claim; uploads are limited to the claimant and the assigned officer while the claim is open. Documents cannot be deleted.",
-    "name" : "Documents"
-  }, {
     "description" : "Submit, track and progress claims through review, assessment, decision and settlement.",
     "name" : "Claims"
   }, {
     "description" : "Who is signed in.",
     "name" : "Current user"
+  }, {
+    "description" : "Supporting documents attached to a claim: photos, police reports, quotes, invoices. Visible to anyone who can see the claim. The claimant and the assigned officer can add them while the claim is open; whoever added a document can remove it until a claims officer picks up the claim.",
+    "name" : "Documents"
   }, {
     "description" : "Approvals above an officer's limit, reviewed by someone above them in the reporting line (four-eyes).",
     "name" : "Approvals"
@@ -41,7 +41,7 @@
           "required" : false,
           "schema" : {
             "type" : "string",
-            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED", "WITHDRAWN" ]
           }
         }, {
           "in" : "query",
@@ -317,6 +317,75 @@
           }
         },
         "summary" : "Claim detail",
+        "tags" : [ "Claims" ]
+      },
+      "put" : {
+        "description" : "Only the claimant, and only while the claim is SUBMITTED (no officer has picked it up). The market cannot change because it sets the claim number and currency. The change is recorded in the activity history and published as CLAIM_DETAILS_UPDATED.",
+        "operationId" : "updateDetails",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateClaimRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "Updated"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "An officer has already picked up the claim"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "The market was changed"
+          }
+        },
+        "summary" : "Edit a claim before it is picked up",
         "tags" : [ "Claims" ]
       }
     },
@@ -665,6 +734,55 @@
         "tags" : [ "Documents" ]
       }
     },
+    "/api/v1/claims/{claimId}/documents/{documentId}" : {
+      "delete" : {
+        "description" : "Only whoever added it, and only before a claims officer picks up the claim. After that, documents are part of the claim's evidence and cannot be removed.",
+        "operationId" : "remove",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        }, {
+          "in" : "path",
+          "name" : "documentId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "Removed"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProblemDetail"
+                }
+              }
+            },
+            "description" : "Not added by you, or the claim has been picked up"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          }
+        },
+        "summary" : "Remove a document",
+        "tags" : [ "Documents" ]
+      }
+    },
     "/api/v1/claims/{claimId}/documents/{documentId}/content" : {
       "get" : {
         "description" : "Sent as an attachment with no-store caching and a sandbox CSP, so it is never cached or run by the browser.",
@@ -907,6 +1025,67 @@
           }
         },
         "summary" : "Mark an approved claim as paid",
+        "tags" : [ "Claims" ]
+      }
+    },
+    "/api/v1/claims/{claimId}/withdrawal" : {
+      "post" : {
+        "description" : "Only the claimant, and only while the claim is SUBMITTED. Moves it to WITHDRAWN, a final status.",
+        "operationId" : "withdraw",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "claimId",
+          "required" : true,
+          "schema" : {
+            "type" : "string",
+            "format" : "uuid"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/WithdrawClaimRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "Withdrawn"
+          },
+          "400" : {
+            "$ref" : "#/components/responses/BadRequest"
+          },
+          "401" : {
+            "$ref" : "#/components/responses/Unauthorized"
+          },
+          "403" : {
+            "$ref" : "#/components/responses/Forbidden"
+          },
+          "404" : {
+            "$ref" : "#/components/responses/NotFound"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ClaimDetailResponse"
+                }
+              }
+            },
+            "description" : "An officer has already picked up the claim"
+          }
+        },
+        "summary" : "Withdraw a claim before it is picked up",
         "tags" : [ "Claims" ]
       }
     },
@@ -1252,7 +1431,7 @@
             "type" : "array",
             "items" : {
               "type" : "string",
-              "enum" : [ "ASSIGN_TO_ME", "START_REVIEW", "REQUEST_INFORMATION", "RESPOND_TO_INFORMATION_REQUEST", "ASSESS", "APPROVE", "REJECT", "APPROVE_REFERRAL", "RETURN_REFERRAL", "REJECT_REFERRAL", "SETTLE" ]
+              "enum" : [ "ASSIGN_TO_ME", "START_REVIEW", "REQUEST_INFORMATION", "RESPOND_TO_INFORMATION_REQUEST", "ASSESS", "APPROVE", "REJECT", "APPROVE_REFERRAL", "RETURN_REFERRAL", "REJECT_REFERRAL", "SETTLE", "EDIT_DETAILS", "WITHDRAW" ]
             },
             "uniqueItems" : true
           },
@@ -1331,7 +1510,7 @@
           },
           "status" : {
             "type" : "string",
-            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED", "WITHDRAWN" ]
           },
           "statusHistory" : {
             "type" : "array",
@@ -1386,7 +1565,7 @@
           },
           "status" : {
             "type" : "string",
-            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED", "WITHDRAWN" ]
           },
           "updatedAt" : {
             "type" : "string",
@@ -1470,6 +1649,10 @@
         "type" : "object",
         "description" : "A supporting document attached to a claim. The content is downloaded separately.",
         "properties" : {
+          "canRemove" : {
+            "type" : "boolean",
+            "description" : "Whether the caller can remove it: only whoever added it, before an officer picks up the claim."
+          },
           "category" : {
             "type" : "string",
             "enum" : [ "PHOTO", "POLICE_REPORT", "REPAIR_QUOTE", "INVOICE", "PROOF_OF_OWNERSHIP", "ADJUSTER_REPORT", "OTHER" ]
@@ -1865,18 +2048,50 @@
           },
           "fromStatus" : {
             "type" : "string",
-            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED", "WITHDRAWN" ]
           },
           "reason" : {
             "type" : "string"
           },
           "toStatus" : {
             "type" : "string",
-            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED" ]
+            "enum" : [ "SUBMITTED", "ASSIGNED", "UNDER_REVIEW", "INFO_REQUESTED", "PENDING_APPROVAL", "APPROVED", "REJECTED", "SETTLED", "WITHDRAWN" ]
           }
         }
       },
       "SubmitClaimRequest" : {
+        "type" : "object",
+        "properties" : {
+          "claimType" : {
+            "type" : "string",
+            "enum" : [ "MOTOR", "PROPERTY" ]
+          },
+          "claimedAmount" : {
+            "type" : "number",
+            "exclusiveMinimum" : 0
+          },
+          "incidentDate" : {
+            "type" : "string",
+            "format" : "date"
+          },
+          "incidentDescription" : {
+            "type" : "string",
+            "maxLength" : 2000,
+            "minLength" : 0
+          },
+          "market" : {
+            "type" : "string",
+            "enum" : [ "SG", "MY", "HK", "TH", "ID", "PH" ]
+          },
+          "policyNumber" : {
+            "type" : "string",
+            "maxLength" : 50,
+            "minLength" : 0
+          }
+        },
+        "required" : [ "claimType", "claimedAmount", "incidentDate", "incidentDescription", "market", "policyNumber" ]
+      },
+      "UpdateClaimRequest" : {
         "type" : "object",
         "properties" : {
           "claimType" : {
@@ -1921,6 +2136,17 @@
             "maxLength" : 30,
             "minLength" : 0,
             "pattern" : "^[+0-9 ()-]*$"
+          }
+        }
+      },
+      "WithdrawClaimRequest" : {
+        "type" : "object",
+        "properties" : {
+          "reason" : {
+            "type" : [ "string", "null" ],
+            "description" : "Why the claim is being withdrawn. Optional.",
+            "maxLength" : 1000,
+            "minLength" : 0
           }
         }
       }

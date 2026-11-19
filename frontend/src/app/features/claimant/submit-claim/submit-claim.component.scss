@@ -439,3 +439,14 @@ textarea.control {
     order: 3;
   }
 }
+
+.locked {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.edit-note {
+  margin: 0 0 20px;
+}

@@ -50,6 +50,16 @@
               >
                 <span class="ms" aria-hidden="true">download</span>
               </button>
+              @if (document.canRemove) {
+                <button
+                  type="button"
+                  class="btn btn-ghost btn-icon remove"
+                  [attr.aria-label]="'Remove ' + document.fileName"
+                  (click)="removing.set(document)"
+                >
+                  <span class="ms" aria-hidden="true">delete</span>
+                </button>
+              }
             </div>
           </li>
         }
@@ -113,3 +123,20 @@
     </div>
   }
 </section>
+
+<app-modal [open]="removing() !== null" title="Remove document" (closed)="removing.set(null)">
+  @if (removing(); as document) {
+    <div class="confirm">
+      <p>
+        Remove <strong>{{ document.fileName }}</strong> from this claim? You can add it again later
+        while the claim is waiting to be picked up.
+      </p>
+      <div class="form-actions">
+        <button type="button" class="btn btn-ghost" (click)="removing.set(null)">Cancel</button>
+        <button type="button" class="btn btn-danger" [disabled]="busy()" (click)="confirmRemove()">
+          {{ busy() ? 'Removing…' : 'Remove document' }}
+        </button>
+      </div>
+    </div>
+  }
+</app-modal>

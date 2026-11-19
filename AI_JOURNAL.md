@@ -186,6 +186,13 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✅ Rehearsed production locally with `DOMAIN=localhost`: HTTPS, an HTTP→HTTPS redirect, HSTS, only ports 80 and 443 open, and all 69 end-to-end tests passing over HTTPS through Caddy; backup dumps and the documents archive checked. The e2e suite now accepts a self-signed certificate, so it doubles as a deployment smoke test.
 - ⚠️ Not verified here: an actual Oracle VM or Codespace (needs my accounts). The image and feature references were checked against their registries.
 
+## Phase 24: Claimants can change a claim before pickup
+
+- ❓ Testing the live build, I found claimants couldn't fix a mistake: no edit, no way to remove a duplicate attachment, no withdraw. Insurers allow all three until someone starts working on the claim.
+- ✅ Rules in the domain: the claimant can edit the details (not the market, which fixes the claim number and currency), remove documents they added, or withdraw (new final status `WITHDRAWN`, migration V7) only while the claim is *Submitted*. Then it locks, with 409/403 from the API. Edits are recorded in the history and published as events; insights treats withdrawn claims as closed.
+- ✅ UI: Edit claim reuses the new-claim form (market locked, with an explanation), a banner explains what can still change, a bin icon with confirmation on removable documents, a withdraw dialog in plain language, and "Details updated" in the timeline.
+- ✅ Tested on a throwaway copy of the production setup so the live demo data stayed clean: 187 unit tests, 14 integration tests, and 73 end-to-end tests (4 new), with no accessibility violations on the changed screens. Migration V7 then applied cleanly to the live data.
+
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.

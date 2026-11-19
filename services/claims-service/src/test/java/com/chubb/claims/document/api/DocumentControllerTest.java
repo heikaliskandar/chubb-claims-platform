@@ -5,6 +5,7 @@ import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.document.application.DocumentContent;
 import com.chubb.claims.document.application.DocumentNotFoundException;
 import com.chubb.claims.document.application.DocumentService;
+import com.chubb.claims.document.application.ListedDocument;
 import com.chubb.claims.document.application.UnsupportedDocumentTypeException;
 import com.chubb.claims.document.domain.ClaimDocument;
 import com.chubb.claims.document.domain.DocumentCategory;
@@ -32,6 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.httpBasic;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -70,7 +72,7 @@ class DocumentControllerTest {
     @Test
     void uploadsAMultipartFileAndPointsToItsContent() throws Exception {
         given(documentService.upload(eq(CLAIM_ID), user("claimant1"), eq(DocumentCategory.REPAIR_QUOTE),
-                eq("quote.pdf"), any())).willReturn(document());
+                eq("quote.pdf"), any())).willReturn(new ListedDocument(document(), true));
 
         mvc.perform(multipart(BASE)
                         .file(new MockMultipartFile("file", "quote.pdf", "application/pdf", PDF))
@@ -125,13 +127,21 @@ class DocumentControllerTest {
 
     @Test
     void listsDocumentsAndHidesInternalStorageDetails() throws Exception {
-        given(documentService.list(eq(CLAIM_ID), user("claimant1"))).willReturn(List.of(document()));
+        given(documentService.list(eq(CLAIM_ID), user("claimant1"))).willReturn(List.of(new ListedDocument(document(), false)));
 
         mvc.perform(get(BASE).with(httpBasic("claimant1", "test-password")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].fileName").value("quote ñ.pdf"))
                 .andExpect(jsonPath("$[0].category").value("REPAIR_QUOTE"))
-                .andExpect(jsonPath("$[0].storageKey").doesNotExist());
+                .andExpect(jsonPath("$[0].storageKey").doesNotExist())
+                .andExpect(jsonPath("$[0].canRemove").value(false));
+    }
+
+    @Test
+    void removingADocumentReturnsNoContent() throws Exception {
+        mvc.perform(delete(BASE + "/" + DOCUMENT_ID).with(httpBasic("claimant1", "test-password")))
+                .andExpect(status().isNoContent());
+        org.mockito.Mockito.verify(documentService).remove(eq(CLAIM_ID), eq(DOCUMENT_ID), user("claimant1"));
     }
 
     @Test

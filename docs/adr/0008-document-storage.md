@@ -11,7 +11,7 @@ Claimants and officers need to attach evidence (photos, police reports, repair q
 - **A separate `claim_document` table**, not a child collection of the claim aggregate. Adding evidence doesn't change the claim's state, so it doesn't bump the claim's optimistic-lock version or conflict with an officer's concurrent update. Visibility and upload rights still come from the claim (`ClaimService.findVisibleClaim`, `Claim.acceptsDocumentsFrom`).
 - **Content behind `DocumentStorage`.** The local build stores files on a Docker volume under `claimId/documentId`. Production swaps in object storage (S3, Azure Blob, GCS) with server-side encryption, with no change outside that class.
 - **Type detection from content.** Only PDF, JPEG, PNG and WebP, recognised by their signatures. The client's content type and the file extension are ignored.
-- **Immutable.** No delete endpoint; corrections are made by adding a newer document.
+- **Frozen once worked on.** Whoever added a document can remove it until a claims officer picks up the claim, so a duplicate or a wrong file can be fixed early. After that, documents can't be removed; corrections are made by adding a newer document. The database record is deleted first, and the file only after the transaction commits.
 - **Hardened downloads.** Served as attachments with `no-store`, `nosniff` and a sandbox CSP.
 - **Limits** of 10 MB per file and 20 per claim, enforced by Spring multipart, nginx and the service.
 

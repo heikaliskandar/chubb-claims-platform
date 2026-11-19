@@ -2,7 +2,8 @@ import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, computed, inject, input, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Observable, switchMap } from 'rxjs';
+import { Router } from '@angular/router';
+import { Observable, of, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth.service';
 import { ClaimsApiService } from '../../../core/claims-api.service';
 import { ClaimAction, ClaimDetail } from '../../../core/models';
@@ -79,6 +80,14 @@ const ACTIONS: Record<ClaimAction, ActionConfig> = {
     hint: 'The claim will be rejected and the customer will see your reason.',
   },
   SETTLE: { label: 'Mark settled', icon: 'account_balance_wallet', style: 'btn-success' },
+  EDIT_DETAILS: { label: 'Edit claim', icon: 'edit', style: 'btn-outline' },
+  WITHDRAW: {
+    label: 'Withdraw claim',
+    icon: 'undo',
+    style: 'btn-danger',
+    text: { label: 'Reason', optional: true },
+    hint: "The claim will be closed and won't be reviewed. This can't be undone, but you can submit a new claim at any time.",
+  },
 };
 
 const REVIEW_ACTIONS: ClaimAction[] = ['APPROVE_REFERRAL', 'RETURN_REFERRAL', 'REJECT_REFERRAL'];
@@ -103,6 +112,7 @@ export class ClaimDetailComponent {
   private readonly api = inject(ClaimsApiService);
   private readonly auth = inject(AuthService);
   private readonly toasts = inject(ToastService);
+  private readonly router = inject(Router);
   protected readonly people = inject(PeopleService);
 
   readonly id = input.required<string>();
@@ -117,6 +127,9 @@ export class ClaimDetailComponent {
 
   protected readonly openRequest = computed(() =>
     this.claim()?.informationRequests.find((request) => request.status === 'OPEN'),
+  );
+  protected readonly changeableByClaimant = computed(
+    () => this.claim()?.allowedActions.includes('EDIT_DETAILS') ?? false,
   );
   protected readonly isStaff = computed(() => this.auth.user()?.role !== 'CLAIMANT');
   protected readonly headerActions = computed(() =>
@@ -149,6 +162,10 @@ export class ClaimDetailComponent {
   }
 
   protected choose(action: ClaimAction): void {
+    if (action === 'EDIT_DETAILS') {
+      this.router.navigate(['/claims', this.id(), 'edit']);
+      return;
+    }
     const config = ACTIONS[action];
     if (!config.text && !config.amount) {
       this.run(action);
@@ -211,6 +228,10 @@ export class ClaimDetailComponent {
         return this.api.reviewReferral(claim.id, 'REJECT', text);
       case 'SETTLE':
         return this.api.settle(claim.id);
+      case 'WITHDRAW':
+        return this.api.withdraw(claim.id, text);
+      case 'EDIT_DETAILS':
+        return of(claim);
     }
   }
 

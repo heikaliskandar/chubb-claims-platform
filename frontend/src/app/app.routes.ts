@@ -36,6 +36,14 @@ export const routes: Routes = [
           ),
       },
       {
+        path: 'claims/:id/edit',
+        canActivate: [roleGuard('CLAIMANT')],
+        loadComponent: () =>
+          import('./features/claimant/submit-claim/submit-claim.component').then(
+            (m) => m.SubmitClaimComponent,
+          ),
+      },
+      {
         path: 'claims/active',
         canActivate: [roleGuard('CLAIMANT')],
         loadComponent: claimList,

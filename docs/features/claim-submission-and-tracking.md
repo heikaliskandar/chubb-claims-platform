@@ -29,6 +29,22 @@ On success the claim gets a number such as `CLM-SG-2026-000001`, made of the mar
 
 **Double submits.** The frontend sends an `Idempotency-Key` header with each submission. Submitting again with the same key returns the original claim instead of creating a new one, which is enforced by a unique `(claimant_id, idempotency_key)` constraint. So a double click, a retry or a flaky network can't create duplicates.
 
+## Changing a claim before it is picked up
+
+Until a claims officer picks up the claim (status *Submitted*), the claimant can still change their mind. This is standard practice for insurers.
+
+| Action | Screen | Endpoint | Recorded as |
+|---|---|---|---|
+| Edit the details | **Edit claim** on the claim page: the same form, pre-filled | `PUT /api/v1/claims/{id}` | "Details updated" in the activity history; event `CLAIM_DETAILS_UPDATED` |
+| Remove a document they added (for example a duplicate) | Bin icon on the document, then confirm | `DELETE /api/v1/claims/{id}/documents/{documentId}` | Audit log; the file and record are removed |
+| Withdraw the claim | **Withdraw claim**, with an optional reason | `POST /api/v1/claims/{id}/withdrawal` | Status **Withdrawn** (final); event `CLAIM_WITHDRAWN`; shown under History |
+
+A banner on the claim page tells the claimant this is possible, and until when.
+
+- **The market can't be edited.** It fixes the claim number (`CLM-MY-…`) and the currency. To claim in another market, withdraw and submit a new claim; the form says so.
+- **Once an officer picks up the claim, it is locked.** Edit and Withdraw disappear, documents can no longer be removed, and the API returns 409 or 403. Further changes go through the officer (information requests), so the officer never works on something that changes under them.
+- **Race-safe.** If an officer picks up the claim while the claimant is editing, the save is rejected with a clear message and the form shows that the claim is now locked.
+
 ## Tracking
 
 Every claim response carries three fields the UI shows directly, so the frontend never re-implements the rules:

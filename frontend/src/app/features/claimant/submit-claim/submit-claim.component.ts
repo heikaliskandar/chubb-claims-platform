@@ -1,6 +1,6 @@
 import { HttpErrorResponse, HttpEventType } from '@angular/common/http';
-import { Component, computed, ElementRef, inject, signal, viewChild } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, computed, ElementRef, inject, input, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   FormBuilder,
@@ -10,7 +10,7 @@ import {
   Validators,
 } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
-import { concatMap, filter, from, tap, toArray } from 'rxjs';
+import { concatMap, filter, from, switchMap, tap, toArray } from 'rxjs';
 import { ClaimsApiService } from '../../../core/claims-api.service';
 import {
   ClaimDetail,
@@ -76,6 +76,14 @@ export class SubmitClaimComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly summary = viewChild<ElementRef<HTMLElement>>('summary');
   private readonly idempotencyKey = crypto.randomUUID();
+
+  readonly id = input<string>();
+  protected readonly editing = computed(() => !!this.id());
+  protected readonly claimNumber = signal<string | null>(null);
+  protected readonly locked = signal(false);
+  protected readonly title = computed(() =>
+    this.editing() ? `Edit ${this.claimNumber() ?? 'claim'}` : 'New claim',
+  );
 
   protected readonly markets = MARKETS;
   protected readonly maxDescription = MAX_DESCRIPTION;
@@ -208,6 +216,28 @@ export class SubmitClaimComponent {
       });
   }
 
+  constructor() {
+    toObservable(this.id)
+      .pipe(
+        filter((id): id is string => !!id),
+        switchMap((id) => this.api.get(id)),
+        takeUntilDestroyed(),
+      )
+      .subscribe((claim) => {
+        this.claimNumber.set(claim.claimNumber);
+        this.locked.set(!claim.allowedActions.includes('EDIT_DETAILS'));
+        this.form.patchValue({
+          claimType: claim.claimType,
+          market: claim.market,
+          policyNumber: claim.policyNumber,
+          incidentDate: claim.incidentDate,
+          claimedAmount: String(claim.claimedAmount),
+          incidentDescription: claim.incidentDescription,
+        });
+        this.form.controls.market.disable();
+      });
+  }
+
   protected submit(): void {
     this.normalisePolicyNumber();
     this.normaliseAmount();
@@ -220,24 +250,37 @@ export class SubmitClaimComponent {
     }
 
     const value = this.form.getRawValue();
+    const request = {
+      ...value,
+      policyNumber: value.policyNumber.trim(),
+      incidentDescription: value.incidentDescription.trim(),
+      claimedAmount: Number(value.claimedAmount),
+    };
     this.busy.set(true);
-    this.api
-      .submit(
-        {
-          ...value,
-          policyNumber: value.policyNumber.trim(),
-          incidentDescription: value.incidentDescription.trim(),
-          claimedAmount: Number(value.claimedAmount),
+    const id = this.id();
+    if (id) {
+      this.api.update(id, request).subscribe({
+        next: (claim) => {
+          this.toasts.show('success', 'Claim updated', claim.claimNumber);
+          this.router.navigate(['/claims', id]);
         },
-        this.idempotencyKey,
-      )
-      .subscribe({
-        next: (claim) => this.uploadAttachments(claim),
         error: (failure: HttpErrorResponse) => {
           this.busy.set(false);
           this.applyServerErrors(failure.error as ProblemDetail | null);
+          if (failure.status === 409) {
+            this.locked.set(true);
+          }
         },
       });
+      return;
+    }
+    this.api.submit(request, this.idempotencyKey).subscribe({
+      next: (claim) => this.uploadAttachments(claim),
+      error: (failure: HttpErrorResponse) => {
+        this.busy.set(false);
+        this.applyServerErrors(failure.error as ProblemDetail | null);
+      },
+    });
   }
 
   private messageFor(field: FieldName): string | null {
