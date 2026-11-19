@@ -56,13 +56,37 @@ To reset the database (the init script only runs on an empty volume): `docker co
 
 HTTP Basic, all with the password `password` (set with `DEMO_USER_PASSWORD`). Production would use OIDC/SSO (e.g. Azure AD or Keycloak) instead.
 
-| User | Role |
-|---|---|
-| `claimant1`, `claimant2` | CLAIMANT |
-| `officer1`, `officer2`, `officer3` | OFFICER |
-| `manager1` | MANAGER |
+| User | Role | Position | Team |
+|---|---|---|---|
+| `claimant1`, `claimant2` | CLAIMANT | — | — |
+| `officer1` | OFFICER | Claims Officer (L1) | Motor Claims |
+| `officer2` | OFFICER | Senior Claims Officer (L2) | Motor Claims |
+| `officer3` | OFFICER | Claims Officer (L1) | Property Claims |
+| `lead1` | OFFICER | Team Lead (L3) | Motor Claims |
+| `manager1` | MANAGER | Claims Manager (L4) | — |
 
-With `DEMO_DATA_ENABLED=true` (the Compose default), the first start seeds seven claims in different states.
+With `DEMO_DATA_ENABLED=true` (the Compose default), the first start seeds eight claims in different states. One of them, `CLM-SG-…` for SGD 78,000 recommended by officer1, is waiting for approval: try approving it as `officer1` (blocked by the four-eyes rule), `officer2` (limit too low) and `lead1` (allowed).
+
+## Approval authority
+
+Each position can approve up to a limit **per currency** (`app.authority.limits`), so no FX conversion is ever needed:
+
+| Position | SGD | MYR | HKD | THB | IDR | PHP |
+|---|---|---|---|---|---|---|
+| Claims Officer | 10k | 30k | 60k | 250k | 100M | 400k |
+| Senior Claims Officer | 50k | 150k | 300k | 1.25M | 500M | 2M |
+| Team Lead | 250k | 750k | 1.5M | 6M | 2.5B | 10M |
+| Claims Manager | unlimited | | | | | |
+
+```
+UNDER_REVIEW ── assigned officer approves amount X (POST /decision)
+   ├─ X within the officer's limit → APPROVED
+   └─ X above the limit           → PENDING_APPROVAL (referred)
+         POST /approval by someone else (four-eyes) whose limit covers X:
+         ├─ APPROVE → APPROVED     ├─ RETURN (comment) → UNDER_REVIEW     └─ REJECT (comment) → REJECTED
+```
+
+Every claim response includes `allowedActions` for the current user, `waitingOn` (CLAIMS_TEAM, ASSIGNED_OFFICER, CLAIMANT, APPROVER or NOBODY) and a plain-language `nextStep`, so the frontend never re-implements the rules.
 
 ## API
 
@@ -80,6 +104,7 @@ Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log i
 | POST | `/api/v1/claims/{id}/information-requests/{requestId}/response` | CLAIMANT (owner) |
 | POST | `/api/v1/claims/{id}/assessment` | OFFICER (assigned) |
 | POST | `/api/v1/claims/{id}/decision` | OFFICER (assigned) |
+| POST | `/api/v1/claims/{id}/approval` | OFFICER, MANAGER (not the recommender, enough authority) |
 | POST | `/api/v1/claims/{id}/settlement` | OFFICER (assigned) |
 | GET | `/api/v1/me` | any |
 
@@ -91,7 +116,7 @@ insights-service (Swagger UI: http://localhost:8082/swagger-ui.html). Read-only 
 | GET | `/api/v1/insights/performance` | OFFICER, MANAGER |
 | GET | `/api/v1/insights/exposure` | MANAGER |
 
-Officer teams are configured in `app.officer-teams`: officer1 and officer2 are in Motor Claims, officer3 in Property Claims.
+Officer teams are configured in `app.officer-teams` in insights-service.
 
 Errors are RFC 7807 Problem Details: 400 validation, 401 unauthenticated, 403 not allowed, 404 not found (also returned for another claimant's claim), 409 invalid status or concurrent update, 422 business rule violated.
 
@@ -110,9 +135,11 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 1. The six markets are SG, MY, HK, TH, ID and PH, with currencies SGD, MYR, HKD, THB, IDR and PHP.
 2. Policy numbers are not validated (no policy admin system integration).
 3. Claimants answer information requests with text only. No document uploads.
-4. Only the assigned officer can act on a claim. Any officer can pick up an unassigned one.
+4. Only the assigned officer works a claim. Any officer can pick up an unassigned one. Approvers of referrals can be any officer or manager with enough authority; they are not restricted to the officer's own team.
 5. Approving a claim requires an assessment first, and the approved amount can't exceed the claimed amount.
 6. Exposure is reported per currency. Amounts in different currencies are never summed.
+7. Officers can reject within their own review without referral. Senior sign-off for high-value rejections is a documented next step.
+8. Positions and teams come from configuration here. In production they would arrive as identity-provider group claims; approval limits stay in the claims system because they are audited business rules, not identity data.
 
 ## Out of scope
 

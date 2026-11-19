@@ -6,6 +6,7 @@ import com.chubb.claims.claim.api.dto.ClaimSummaryResponse;
 import com.chubb.claims.claim.api.dto.DecideClaimRequest;
 import com.chubb.claims.claim.api.dto.ProvideInformationRequest;
 import com.chubb.claims.claim.api.dto.RequestInformationRequest;
+import com.chubb.claims.claim.api.dto.ReviewReferralRequest;
 import com.chubb.claims.claim.api.dto.SubmitClaimRequest;
 import com.chubb.claims.claim.application.ClaimService;
 import com.chubb.claims.claim.application.ClaimSubmission;
@@ -55,7 +56,7 @@ public class ClaimController {
             @RequestHeader(name = "Idempotency-Key", required = false) @Size(max = 100) String idempotencyKey,
             Authentication authentication) {
         ClaimSubmission submission =
-                claimService.submit(authentication.getName(), request.toClaimDetails(), idempotencyKey);
+                claimService.submit(CurrentUser.from(authentication), request.toClaimDetails(), idempotencyKey);
         if (!submission.created()) {
             return ResponseEntity.ok(submission.claim());
         }
@@ -97,14 +98,14 @@ public class ClaimController {
     @PreAuthorize("hasRole('OFFICER')")
     @Operation(summary = "Pick up an unassigned claim")
     public ClaimDetailResponse assign(@PathVariable UUID claimId, Authentication authentication) {
-        return claimService.assign(claimId, authentication.getName());
+        return claimService.assign(claimId, CurrentUser.from(authentication));
     }
 
     @PostMapping("/{claimId}/review")
     @PreAuthorize("hasRole('OFFICER')")
     @Operation(summary = "Start reviewing an assigned claim")
     public ClaimDetailResponse startReview(@PathVariable UUID claimId, Authentication authentication) {
-        return claimService.startReview(claimId, authentication.getName());
+        return claimService.startReview(claimId, CurrentUser.from(authentication));
     }
 
     @PostMapping("/{claimId}/information-requests")
@@ -113,7 +114,7 @@ public class ClaimController {
     public ClaimDetailResponse requestInformation(@PathVariable UUID claimId,
                                                   @Valid @RequestBody RequestInformationRequest request,
                                                   Authentication authentication) {
-        return claimService.requestInformation(claimId, authentication.getName(), request.question());
+        return claimService.requestInformation(claimId, CurrentUser.from(authentication), request.question());
     }
 
     @PostMapping("/{claimId}/information-requests/{requestId}/response")
@@ -123,7 +124,8 @@ public class ClaimController {
                                                   @PathVariable UUID requestId,
                                                   @Valid @RequestBody ProvideInformationRequest request,
                                                   Authentication authentication) {
-        return claimService.provideInformation(claimId, requestId, authentication.getName(), request.response());
+        return claimService.provideInformation(claimId, requestId, CurrentUser.from(authentication),
+                request.response());
     }
 
     @PostMapping("/{claimId}/assessment")
@@ -132,23 +134,36 @@ public class ClaimController {
     public ClaimDetailResponse assess(@PathVariable UUID claimId,
                                       @Valid @RequestBody AssessClaimRequest request,
                                       Authentication authentication) {
-        return claimService.assess(claimId, authentication.getName(), request.assessedAmount(), request.notes());
+        return claimService.assess(claimId, CurrentUser.from(authentication), request.assessedAmount(),
+                request.notes());
     }
 
     @PostMapping("/{claimId}/decision")
     @PreAuthorize("hasRole('OFFICER')")
-    @Operation(summary = "Approve or reject the claim")
+    @Operation(summary = "Approve or reject the claim",
+            description = "Approvals above the officer's authority limit are referred (PENDING_APPROVAL).")
     public ClaimDetailResponse decide(@PathVariable UUID claimId,
                                       @Valid @RequestBody DecideClaimRequest request,
                                       Authentication authentication) {
-        return claimService.decide(claimId, authentication.getName(), request.outcome(),
+        return claimService.decide(claimId, CurrentUser.from(authentication), request.outcome(),
                 request.approvedAmount(), request.reason());
+    }
+
+    @PostMapping("/{claimId}/approval")
+    @PreAuthorize("hasAnyRole('OFFICER', 'MANAGER')")
+    @Operation(summary = "Approve, return or reject a claim referred above the recommending officer's authority",
+            description = "The approver must be a different person (four-eyes) with authority for the amount.")
+    public ClaimDetailResponse reviewReferral(@PathVariable UUID claimId,
+                                              @Valid @RequestBody ReviewReferralRequest request,
+                                              Authentication authentication) {
+        return claimService.reviewReferral(claimId, CurrentUser.from(authentication), request.outcome(),
+                request.comment());
     }
 
     @PostMapping("/{claimId}/settlement")
     @PreAuthorize("hasRole('OFFICER')")
     @Operation(summary = "Mark an approved claim as paid")
     public ClaimDetailResponse settle(@PathVariable UUID claimId, Authentication authentication) {
-        return claimService.settle(claimId, authentication.getName());
+        return claimService.settle(claimId, CurrentUser.from(authentication));
     }
 }

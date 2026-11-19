@@ -35,15 +35,21 @@ app:
     replication-factor: 1
   outbox:
     poll-interval-ms: 1000
+  authority:
+    limits:
+      CLAIMS_OFFICER: { SGD: 10000, MYR: 30000, HKD: 60000, THB: 250000, IDR: 100000000, PHP: 400000 }
+      SENIOR_CLAIMS_OFFICER: { SGD: 50000, MYR: 150000, HKD: 300000, THB: 1250000, IDR: 500000000, PHP: 2000000 }
+      TEAM_LEAD: { SGD: 250000, MYR: 750000, HKD: 1500000, THB: 6000000, IDR: 2500000000, PHP: 10000000 }
   demo-data:
     enabled: ${DEMO_DATA_ENABLED:false}
   security:
     demo-users:
       password: ${DEMO_USER_PASSWORD}
       users:
-        claimant1: CLAIMANT
-        claimant2: CLAIMANT
-        officer1: OFFICER
-        officer2: OFFICER
-        officer3: OFFICER
-        manager1: MANAGER
+        claimant1: { role: CLAIMANT }
+        claimant2: { role: CLAIMANT }
+        officer1: { role: OFFICER, position: CLAIMS_OFFICER }
+        officer2: { role: OFFICER, position: SENIOR_CLAIMS_OFFICER }
+        officer3: { role: OFFICER, position: CLAIMS_OFFICER }
+        lead1: { role: OFFICER, position: TEAM_LEAD }
+        manager1: { role: MANAGER, position: CLAIMS_MANAGER }

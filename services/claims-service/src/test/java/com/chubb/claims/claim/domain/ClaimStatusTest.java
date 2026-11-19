@@ -22,6 +22,10 @@ class ClaimStatusTest {
             "INFO_REQUESTED -> UNDER_REVIEW",
             "UNDER_REVIEW -> APPROVED",
             "UNDER_REVIEW -> REJECTED",
+            "UNDER_REVIEW -> PENDING_APPROVAL",
+            "PENDING_APPROVAL -> APPROVED",
+            "PENDING_APPROVAL -> REJECTED",
+            "PENDING_APPROVAL -> UNDER_REVIEW",
             "APPROVED -> SETTLED");
 
     static Stream<Arguments> everyPairOfStatuses() {

@@ -8,7 +8,10 @@ import com.chubb.claims.claim.domain.ClaimStatus;
 import com.chubb.claims.claim.domain.ClaimType;
 import com.chubb.claims.claim.domain.InvalidClaimStateException;
 import com.chubb.claims.claim.domain.Market;
+import com.chubb.claims.claim.domain.Referral;
 import com.chubb.claims.common.config.SecurityConfig;
+import com.chubb.claims.common.security.CurrentUser;
+import com.chubb.claims.common.security.Position;
 import com.chubb.claims.common.web.PageResponse;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,10 +27,12 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.BDDMockito.given;
@@ -62,6 +67,10 @@ class ClaimControllerTest {
     @MockitoBean
     private ClaimService claimService;
 
+    private static CurrentUser user(String username) {
+        return argThat(user -> user != null && user.username().equals(username));
+    }
+
     private static RequestPostProcessor as(String username) {
         return httpBasic(username, PASSWORD);
     }
@@ -69,7 +78,8 @@ class ClaimControllerTest {
     private static ClaimDetailResponse claim(ClaimStatus status) {
         return new ClaimDetailResponse(CLAIM_ID, "CLM-SG-2026-000001", "POL-SG-1001", "claimant1", Market.SG,
                 ClaimType.MOTOR, LocalDate.of(2026, 11, 1), "Rear-ended at a traffic light", "SGD",
-                new BigDecimal("3200.00"), status, null, null, null, List.of(), List.of(), null,
+                new BigDecimal("3200.00"), status, status.waitingOn(), "Next step", Set.of(), null, null, null, null,
+                List.of(), List.of(), null,
                 Instant.parse("2026-11-19T10:00:00Z"), Instant.parse("2026-11-19T10:00:00Z"));
     }
 
@@ -106,7 +116,7 @@ class ClaimControllerTest {
 
     @Test
     void submittingANewClaimReturnsCreatedWithLocation() throws Exception {
-        given(claimService.submit(eq("claimant1"), any(), eq("key-1")))
+        given(claimService.submit(user("claimant1"), any(), eq("key-1")))
                 .willReturn(new ClaimSubmission(claim(ClaimStatus.SUBMITTED), true));
 
         mvc.perform(post("/api/v1/claims").with(as("claimant1"))
@@ -120,7 +130,7 @@ class ClaimControllerTest {
 
     @Test
     void replayingAnIdempotencyKeyReturnsTheOriginalClaim() throws Exception {
-        given(claimService.submit(eq("claimant1"), any(), eq("key-1")))
+        given(claimService.submit(user("claimant1"), any(), eq("key-1")))
                 .willReturn(new ClaimSubmission(claim(ClaimStatus.SUBMITTED), false));
 
         mvc.perform(post("/api/v1/claims").with(as("claimant1"))
@@ -170,7 +180,7 @@ class ClaimControllerTest {
 
     @Test
     void mapsAnInvalidTransitionToConflict() throws Exception {
-        given(claimService.assign(CLAIM_ID, "officer1"))
+        given(claimService.assign(eq(CLAIM_ID), user("officer1")))
                 .willThrow(new InvalidClaimStateException("Cannot move claim from ASSIGNED to ASSIGNED"));
 
         mvc.perform(post("/api/v1/claims/{id}/assignment", CLAIM_ID).with(as("officer1")))
@@ -180,7 +190,7 @@ class ClaimControllerTest {
 
     @Test
     void mapsAConcurrentUpdateToConflict() throws Exception {
-        given(claimService.assign(CLAIM_ID, "officer2"))
+        given(claimService.assign(eq(CLAIM_ID), user("officer2")))
                 .willThrow(new ObjectOptimisticLockingFailureException("Claim", CLAIM_ID));
 
         mvc.perform(post("/api/v1/claims/{id}/assignment", CLAIM_ID).with(as("officer2")))
@@ -190,7 +200,7 @@ class ClaimControllerTest {
 
     @Test
     void mapsABusinessRuleViolationToUnprocessableContent() throws Exception {
-        given(claimService.decide(eq(CLAIM_ID), eq("officer1"), any(), any(), any()))
+        given(claimService.decide(eq(CLAIM_ID), user("officer1"), any(), any(), any()))
                 .willThrow(new ClaimRuleViolationException("A claim must be assessed before it can be approved"));
 
         mvc.perform(post("/api/v1/claims/{id}/decision", CLAIM_ID).with(as("officer1"))
@@ -213,8 +223,34 @@ class ClaimControllerTest {
     }
 
     @Test
+    void claimantsCannotReviewReferrals() throws Exception {
+        mvc.perform(post("/api/v1/claims/{id}/approval", CLAIM_ID).with(as("claimant1"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"outcome": "APPROVE"}
+                                """))
+                .andExpect(status().isForbidden());
+
+        verifyNoInteractions(claimService);
+    }
+
+    @Test
+    void managersReviewReferralsWithTheirPositionFromTheLogin() throws Exception {
+        given(claimService.reviewReferral(eq(CLAIM_ID),
+                argThat(user -> user.position() == Position.CLAIMS_MANAGER), eq(Referral.Outcome.APPROVE), any()))
+                .willReturn(claim(ClaimStatus.APPROVED));
+
+        mvc.perform(post("/api/v1/claims/{id}/approval", CLAIM_ID).with(as("manager1"))
+                        .contentType(MediaType.APPLICATION_JSON).content("""
+                                {"outcome": "APPROVE", "comment": "Agreed"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"))
+                .andExpect(jsonPath("$.waitingOn").value("ASSIGNED_OFFICER"));
+    }
+
+    @Test
     void submitsWithoutAnIdempotencyKey() throws Exception {
-        given(claimService.submit(eq("claimant1"), any(), isNull()))
+        given(claimService.submit(user("claimant1"), any(), isNull()))
                 .willReturn(new ClaimSubmission(claim(ClaimStatus.SUBMITTED), true));
 
         mvc.perform(post("/api/v1/claims").with(as("claimant1"))

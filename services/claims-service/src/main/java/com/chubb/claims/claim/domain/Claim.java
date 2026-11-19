@@ -17,8 +17,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Entity
@@ -54,6 +56,9 @@ public class Claim {
 
     @Embedded
     private Decision decision;
+
+    @Embedded
+    private Referral referral;
 
     private String idempotencyKey;
 
@@ -130,18 +135,17 @@ public class Claim {
 
     public void assess(String officerId, BigDecimal assessedAmount, String notes, Instant now) {
         requireAssignedOfficer(officerId);
-        if (status != ClaimStatus.UNDER_REVIEW) {
-            throw new InvalidClaimStateException("Cannot assess a claim in status " + status);
-        }
+        requireStatus(ClaimStatus.UNDER_REVIEW, "assess");
         BigDecimal amount = toMoney(assessedAmount, "assessedAmount");
         assessments.add(new Assessment(this, officerId, amount, currency, notes, now));
         this.reserveAmount = amount;
         this.updatedAt = now;
     }
 
-    public void approve(String officerId, BigDecimal approvedAmount, String reason, Instant now) {
+    public void approve(String officerId, BigDecimal approvedAmount, String reason, ApprovalLimit authority,
+                        Instant now) {
         requireAssignedOfficer(officerId);
-        requireCanTransitionTo(ClaimStatus.APPROVED);
+        requireStatus(ClaimStatus.UNDER_REVIEW, "approve");
         if (assessments.isEmpty()) {
             throw new ClaimRuleViolationException("A claim must be assessed before it can be approved");
         }
@@ -149,17 +153,104 @@ public class Claim {
         if (amount.compareTo(claimedAmount) > 0) {
             throw new ClaimRuleViolationException("Approved amount cannot exceed the claimed amount of " + claimedAmount);
         }
-        transitionTo(ClaimStatus.APPROVED, officerId, reason, now);
-        this.decision = new Decision(Decision.Outcome.APPROVED, amount, reason, officerId, now);
-        this.reserveAmount = amount;
+        if (authority.covers(amount)) {
+            transitionTo(ClaimStatus.APPROVED, officerId, reason, now);
+            recordApproval(amount, reason, officerId, now);
+        } else {
+            transitionTo(ClaimStatus.PENDING_APPROVAL, officerId, reason, now);
+            this.referral = new Referral(officerId, amount, reason, now);
+        }
     }
 
     public void reject(String officerId, String reason, Instant now) {
         requireAssignedOfficer(officerId);
+        requireStatus(ClaimStatus.UNDER_REVIEW, "reject");
         requireText(reason, "reason");
         transitionTo(ClaimStatus.REJECTED, officerId, reason, now);
-        this.decision = new Decision(Decision.Outcome.REJECTED, null, reason, officerId, now);
+        recordRejection(reason, officerId, now);
+    }
+
+    public void reviewReferral(String approverId, ApprovalLimit authority, Referral.Outcome outcome,
+                               String comment, Instant now) {
+        if (status != ClaimStatus.PENDING_APPROVAL) {
+            throw new InvalidClaimStateException("Claim is not awaiting approval");
+        }
+        if (referral.referredBy().equals(approverId)) {
+            throw new ClaimAccessDeniedException("Four-eyes rule: you cannot approve your own recommendation");
+        }
+        if (!authority.covers(referral.amount())) {
+            throw new ClaimAccessDeniedException("The recommended amount exceeds your approval authority");
+        }
+        switch (outcome) {
+            case APPROVE -> {
+                transitionTo(ClaimStatus.APPROVED, approverId, comment, now);
+                recordApproval(referral.amount(), referral.reason(), approverId, now);
+            }
+            case RETURN -> {
+                requireText(comment, "comment");
+                transitionTo(ClaimStatus.UNDER_REVIEW, approverId, comment, now);
+            }
+            case REJECT -> {
+                requireText(comment, "comment");
+                transitionTo(ClaimStatus.REJECTED, approverId, comment, now);
+                recordRejection(comment, approverId, now);
+            }
+        }
+    }
+
+    public Set<ClaimAction> availableActions(Actor actor) {
+        Set<ClaimAction> actions = EnumSet.noneOf(ClaimAction.class);
+        if (status == ClaimStatus.INFO_REQUESTED && claimantId.equals(actor.userId())) {
+            actions.add(ClaimAction.RESPOND_TO_INFORMATION_REQUEST);
+        }
+        if (status == ClaimStatus.PENDING_APPROVAL && isEligibleApprover(actor)) {
+            actions.addAll(EnumSet.of(ClaimAction.APPROVE_REFERRAL, ClaimAction.RETURN_REFERRAL,
+                    ClaimAction.REJECT_REFERRAL));
+        }
+        if (!actor.handlesClaims()) {
+            return actions;
+        }
+        boolean assignedToActor = actor.userId().equals(assignedOfficerId);
+        switch (status) {
+            case SUBMITTED -> actions.add(ClaimAction.ASSIGN_TO_ME);
+            case ASSIGNED -> addIf(actions, assignedToActor, ClaimAction.START_REVIEW);
+            case UNDER_REVIEW -> {
+                addIf(actions, assignedToActor, ClaimAction.REQUEST_INFORMATION);
+                addIf(actions, assignedToActor, ClaimAction.ASSESS);
+                addIf(actions, assignedToActor, ClaimAction.REJECT);
+                addIf(actions, assignedToActor && !assessments.isEmpty(), ClaimAction.APPROVE);
+            }
+            case APPROVED -> addIf(actions, assignedToActor, ClaimAction.SETTLE);
+            default -> {
+            }
+        }
+        return actions;
+    }
+
+    private boolean isEligibleApprover(Actor actor) {
+        return !referral.referredBy().equals(actor.userId()) && actor.approvalLimit().covers(referral.amount());
+    }
+
+    private static void addIf(Set<ClaimAction> actions, boolean condition, ClaimAction action) {
+        if (condition) {
+            actions.add(action);
+        }
+    }
+
+    private void recordApproval(BigDecimal amount, String reason, String decidedBy, Instant now) {
+        this.decision = new Decision(Decision.Outcome.APPROVED, amount, reason, decidedBy, now);
+        this.reserveAmount = amount;
+    }
+
+    private void recordRejection(String reason, String decidedBy, Instant now) {
+        this.decision = new Decision(Decision.Outcome.REJECTED, null, reason, decidedBy, now);
         this.reserveAmount = ZERO_MONEY;
+    }
+
+    private void requireStatus(ClaimStatus required, String operation) {
+        if (status != required) {
+            throw new InvalidClaimStateException("Cannot " + operation + " a claim in status " + status);
+        }
     }
 
     public void settle(String officerId, Instant now) {
@@ -284,6 +375,10 @@ public class Claim {
 
     public Decision getDecision() {
         return decision;
+    }
+
+    public Referral getReferral() {
+        return referral;
     }
 
     public String getIdempotencyKey() {

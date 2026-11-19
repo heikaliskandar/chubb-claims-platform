@@ -1,5 +1,6 @@
 package com.chubb.claims.claim.api.dto;
 
+import com.chubb.claims.claim.domain.ClaimAction;
 import com.chubb.claims.claim.domain.ClaimStatus;
 import com.chubb.claims.claim.domain.ClaimType;
 import com.chubb.claims.claim.domain.Decision;
@@ -11,6 +12,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 public record ClaimDetailResponse(
@@ -25,10 +27,16 @@ public record ClaimDetailResponse(
         String currency,
         BigDecimal claimedAmount,
         ClaimStatus status,
+        ClaimStatus.Party waitingOn,
+        String nextStep,
+        Set<ClaimAction> allowedActions,
         String assignedOfficerId,
         @Schema(description = "Internal estimate of liability. Null for claimants.", nullable = true)
         BigDecimal reserveAmount,
         DecisionResponse decision,
+        @Schema(description = "Latest referral for approval above the officer's authority. Null for claimants.",
+                nullable = true)
+        ReferralResponse referral,
         List<StatusChangeResponse> statusHistory,
         List<InformationRequestResponse> informationRequests,
         @Schema(description = "Officer assessments. Null for claimants.", nullable = true)
@@ -42,6 +50,13 @@ public record ClaimDetailResponse(
             String reason,
             String decidedBy,
             Instant decidedAt) {
+    }
+
+    public record ReferralResponse(
+            String referredBy,
+            BigDecimal amount,
+            String reason,
+            Instant referredAt) {
     }
 
     public record StatusChangeResponse(

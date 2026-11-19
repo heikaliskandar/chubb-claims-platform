@@ -1,6 +1,7 @@
 package com.chubb.claims.claim.infrastructure;
 
 import com.chubb.claims.TestcontainersConfiguration;
+import com.chubb.claims.claim.domain.ApprovalLimit;
 import com.chubb.claims.claim.domain.Claim;
 import com.chubb.claims.claim.domain.ClaimDetails;
 import com.chubb.claims.claim.domain.ClaimStatus;
@@ -46,7 +47,7 @@ class ClaimRepositoryIT {
             InformationRequest request = claim.requestInformation("officer1", "Plumber's report?", NOW);
             claim.provideInformation(request.getId(), "claimant1", "Attached", NOW);
             claim.assess("officer1", new BigDecimal("11000.00"), "Loss adjuster estimate", NOW);
-            claim.approve("officer1", new BigDecimal("10800.00"), "Covered", NOW);
+            claim.approve("officer1", new BigDecimal("10800.00"), "Covered", ApprovalLimit.UNLIMITED, NOW);
             return claims.save(claim).getId();
         });
 

@@ -6,6 +6,9 @@ import com.chubb.claims.claim.domain.ClaimDetails;
 import com.chubb.claims.claim.domain.ClaimType;
 import com.chubb.claims.claim.domain.Market;
 import com.chubb.claims.claim.infrastructure.ClaimRepository;
+import com.chubb.claims.common.security.CurrentUser;
+import com.chubb.claims.common.security.Position;
+import com.chubb.claims.common.security.Role;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -40,7 +43,9 @@ class OptimisticLockingIT {
     void aStaleCopyOfTheClaimCannotOverwriteAnotherOfficersChange() {
         ClaimDetails details = new ClaimDetails("POL-HK-2207", Market.HK, ClaimType.PROPERTY,
                 LocalDate.of(2026, 11, 5), "Ceiling collapse after heavy rain", new BigDecimal("18000.00"));
-        UUID claimId = claimService.submit("claimant2", details, null).claim().id();
+        CurrentUser claimant = new CurrentUser("claimant2", Role.CLAIMANT, null);
+        CurrentUser officer = new CurrentUser("officer1", Role.OFFICER, Position.CLAIMS_OFFICER);
+        UUID claimId = claimService.submit(claimant, details, null).claim().id();
 
         TransactionTemplate officerTwo = new TransactionTemplate(transactionManager);
         TransactionTemplate officerOne = new TransactionTemplate(transactionManager);
@@ -48,7 +53,7 @@ class OptimisticLockingIT {
 
         assertThatThrownBy(() -> officerTwo.executeWithoutResult(status -> {
             Claim staleCopy = claims.findById(claimId).orElseThrow();
-            officerOne.executeWithoutResult(inner -> claimService.assign(claimId, "officer1"));
+            officerOne.executeWithoutResult(inner -> claimService.assign(claimId, officer));
             staleCopy.assignTo("officer2", Instant.now());
         })).isInstanceOf(OptimisticLockingFailureException.class);
 

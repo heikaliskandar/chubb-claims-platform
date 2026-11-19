@@ -9,5 +9,8 @@ import java.util.Map;
 
 @Validated
 @ConfigurationProperties("app.security.demo-users")
-public record DemoUserProperties(@NotBlank String password, @NotEmpty Map<String, Role> users) {
+public record DemoUserProperties(@NotBlank String password, @NotEmpty Map<String, DemoUser> users) {
+
+    public record DemoUser(Role role, Position position) {
+    }
 }

@@ -1,6 +1,8 @@
 package com.chubb.claims.common.config;
 
+import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.common.security.DemoUserProperties;
+import com.chubb.claims.common.security.DemoUserProperties.DemoUser;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -59,10 +61,17 @@ public class SecurityConfig {
         List<UserDetails> users = properties.users().entrySet().stream()
                 .map(user -> User.withUsername(user.getKey())
                         .password(encodedPassword)
-                        .roles(user.getValue().name())
+                        .authorities(authoritiesOf(user.getValue()))
                         .build())
                 .toList();
         return new InMemoryUserDetailsManager(users);
+    }
+
+    private static String[] authoritiesOf(DemoUser user) {
+        String role = CurrentUser.ROLE_PREFIX + user.role();
+        return user.position() == null
+                ? new String[]{role}
+                : new String[]{role, CurrentUser.POSITION_PREFIX + user.position()};
     }
 
     @Bean

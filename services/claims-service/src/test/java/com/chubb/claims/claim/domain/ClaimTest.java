@@ -13,6 +13,7 @@ import java.util.UUID;
 import static com.chubb.claims.claim.domain.ClaimStatus.APPROVED;
 import static com.chubb.claims.claim.domain.ClaimStatus.ASSIGNED;
 import static com.chubb.claims.claim.domain.ClaimStatus.INFO_REQUESTED;
+import static com.chubb.claims.claim.domain.ClaimStatus.PENDING_APPROVAL;
 import static com.chubb.claims.claim.domain.ClaimStatus.REJECTED;
 import static com.chubb.claims.claim.domain.ClaimStatus.SETTLED;
 import static com.chubb.claims.claim.domain.ClaimStatus.SUBMITTED;
@@ -26,6 +27,10 @@ class ClaimTest {
     private static final String CLAIMANT = "claimant1";
     private static final String OFFICER = "officer1";
     private static final String OTHER_OFFICER = "officer2";
+    private static final String TEAM_LEAD = "lead1";
+    private static final ApprovalLimit ANY_AMOUNT = ApprovalLimit.UNLIMITED;
+    private static final ApprovalLimit UP_TO_10K = ApprovalLimit.upTo(new BigDecimal("10000"));
+    private static final ApprovalLimit UP_TO_100K = ApprovalLimit.upTo(new BigDecimal("100000"));
 
     private static Claim submittedClaim(String claimedAmount) {
         ClaimDetails details = new ClaimDetails("POL-MY-778812", Market.MY, ClaimType.MOTOR,
@@ -97,12 +102,13 @@ class ClaimTest {
             InformationRequest request = claim.requestInformation(OFFICER, "Please upload the police report", NOW);
             claim.provideInformation(request.getId(), CLAIMANT, "Report number PR-4471", NOW);
             claim.assess(OFFICER, new BigDecimal("4200.00"), "Workshop quote received", NOW);
-            claim.approve(OFFICER, new BigDecimal("4000.00"), "Covered under policy section 2", NOW);
+            claim.approve(OFFICER, new BigDecimal("4000.00"), "Covered under policy section 2", ANY_AMOUNT, NOW);
             claim.settle(OFFICER, NOW);
 
             assertThat(claim.getStatus()).isEqualTo(SETTLED);
             assertThat(claim.getStatusHistory()).extracting(ClaimStatusHistory::getToStatus)
-                    .containsExactly(SUBMITTED, ASSIGNED, UNDER_REVIEW, INFO_REQUESTED, UNDER_REVIEW, APPROVED, SETTLED);
+                    .containsExactly(SUBMITTED, ASSIGNED, UNDER_REVIEW, INFO_REQUESTED, UNDER_REVIEW, APPROVED,
+                            SETTLED);
             assertThat(claim.getDecision().outcome()).isEqualTo(Decision.Outcome.APPROVED);
             assertThat(claim.getDecision().approvedAmount()).isEqualByComparingTo("4000.00");
             assertThat(claim.getReserveAmount()).isEqualByComparingTo("0");
@@ -245,7 +251,7 @@ class ClaimTest {
         void approvalRequiresAnAssessment() {
             Claim claim = claimUnderReview();
 
-            assertThatThrownBy(() -> claim.approve(OFFICER, new BigDecimal("1000.00"), "OK", NOW))
+            assertThatThrownBy(() -> claim.approve(OFFICER, new BigDecimal("1000.00"), "OK", ANY_AMOUNT, NOW))
                     .isInstanceOf(ClaimRuleViolationException.class)
                     .hasMessageContaining("assessed");
         }
@@ -254,7 +260,7 @@ class ClaimTest {
         void approvedAmountCannotExceedClaimedAmount() {
             Claim claim = assessedClaim("5000.00");
 
-            assertThatThrownBy(() -> claim.approve(OFFICER, new BigDecimal("5000.01"), "OK", NOW))
+            assertThatThrownBy(() -> claim.approve(OFFICER, new BigDecimal("5000.01"), "OK", ANY_AMOUNT, NOW))
                     .isInstanceOf(ClaimRuleViolationException.class);
         }
 
@@ -262,7 +268,7 @@ class ClaimTest {
         void approvingTheFullClaimedAmountSetsReserveToTheApprovedAmount() {
             Claim claim = assessedClaim("4800.00");
 
-            claim.approve(OFFICER, new BigDecimal("5000"), "Total loss", NOW);
+            claim.approve(OFFICER, new BigDecimal("5000"), "Total loss", ANY_AMOUNT, NOW);
 
             assertThat(claim.getStatus()).isEqualTo(APPROVED);
             assertThat(claim.getReserveAmount()).isEqualByComparingTo("5000.00");
@@ -296,8 +302,159 @@ class ClaimTest {
             Claim claim = assessedClaim("4200.00");
             claim.reject(OFFICER, "Not covered", NOW);
 
-            assertThatThrownBy(() -> claim.approve(OFFICER, new BigDecimal("100.00"), "Changed my mind", NOW))
+            assertThatThrownBy(() ->
+                    claim.approve(OFFICER, new BigDecimal("100.00"), "Changed my mind", ANY_AMOUNT, NOW))
                     .isInstanceOf(InvalidClaimStateException.class);
+        }
+    }
+
+    private static Claim referredClaim() {
+        Claim claim = submittedClaim("60000.00");
+        claim.assignTo(OFFICER, NOW);
+        claim.startReview(OFFICER, NOW);
+        claim.assess(OFFICER, new BigDecimal("50000.00"), "Loss adjuster estimate", NOW);
+        claim.approve(OFFICER, new BigDecimal("48000.00"), "Covered", UP_TO_10K, NOW);
+        return claim;
+    }
+
+    @Nested
+    class DelegatedAuthority {
+
+        @Test
+        void anApprovalWithinTheOfficersLimitIsFinal() {
+            Claim claim = assessedClaim("4200.00");
+
+            claim.approve(OFFICER, new BigDecimal("4000.00"), "Covered", UP_TO_10K, NOW);
+
+            assertThat(claim.getStatus()).isEqualTo(APPROVED);
+            assertThat(claim.getDecision().decidedBy()).isEqualTo(OFFICER);
+        }
+
+        @Test
+        void anApprovalAboveTheOfficersLimitIsReferredWithoutADecision() {
+            Claim claim = referredClaim();
+
+            assertThat(claim.getStatus()).isEqualTo(PENDING_APPROVAL);
+            assertThat(claim.getDecision()).isNull();
+            assertThat(claim.getReferral().referredBy()).isEqualTo(OFFICER);
+            assertThat(claim.getReferral().amount()).isEqualByComparingTo("48000.00");
+            assertThat(claim.getReserveAmount()).isEqualByComparingTo("50000.00");
+        }
+
+        @Test
+        void anApproverWithEnoughAuthorityApprovesTheReferredAmount() {
+            Claim claim = referredClaim();
+
+            claim.reviewReferral(TEAM_LEAD, UP_TO_100K, Referral.Outcome.APPROVE, "Agreed", NOW);
+
+            assertThat(claim.getStatus()).isEqualTo(APPROVED);
+            assertThat(claim.getDecision().decidedBy()).isEqualTo(TEAM_LEAD);
+            assertThat(claim.getDecision().approvedAmount()).isEqualByComparingTo("48000.00");
+            assertThat(claim.getReserveAmount()).isEqualByComparingTo("48000.00");
+        }
+
+        @Test
+        void fourEyesRuleStopsTheRecommenderApprovingTheirOwnReferral() {
+            Claim claim = referredClaim();
+
+            assertThatThrownBy(() -> claim.reviewReferral(OFFICER, ANY_AMOUNT, Referral.Outcome.APPROVE, null, NOW))
+                    .isInstanceOf(ClaimAccessDeniedException.class)
+                    .hasMessageContaining("Four-eyes");
+        }
+
+        @Test
+        void anApproverWithoutEnoughAuthorityCannotApprove() {
+            Claim claim = referredClaim();
+
+            assertThatThrownBy(() ->
+                    claim.reviewReferral(OTHER_OFFICER, UP_TO_10K, Referral.Outcome.APPROVE, null, NOW))
+                    .isInstanceOf(ClaimAccessDeniedException.class);
+            assertThat(claim.getStatus()).isEqualTo(PENDING_APPROVAL);
+        }
+
+        @Test
+        void returningAReferralSendsTheClaimBackToReviewWithTheApproversComment() {
+            Claim claim = referredClaim();
+
+            claim.reviewReferral(TEAM_LEAD, UP_TO_100K, Referral.Outcome.RETURN, "Get a second quote", NOW);
+
+            assertThat(claim.getStatus()).isEqualTo(UNDER_REVIEW);
+            assertThat(claim.getStatusHistory().getLast().getReason()).isEqualTo("Get a second quote");
+        }
+
+        @Test
+        void anApproverCanRejectAReferral() {
+            Claim claim = referredClaim();
+
+            claim.reviewReferral(TEAM_LEAD, UP_TO_100K, Referral.Outcome.REJECT, "Excluded peril", NOW);
+
+            assertThat(claim.getStatus()).isEqualTo(REJECTED);
+            assertThat(claim.getDecision().decidedBy()).isEqualTo(TEAM_LEAD);
+            assertThat(claim.getReserveAmount()).isEqualByComparingTo("0");
+        }
+
+        @Test
+        void theAssignedOfficerCannotBypassTheApproverWhileTheClaimIsReferred() {
+            Claim claim = referredClaim();
+
+            assertThatThrownBy(() -> claim.approve(OFFICER, new BigDecimal("5000.00"), "Lower", UP_TO_10K, NOW))
+                    .isInstanceOf(InvalidClaimStateException.class);
+            assertThatThrownBy(() -> claim.reject(OFFICER, "Changed my mind", NOW))
+                    .isInstanceOf(InvalidClaimStateException.class);
+        }
+    }
+
+    @Nested
+    class AvailableActions {
+
+        private final Actor officer = new Actor(OFFICER, true, UP_TO_10K);
+        private final Actor otherOfficer = new Actor(OTHER_OFFICER, true, UP_TO_10K);
+        private final Actor teamLead = new Actor(TEAM_LEAD, true, UP_TO_100K);
+        private final Actor claimant = new Actor(CLAIMANT, false, ApprovalLimit.NONE);
+
+        @Test
+        void anyOfficerCanPickUpASubmittedClaimButTheClaimantCannot() {
+            Claim claim = submittedClaim();
+
+            assertThat(claim.availableActions(otherOfficer)).containsExactly(ClaimAction.ASSIGN_TO_ME);
+            assertThat(claim.availableActions(claimant)).isEmpty();
+        }
+
+        @Test
+        void onlyTheAssignedOfficerSeesReviewActionsAndApproveOnlyAfterAssessment() {
+            Claim claim = claimUnderReview();
+
+            assertThat(claim.availableActions(officer)).containsExactlyInAnyOrder(
+                    ClaimAction.REQUEST_INFORMATION, ClaimAction.ASSESS, ClaimAction.REJECT);
+            assertThat(claim.availableActions(otherOfficer)).isEmpty();
+
+            claim.assess(OFFICER, new BigDecimal("1000.00"), null, NOW);
+            assertThat(claim.availableActions(officer)).contains(ClaimAction.APPROVE);
+        }
+
+        @Test
+        void theClaimantCanRespondOnlyWhileInformationIsRequested() {
+            Claim claim = claimUnderReview();
+            claim.requestInformation(OFFICER, "Photos?", NOW);
+
+            assertThat(claim.availableActions(claimant)).containsExactly(ClaimAction.RESPOND_TO_INFORMATION_REQUEST);
+            assertThat(claim.availableActions(officer)).isEmpty();
+        }
+
+        @Test
+        void aReferralCanOnlyBeReviewedBySomeoneElseWithEnoughAuthority() {
+            Claim claim = referredClaim();
+
+            assertThat(claim.availableActions(teamLead)).containsExactlyInAnyOrder(
+                    ClaimAction.APPROVE_REFERRAL, ClaimAction.RETURN_REFERRAL, ClaimAction.REJECT_REFERRAL);
+            assertThat(claim.availableActions(officer)).isEmpty();
+            assertThat(claim.availableActions(otherOfficer)).isEmpty();
+        }
+
+        @Test
+        void eachStatusSaysWhoTheClaimIsWaitingOn() {
+            assertThat(submittedClaim().getStatus().waitingOn()).isEqualTo(ClaimStatus.Party.CLAIMS_TEAM);
+            assertThat(referredClaim().getStatus().waitingOn()).isEqualTo(ClaimStatus.Party.APPROVER);
         }
     }
 

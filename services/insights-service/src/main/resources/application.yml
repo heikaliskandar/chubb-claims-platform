@@ -32,6 +32,7 @@ app:
     officer1: Motor Claims
     officer2: Motor Claims
     officer3: Property Claims
+    lead1: Motor Claims
   security:
     demo-users:
       password: ${DEMO_USER_PASSWORD}
@@ -41,4 +42,5 @@ app:
         officer1: OFFICER
         officer2: OFFICER
         officer3: OFFICER
+        lead1: OFFICER
         manager1: MANAGER

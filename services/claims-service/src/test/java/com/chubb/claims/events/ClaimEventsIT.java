@@ -6,6 +6,9 @@ import com.chubb.claims.claim.domain.ClaimDetails;
 import com.chubb.claims.claim.domain.ClaimType;
 import com.chubb.claims.claim.domain.InvalidClaimStateException;
 import com.chubb.claims.claim.domain.Market;
+import com.chubb.claims.common.security.CurrentUser;
+import com.chubb.claims.common.security.Position;
+import com.chubb.claims.common.security.Role;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -37,6 +40,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ClaimEventsIT {
 
     private static final Duration KAFKA_TIMEOUT = Duration.ofSeconds(30);
+    private static final CurrentUser CLAIMANT = new CurrentUser("claimant1", Role.CLAIMANT, null);
+    private static final CurrentUser OFFICER_1 =
+            new CurrentUser("officer1", Role.OFFICER, Position.CLAIMS_OFFICER);
+    private static final CurrentUser OFFICER_2 =
+            new CurrentUser("officer2", Role.OFFICER, Position.CLAIMS_OFFICER);
 
     @Autowired
     private ClaimService claimService;
@@ -56,7 +64,7 @@ class ClaimEventsIT {
     private UUID submitClaim() {
         ClaimDetails details = new ClaimDetails("POL-MY-5531", Market.MY, ClaimType.MOTOR,
                 LocalDate.of(2026, 11, 10), "Hit by a motorcycle while parked", new BigDecimal("2750.00"));
-        return claimService.submit("claimant1", details, null).claim().id();
+        return claimService.submit(CLAIMANT, details, null).claim().id();
     }
 
     private List<Map<String, Object>> outboxRowsFor(UUID claimId) {
@@ -85,9 +93,9 @@ class ClaimEventsIT {
     @Test
     void aRejectedCommandWritesNoOutboxEvent() {
         UUID claimId = submitClaim();
-        claimService.assign(claimId, "officer1");
+        claimService.assign(claimId, OFFICER_1);
 
-        assertThatThrownBy(() -> claimService.assign(claimId, "officer2"))
+        assertThatThrownBy(() -> claimService.assign(claimId, OFFICER_2))
                 .isInstanceOf(InvalidClaimStateException.class);
 
         assertThat(outboxRowsFor(claimId)).extracting(row -> row.get("event_type"))
@@ -97,8 +105,8 @@ class ClaimEventsIT {
     @Test
     void publishesEventsToKafkaKeyedByClaimIdInVersionOrder() {
         UUID claimId = submitClaim();
-        claimService.assign(claimId, "officer1");
-        claimService.startReview(claimId, "officer1");
+        claimService.assign(claimId, OFFICER_1);
+        claimService.startReview(claimId, OFFICER_1);
 
         List<JsonNode> events = consumeEventsFor(claimId, 3);
 

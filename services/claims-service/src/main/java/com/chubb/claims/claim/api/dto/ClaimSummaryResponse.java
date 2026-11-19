@@ -15,6 +15,7 @@ public record ClaimSummaryResponse(
         Market market,
         ClaimType claimType,
         ClaimStatus status,
+        ClaimStatus.Party waitingOn,
         String currency,
         BigDecimal claimedAmount,
         String assignedOfficerId,
