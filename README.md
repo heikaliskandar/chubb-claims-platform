@@ -19,7 +19,7 @@ A claims platform for motor and property claims across six APAC markets:
 | Kafka UI | Browse topics and messages. | 8090 |
 | `frontend` | Angular 22 app for all roles, served by nginx, which also proxies `/api` to the services. | 4200 |
 
-**REST** is used when a user is waiting for an answer. **Kafka** carries facts that have already happened. Details: _docs/architecture.md (Phase 7)_.
+**REST** is used when a user is waiting for an answer. **Kafka** carries facts that have already happened. Details, diagrams and scaling notes: [docs/architecture.md](docs/architecture.md). Key decisions: [docs/adr](docs/adr).
 
 ## Prerequisites
 
@@ -138,6 +138,22 @@ curl -u officer1:password "http://localhost:8081/api/v1/claims?status=SUBMITTED"
 curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assignment
 ```
 
+## Tests
+
+```bash
+cd services/claims-service && ./mvnw test      # 123 unit + web-layer tests, no Docker needed
+cd services/insights-service && ./mvnw test    # 12 unit + web-layer tests
+./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
+```
+
+| Area | What is tested |
+|---|---|
+| State machine | All 64 status pairs against an independently written table (`ClaimStatusTest`) |
+| Business rules | Money validation, assignment, info requests, assessment, approval limits, referral, four-eyes, allowed actions (`ClaimTest`, `AuthorityLimitsTest`) |
+| API and security | Authentication, roles, validation errors, Problem Details mapping, idempotent submit (`ClaimControllerTest`, `DashboardControllerTest`) |
+| Money and reporting | Per-currency totals that are never mixed, weighted team averages, workload grouping (`ExposureReportTest`, `PerformanceReportTest`, `WorkloadReportTest`) |
+| Integration (Testcontainers) | Flyway schema matches the entities; claim and outbox event commit together; a failed command writes no event; events reach Kafka in order; optimistic-lock conflict; duplicate and stale events are ignored; poison messages go to the DLT |
+
 ## Assumptions
 
 1. The six markets are SG, MY, HK, TH, ID and PH, with currencies SGD, MYR, HKD, THB, IDR and PHP.
@@ -151,4 +167,27 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 
 ## Out of scope
 
-_Explained with reasons in Phase 7:_ SSO/OIDC, file storage, payments, FX conversion, email/SMS, policy admin integration, fraud scoring, i18n, Kubernetes/cloud, CI/CD.
+| Left out | Why |
+|---|---|
+| SSO / OIDC | Needs an identity provider and a token flow in both services and the SPA. HTTP Basic shows the same role and position model; production would use Entra ID, Okta or Keycloak. |
+| Document upload and storage | Needs object storage, virus scanning and retention rules. Claimants answer information requests in text. |
+| Payments | Settlement records that payment happened; releasing money belongs to finance systems with their own controls. |
+| FX conversion | Avoided by design: exposure and approval limits are per currency. |
+| Email / SMS | Notifications are logged by insights-service as a stub at the point a real sender would be called. |
+| Policy administration integration | Policy numbers are not validated against a policy system. |
+| Fraud scoring / SIU referral | A separate domain; it would consume the same claim events. |
+| Multi-language UI | English only. |
+| Kubernetes, cloud deployment, CI/CD | Outside a local take-home; the services are stateless containers ready for them. |
+
+## Known limitations and next steps
+
+Most important first:
+
+1. **Run the integration tests and the full stack.** The Testcontainers tests and `docker compose up` were written but not executed on the development machine, which had no Docker. Unit and web-layer tests (135) were run.
+2. **OIDC resource servers** in both services instead of HTTP Basic and duplicated security config.
+3. **Workflow:** SLA timers and escalation, automatic triage and assignment by market and line of business, senior sign-off for high-value rejections, approvers scoped to team or market, reopening claims.
+4. **Contract:** generate the frontend models from `/v3/api-docs`, and detect an `Idempotency-Key` reused with a different request body.
+5. **Operations:** outbox retention job, structured JSON logs with correlation IDs, metrics and alerts on outbox lag and DLT depth, a DLT replay tool.
+6. **UI:** Server-Sent Events instead of polling, frontend component tests, dashboard time filters.
+
+See [docs/architecture.md](docs/architecture.md#scaling) for what changes at 10x and 100x volume.
