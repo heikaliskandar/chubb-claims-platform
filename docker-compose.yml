@@ -61,6 +61,7 @@ services:
       DB_PASSWORD: ${CLAIMS_DB_PASSWORD:-claims_dev_pw}
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-password}
       DEMO_DATA_ENABLED: "true"
+      DEMO_CLAIMS_ENABLED: ${DEMO_CLAIMS_ENABLED:-true}
       DOCUMENT_STORAGE_PATH: /data/documents
       API_DOCS_ENABLED: "true"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092

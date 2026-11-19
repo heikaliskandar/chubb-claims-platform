@@ -70,6 +70,7 @@ CLAIMS_DB_PASSWORD=$(secret)
 INSIGHTS_DB_PASSWORD=$(secret)
 DEMO_USER_PASSWORD=password
 DEMO_DATA_ENABLED=true
+DEMO_CLAIMS_ENABLED=true
 API_DOCS_ENABLED=true
 EOF
   echo "created .env with random database passwords (readable only by $USER)"

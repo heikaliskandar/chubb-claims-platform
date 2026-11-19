@@ -25,6 +25,7 @@ services:
       DB_PASSWORD: ${CLAIMS_DB_PASSWORD:?set CLAIMS_DB_PASSWORD in .env}
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:?set DEMO_USER_PASSWORD in .env}
       DEMO_DATA_ENABLED: ${DEMO_DATA_ENABLED:-false}
+      DEMO_CLAIMS_ENABLED: ${DEMO_CLAIMS_ENABLED:-true}
       API_DOCS_ENABLED: ${API_DOCS_ENABLED:-false}
     restart: unless-stopped
 

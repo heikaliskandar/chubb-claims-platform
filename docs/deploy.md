@@ -27,6 +27,8 @@ No account, no card, no server. The stack runs on your machine, and Cloudflare g
    ```
 4. Copy the `https://<random-words>.trycloudflare.com` address it prints, and share it. The app and `/api/docs` work there with the demo accounts.
 
+To hand reviewers an empty system (no claims; the demo employees stay), put `DEMO_CLAIMS_ENABLED=false` in `.env` and start from a clean database (`docker compose down -v && docker compose up -d`). The same setting works on a server.
+
 Only the web app (port 4200) is exposed; the database, Kafka, the services and Kafka UI are not. Stop the tunnel (Ctrl+C, or end the `cloudflared` process) to take the link offline. Each start gives a new address. A fixed address needs a free Cloudflare account and a domain (a *named tunnel*).
 
 This was checked end to end: 41 read-only end-to-end tests (access, navigation for all eight users, accessibility, API docs) passed against the public tunnel URL.

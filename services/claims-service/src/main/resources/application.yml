@@ -49,6 +49,7 @@ app:
     max-per-claim: 20
   demo-data:
     enabled: ${DEMO_DATA_ENABLED:false}
+    claims-enabled: ${DEMO_CLAIMS_ENABLED:true}
   security:
     demo-users:
       password: ${DEMO_USER_PASSWORD}

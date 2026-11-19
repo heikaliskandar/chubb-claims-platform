@@ -133,7 +133,7 @@ To reset the database (the init script only runs on an empty volume): `docker co
 
 HTTP Basic, all with the password `password` (set with `DEMO_USER_PASSWORD`). Production would use OIDC/SSO (e.g. Azure AD or Keycloak) instead.
 
-A fresh stack is seeded with **nine claims, one at each stage of the lifecycle** across all six markets, so every screen has something to act on. The list, and what to try with each, is in [docs/user-flows.md](docs/user-flows.md#demo-data-one-claim-per-stage). To return to that state: `docker compose down -v && docker compose up --build -d`.
+A fresh stack is seeded with **nine claims, one at each stage of the lifecycle** across all six markets, so every screen has something to act on. The list, and what to try with each, is in [docs/user-flows.md](docs/user-flows.md#demo-data-one-claim-per-stage). To return to that state: `docker compose down -v && docker compose up --build -d`. To start with **no claims at all** (empty for claimants and staff; employees and reporting lines are kept), put `DEMO_CLAIMS_ENABLED=false` in a local `.env` file before the first start.
 
 | User | Name | Role | Position | Team | Reports to |
 |---|---|---|---|---|---|

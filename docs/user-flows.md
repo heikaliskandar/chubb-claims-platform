@@ -154,7 +154,7 @@ Totals are **never summed across currencies**. Dashboards come from the event-fe
 
 ## Demo data: one claim per stage
 
-A fresh stack (`docker compose down -v && docker compose up --build -d`) contains exactly these claims. Each one shows a different part of the flow.
+A fresh stack (`docker compose down -v && docker compose up --build -d`) contains exactly these claims. With `DEMO_CLAIMS_ENABLED=false` it starts with no claims instead, ready for a reviewer to submit the first one. Each one shows a different part of the flow.
 
 | Claim | Stage | Waiting on | What it shows | Try it as |
 |---|---|---|---|---|

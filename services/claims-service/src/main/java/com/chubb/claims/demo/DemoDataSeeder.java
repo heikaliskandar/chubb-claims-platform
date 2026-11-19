@@ -16,6 +16,7 @@ import com.chubb.claims.employee.domain.Employee;
 import com.chubb.claims.employee.infrastructure.EmployeeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
@@ -50,13 +51,16 @@ public class DemoDataSeeder implements ApplicationRunner {
     private final ClaimRepository claims;
     private final EmployeeRepository employees;
     private final DocumentService documents;
+    private final boolean claimsEnabled;
 
     public DemoDataSeeder(ClaimService claimService, ClaimRepository claims, EmployeeRepository employees,
-                          DocumentService documents) {
+                          DocumentService documents,
+                          @Value("${app.demo-data.claims-enabled:true}") boolean claimsEnabled) {
         this.claimService = claimService;
         this.claims = claims;
         this.employees = employees;
         this.documents = documents;
+        this.claimsEnabled = claimsEnabled;
     }
 
     @Override
@@ -64,7 +68,7 @@ public class DemoDataSeeder implements ApplicationRunner {
         if (employees.count() == 0) {
             seedEmployees();
         }
-        if (claims.count() == 0) {
+        if (claimsEnabled && claims.count() == 0) {
             seedClaims();
         }
     }
