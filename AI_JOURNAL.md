@@ -88,6 +88,12 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ❌ I asked the AI to copy a commercial admin template I had downloaded. It refused because of licensing and because presenting it as my own work would misrepresent the assessment, and built an original layout on PrimeNG instead.
 - ⚠️ The initial bundle grew to 660 kB raw / 151 kB transferred because of the theme engine. I raised the warning budget to 750 kB instead of hiding the warning; the hard limit stays at 1 MB.
 
+## Phase 10: Chasing the 502
+
+- ❓ Sign-in returned 502 in the Codespace, and I could not share the container logs at the time. The AI booted both services locally against a real embedded PostgreSQL 17 (a temporary test, removed afterwards) and called the main endpoints over HTTP. Migrations, seeding, positions from the directory, reporting-line visibility, contact updates and claim submission all worked, so the code was not the cause.
+- ✅ Hardened the environment instead: nginx re-resolves service addresses, the backends restart on failure, the JVMs and Kafka have memory caps for small machines, and the frontend waits for both backends to accept connections before starting.
+- ⚠️ The smoke run also caught a contract leak: `/api/v1/me` returned two helper flags (`claimant`, `officer`) as JSON fields. Fixed with `@JsonIgnore`.
+
 ## Phase 9: Removing the paid UI library
 
 - ⚠️ The running app showed an "Invalid PrimeUI License" banner. The AI found that PrimeNG 22 and PrimeIcons are no longer open source: they need a PrimeUI licence key. It corrected its own earlier claim that PrimeNG was free to use, and refused to hide or bypass the licence check.

@@ -1,5 +1,6 @@
 package com.chubb.claims.common.security;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 
@@ -27,10 +28,12 @@ public record CurrentUser(String username, Role role, Position position) {
         return new CurrentUser(authentication.getName(), role, position);
     }
 
+    @JsonIgnore
     public boolean isClaimant() {
         return role == Role.CLAIMANT;
     }
 
+    @JsonIgnore
     public boolean isOfficer() {
         return role == Role.OFFICER;
     }

@@ -150,7 +150,7 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 ## Tests
 
 ```bash
-cd services/claims-service && ./mvnw test      # 123 unit + web-layer tests, no Docker needed
+cd services/claims-service && ./mvnw test      # 129 unit + web-layer tests, no Docker needed
 cd services/insights-service && ./mvnw test    # 12 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
 ```
@@ -192,7 +192,7 @@ cd services/insights-service && ./mvnw test    # 12 unit + web-layer tests
 
 Most important first:
 
-1. **Run the integration tests and the full stack.** The Testcontainers tests and `docker compose up` were written but not executed on the development machine, which had no Docker. Unit and web-layer tests (135) were run.
+1. **Run the integration tests and the full stack.** The development machine had no Docker, so the Testcontainers tests and `docker compose up` were not run there. Unit and web-layer tests (141) were run, and both services were booted against a real PostgreSQL 17 (embedded, without Kafka) to check migrations, seeding, security and the main API flows.
 2. **OIDC resource servers** in both services instead of HTTP Basic and duplicated security config.
 3. **Workflow:** SLA timers and escalation, automatic triage and assignment by market and line of business, senior sign-off for high-value rejections, reopening claims. Insights dashboards are not yet filtered by reporting line.
 4. **Contract:** generate the frontend models from `/v3/api-docs`, and detect an `Idempotency-Key` reused with a different request body.

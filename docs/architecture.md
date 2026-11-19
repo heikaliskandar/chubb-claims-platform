@@ -161,7 +161,7 @@ The services are stateless, so the first lever at any volume is more instances b
 
 ## Known limitations
 
-- The integration tests (Testcontainers) and the full `docker compose up` run were written but not executed on the development machine, which had no Docker. The unit and web-layer tests (135) were run.
+- The integration tests (Testcontainers) and the full `docker compose up` run were not executed on the development machine, which had no Docker. Unit and web-layer tests were run, and both services were booted against a real PostgreSQL 17 (embedded, without Kafka) to check migrations, seeding, security and the main API flows.
 - Security configuration is duplicated across the two services. A shared OIDC resource-server setup would replace it.
 - An `Idempotency-Key` reused with a different request body is not detected (that would need a stored request hash).
 - insights-service dashboards are not filtered by reporting line; workload and performance are visible to all officers.

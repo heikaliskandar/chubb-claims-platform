@@ -32,6 +32,7 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+      KAFKA_HEAP_OPTS: "-Xms256m -Xmx512m"
     ports:
       - "9094:9094"
     healthcheck:
@@ -61,8 +62,15 @@ services:
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-password}
       DEMO_DATA_ENABLED: "true"
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
     ports:
       - "8081:8081"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8081'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
     depends_on:
       postgres:
         condition: service_healthy
@@ -78,8 +86,15 @@ services:
       DB_PASSWORD: ${INSIGHTS_DB_PASSWORD:-insights_dev_pw}
       DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:-password}
       KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      JAVA_TOOL_OPTIONS: "-Xms128m -Xmx512m"
     ports:
       - "8082:8082"
+    healthcheck:
+      test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8082'"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
     depends_on:
       postgres:
         condition: service_healthy
@@ -91,8 +106,10 @@ services:
     ports:
       - "4200:80"
     depends_on:
-      - claims-service
-      - insights-service
+      claims-service:
+        condition: service_healthy
+      insights-service:
+        condition: service_healthy
 
 volumes:
   postgres-data:
