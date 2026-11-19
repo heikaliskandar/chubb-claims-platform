@@ -25,7 +25,7 @@ A claims platform for motor and property claims across six APAC markets:
 | REST and Kafka, with a reason for each | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
 | Async processing across both tiers | Outbox → Kafka → read model; the UI polls and shows "Updated hh:mm:ss" on dashboards |
 
-**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 148 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 36 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
+**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 151 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 36 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
 
 ## Architecture at a glance
 
@@ -59,7 +59,7 @@ docker compose up --build
 | insights-service health | http://localhost:8082/actuator/health |
 | Kafka UI | http://localhost:8090 |
 
-Each health endpoint should report `"status":"UP"`, with a `db` component that is also `UP`.
+Each health endpoint should report `"status":"UP"`. Component details (database, disk) are only shown to authenticated callers.
 
 The passwords in `docker-compose.yml` are **dev-only defaults**. Override them with environment variables or a git-ignored `.env` file.
 
@@ -120,7 +120,7 @@ Every claim response includes `allowedActions` for the current user, `waitingOn`
 
 ## API
 
-Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log in as a demo user).
+Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log in as a demo user). API docs are switched on by `API_DOCS_ENABLED=true` in the Compose stack and are off by default.
 
 | Method | Path | Role |
 |---|---|---|
@@ -170,7 +170,7 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 ## Tests
 
 ```bash
-cd services/claims-service && ./mvnw test      # 135 unit + web-layer tests, no Docker needed
+cd services/claims-service && ./mvnw test      # 138 unit + web-layer tests, no Docker needed
 cd services/insights-service && ./mvnw test    # 13 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
 cd e2e && npm ci && npx playwright test        # 36 end-to-end tests against the running stack
@@ -192,7 +192,10 @@ cd e2e && npm ci && npx playwright test        # 36 end-to-end tests against the
 | Authentication | HTTP Basic over a stateless API. The SPA keeps the credentials in memory only (nothing in `localStorage` or cookies), so a reload or closed tab signs the user out. |
 | Authorization | Role and position checks on every endpoint (`@PreAuthorize`); reporting-line scoping returns 404, not 403, for claims and people outside your scope, so their existence isn't leaked. |
 | Browser hardening | nginx sends a strict Content Security Policy (no inline scripts except two pinned by SHA-256 hash; no third-party scripts), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` and `Cross-Origin-Opener-Policy`. Server version is hidden. |
-| Errors | RFC 7807 Problem Details with no stack traces or SQL in responses. |
+| Brute force | Five consecutive failed sign-ins lock the account for 15 minutes in both services, and the lockout is audited. |
+| Personal data (PDPA) | Kafka events and the insights read model hold no personal data; every read of a claim or colleague profile is written to a dedicated `AUDIT` log with actor, role and record ID, never the data itself. See [ADR 0007](docs/adr/0007-personal-data-protection.md). |
+| Database integrity | CHECK constraints on every status, market, currency and position code, and on the completeness of decisions, referrals and answers. |
+| Errors | RFC 7807 Problem Details with no stack traces or SQL in responses. Health details and API docs are hidden by default. |
 | Caching | Hashed JS/CSS bundles are cached for a year as `immutable`; `index.html` is `no-cache`, so a deploy is picked up on the next load. API responses are `no-store` (Spring Security default). Static assets are gzip-compressed. |
 | Bundle | 311 kB initial (85 kB over the wire); every feature route is lazy-loaded. |
 | Lighthouse | Login page: Accessibility 100, Best Practices 100. All 11 signed-in pages checked (manager, lead and claimant): Accessibility 100, Best Practices 100. SEO is deliberately low: `robots.txt` blocks indexing because this is an internal application. |
@@ -239,7 +242,7 @@ Deliberately not built, to keep the scope honest. The design already leaves room
 
 Most important first:
 
-1. **OIDC resource servers** in both services instead of HTTP Basic and duplicated security config (see [Path to production](#path-to-production)).
+1. **OIDC resource servers** in both services instead of HTTP Basic and duplicated security config (see [Path to production](#path-to-production)), plus the PDPA items in [ADR 0007](docs/adr/0007-personal-data-protection.md#required-before-production-not-built-here): encryption, least-privilege database roles, an audit sink, retention and erasure.
 2. **Workflow:** SLA timers and escalation, automatic triage and assignment by market and line of business, senior sign-off for high-value rejections, reopening claims. Insights dashboards are not yet filtered by reporting line.
 3. **Contract:** generate the frontend models from `/v3/api-docs`, and detect an `Idempotency-Key` reused with a different request body.
 4. **Operations:** outbox retention job, structured JSON logs with correlation IDs, metrics and alerts on outbox lag and DLT depth, a DLT replay tool.

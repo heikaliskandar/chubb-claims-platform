@@ -21,7 +21,7 @@ management:
         include: health
   endpoint:
     health:
-      show-components: always
+      show-components: when_authorized
 
 app:
   kafka:
@@ -46,3 +46,9 @@ app:
         lead1: OFFICER
         lead2: OFFICER
         manager1: MANAGER
+
+springdoc:
+  api-docs:
+    enabled: ${API_DOCS_ENABLED:false}
+  swagger-ui:
+    enabled: ${API_DOCS_ENABLED:false}

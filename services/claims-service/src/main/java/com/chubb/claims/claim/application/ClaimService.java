@@ -15,6 +15,7 @@ import com.chubb.claims.claim.domain.Decision;
 import com.chubb.claims.claim.domain.Referral;
 import com.chubb.claims.claim.infrastructure.ClaimRepository;
 import com.chubb.claims.claim.infrastructure.ClaimSpecifications;
+import com.chubb.claims.common.audit.AccessAudit;
 import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.common.web.PageResponse;
 import com.chubb.claims.employee.application.EmployeeService;
@@ -117,7 +118,9 @@ public class ClaimService {
     @Transactional(readOnly = true)
     public ClaimDetailResponse getClaim(UUID claimId, CurrentUser user) {
         Set<String> reports = reportsOf(user);
-        return toDetail(loadFor(claimId, user, reports), user, reports);
+        ClaimDetailResponse detail = toDetail(loadFor(claimId, user, reports), user, reports);
+        AccessAudit.viewed(user, "claim", claimId);
+        return detail;
     }
 
     public ClaimDetailResponse assign(UUID claimId, CurrentUser officer) {

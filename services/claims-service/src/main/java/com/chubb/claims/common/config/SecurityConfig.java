@@ -3,6 +3,7 @@ package com.chubb.claims.common.config;
 import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.common.security.DemoUserProperties;
 import com.chubb.claims.common.security.DemoUserProperties.DemoUser;
+import com.chubb.claims.common.security.LoginAttempts;
 import com.chubb.claims.employee.application.EmployeeService;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -22,6 +23,8 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +36,9 @@ public class SecurityConfig {
     private static final String[] PUBLIC_PATHS = {
             "/actuator/health/**", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/error"
     };
+
+    private static final int MAX_FAILED_LOGINS = 5;
+    private static final Duration LOCKOUT = Duration.ofMinutes(15);
 
     @Bean
     SecurityFilterChain securityFilterChain(
@@ -57,8 +63,13 @@ public class SecurityConfig {
     }
 
     @Bean
+    LoginAttempts loginAttempts() {
+        return new LoginAttempts(MAX_FAILED_LOGINS, LOCKOUT, Clock.systemUTC());
+    }
+
+    @Bean
     UserDetailsService demoUsers(DemoUserProperties properties, PasswordEncoder passwordEncoder,
-                                 EmployeeService employees) {
+                                 EmployeeService employees, LoginAttempts loginAttempts) {
         String encodedPassword = passwordEncoder.encode(properties.password());
         return username -> {
             DemoUser account = properties.users().get(username);
@@ -71,6 +82,7 @@ public class SecurityConfig {
             return User.withUsername(username)
                     .password(encodedPassword)
                     .authorities(authorities.toArray(String[]::new))
+                    .accountLocked(loginAttempts.isLocked(username))
                     .build();
         };
     }

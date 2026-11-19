@@ -2,6 +2,7 @@ package com.chubb.claims.employee.application;
 
 import com.chubb.claims.claim.application.AuthorityLimits;
 import com.chubb.claims.claim.domain.Market;
+import com.chubb.claims.common.audit.AccessAudit;
 import com.chubb.claims.common.security.CurrentUser;
 import com.chubb.claims.common.security.Position;
 import com.chubb.claims.common.web.PageResponse;
@@ -57,13 +58,18 @@ public class EmployeeService {
         if (!self && !reportsOf(viewer.username()).contains(username)) {
             throw new EmployeeNotFoundException(username);
         }
-        return toDetail(load(username), self);
+        EmployeeDetailResponse detail = toDetail(load(username), self);
+        if (!self) {
+            AccessAudit.viewed(viewer, "employee", username);
+        }
+        return detail;
     }
 
     @Transactional
     public EmployeeDetailResponse updateContact(CurrentUser viewer, String phone, String officeLocation) {
         Employee employee = load(viewer.username());
         employee.updateContact(blankToNull(phone), blankToNull(officeLocation));
+        AccessAudit.changed(viewer, "employee", viewer.username(), "contact");
         return toDetail(employee, true);
     }
 
