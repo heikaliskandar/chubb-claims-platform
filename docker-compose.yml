@@ -1,5 +1,3 @@
-# Local development stack. Passwords below are DEV-ONLY defaults;
-# override them via environment variables or a git-ignored .env file.
 services:
   postgres:
     image: postgres:17-alpine
@@ -19,7 +17,6 @@ services:
       timeout: 5s
       retries: 10
 
-  # Single-node Kafka in KRaft mode: this node is both broker and controller (no ZooKeeper).
   kafka:
     image: apache/kafka:4.4.0
     environment:
@@ -27,16 +24,13 @@ services:
       KAFKA_PROCESS_ROLES: broker,controller
       KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
       KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
-      # INTERNAL: other containers (kafka:9092). EXTERNAL: tools on the host (localhost:9094).
       KAFKA_LISTENERS: INTERNAL://:9092,CONTROLLER://:9093,EXTERNAL://:9094
       KAFKA_ADVERTISED_LISTENERS: INTERNAL://kafka:9092,EXTERNAL://localhost:9094
       KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: INTERNAL:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT
       KAFKA_INTER_BROKER_LISTENER_NAME: INTERNAL
-      # Single broker, so internal topics cannot be replicated.
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
-      # Topics are declared explicitly by the services, never created by a typo.
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     ports:
       - "9094:9094"

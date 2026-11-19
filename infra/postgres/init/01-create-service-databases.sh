@@ -1,6 +1,4 @@
 #!/bin/sh
-# Runs once, on first start of an empty Postgres volume.
-# One database and one login per service: each service can only touch its own data.
 set -e
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname postgres <<EOSQL

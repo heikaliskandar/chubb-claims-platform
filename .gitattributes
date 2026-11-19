@@ -1,5 +1,4 @@
-# Normalise line endings to LF in the repo so shell scripts (mvnw, Postgres init)
-# still run inside Linux containers when the repo is checked out on Windows.
+# LF everywhere so mvnw and the Postgres init script run in Linux containers on Windows checkouts.
 * text=auto eol=lf
 *.cmd text eol=crlf
 *.jar binary
