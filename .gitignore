@@ -13,3 +13,6 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Machine-specific Compose overrides
+docker-compose.override.yml
