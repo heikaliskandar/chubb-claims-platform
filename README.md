@@ -47,18 +47,53 @@ To run one service from your IDE or with Maven (with Postgres started by Compose
 ```bash
 docker compose up -d postgres
 cd services/claims-service
-DB_PASSWORD=claims_dev_pw ./mvnw spring-boot:run
+DB_PASSWORD=claims_dev_pw DEMO_USER_PASSWORD=password ./mvnw spring-boot:run
 ```
 
 To reset the database (the init script only runs on an empty volume): `docker compose down -v`.
 
 ## Demo users
 
-_Added in Phase 3._
+HTTP Basic, all with the password `password` (set with `DEMO_USER_PASSWORD`). Production would use OIDC/SSO (e.g. Azure AD or Keycloak) instead.
+
+| User | Role |
+|---|---|
+| `claimant1`, `claimant2` | CLAIMANT |
+| `officer1`, `officer2`, `officer3` | OFFICER |
+| `manager1` | MANAGER |
+
+With `DEMO_DATA_ENABLED=true` (the Compose default), the first start seeds seven claims in different states.
 
 ## API
 
-_Swagger UI and examples added in Phase 3._
+Swagger UI: http://localhost:8081/swagger-ui.html (click **Authorize** and log in as a demo user).
+
+| Method | Path | Role |
+|---|---|---|
+| POST | `/api/v1/claims` (optional `Idempotency-Key` header) | CLAIMANT |
+| GET | `/api/v1/claims?status=&assignedTo=&page=&size=` | OFFICER, MANAGER |
+| GET | `/api/v1/claims/mine` | CLAIMANT |
+| GET | `/api/v1/claims/{id}` | any (claimants: own claims only) |
+| POST | `/api/v1/claims/{id}/assignment` | OFFICER |
+| POST | `/api/v1/claims/{id}/review` | OFFICER (assigned) |
+| POST | `/api/v1/claims/{id}/information-requests` | OFFICER (assigned) |
+| POST | `/api/v1/claims/{id}/information-requests/{requestId}/response` | CLAIMANT (owner) |
+| POST | `/api/v1/claims/{id}/assessment` | OFFICER (assigned) |
+| POST | `/api/v1/claims/{id}/decision` | OFFICER (assigned) |
+| POST | `/api/v1/claims/{id}/settlement` | OFFICER (assigned) |
+| GET | `/api/v1/me` | any |
+
+Errors are RFC 7807 Problem Details: 400 validation, 401 unauthenticated, 403 not allowed, 404 not found (also returned for another claimant's claim), 409 invalid status or concurrent update, 422 business rule violated.
+
+```bash
+curl -u claimant1:password -H "Content-Type: application/json" -H "Idempotency-Key: $(uuidgen)" \
+  -d '{"policyNumber":"POL-SG-1001","market":"SG","claimType":"MOTOR","incidentDate":"2026-11-01",
+       "incidentDescription":"Rear-ended at a traffic light","claimedAmount":3200.00}' \
+  http://localhost:8081/api/v1/claims
+
+curl -u officer1:password "http://localhost:8081/api/v1/claims?status=SUBMITTED"
+curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assignment
+```
 
 ## Assumptions
 

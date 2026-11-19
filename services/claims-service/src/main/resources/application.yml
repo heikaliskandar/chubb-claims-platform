@@ -21,3 +21,17 @@ management:
   endpoint:
     health:
       show-components: always
+
+app:
+  demo-data:
+    enabled: ${DEMO_DATA_ENABLED:false}
+  security:
+    demo-users:
+      password: ${DEMO_USER_PASSWORD}
+      users:
+        claimant1: CLAIMANT
+        claimant2: CLAIMANT
+        officer1: OFFICER
+        officer2: OFFICER
+        officer3: OFFICER
+        manager1: MANAGER

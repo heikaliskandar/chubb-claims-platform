@@ -211,7 +211,10 @@ public class Claim {
     }
 
     private static BigDecimal toMoney(BigDecimal amount, String field) {
-        if (amount == null || amount.signum() < 0) {
+        if (amount == null) {
+            throw new ClaimRuleViolationException(field + " is required");
+        }
+        if (amount.signum() < 0) {
             throw new ClaimRuleViolationException(field + " must not be negative");
         }
         if (amount.stripTrailingZeros().scale() > MONEY_SCALE) {

@@ -22,7 +22,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
+@SpringBootTest(properties = "app.security.demo-users.password=test-password")
 @Import(TestcontainersConfiguration.class)
 class ClaimRepositoryIT {
 
