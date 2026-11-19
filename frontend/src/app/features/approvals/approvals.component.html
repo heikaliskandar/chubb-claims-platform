@@ -1,6 +1,33 @@
 <app-page-header title="Approvals" [crumbs]="[{ label: 'Approvals' }]" />
 
 @if (view(); as current) {
+  <section class="surface-card how" aria-labelledby="how-title">
+    <h2 id="how-title" class="how-title">How approvals work</h2>
+    <ol class="steps">
+      <li>
+        <span class="step-icon"><span class="ms" aria-hidden="true">request_quote</span></span>
+        <div>
+          <strong>An officer recommends a payment</strong>
+          <span class="muted small">Every officer can approve up to their own limit.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step-icon"><span class="ms" aria-hidden="true">how_to_reg</span></span>
+        <div>
+          <strong>Above their limit, a senior colleague signs off</strong>
+          <span class="muted small">Someone above them in the team, with a high enough limit.</span>
+        </div>
+      </li>
+      <li>
+        <span class="step-icon"><span class="ms" aria-hidden="true">task_alt</span></span>
+        <div>
+          <strong>Approve, send back or decline</strong>
+          <span class="muted small">No large payment is ever approved by one person alone.</span>
+        </div>
+      </li>
+    </ol>
+  </section>
+
   @if (tabs().length > 1) {
     <div class="tabs" role="tablist">
       @for (tab of tabs(); track tab.value) {
@@ -19,120 +46,128 @@
     </div>
   }
 
-  <section class="surface-card">
-    <p class="intro muted small">
-      @switch (current) {
-        @case ('TO_REVIEW') {
-          Referrals from your team that are above the recommending officer's approval limit.
-        }
-        @case ('DECIDED') {
-          Referrals from your team that have been approved, returned or rejected.
-        }
-        @case ('MY_REFERRALS') {
-          Approvals you recommended above your own limit, and what happened to them.
-        }
+  <p class="intro muted">
+    @switch (current) {
+      @case ('TO_REVIEW') {
+        Payments your team has recommended that are above their own approval limit. They need your
+        decision.
       }
-    </p>
+      @case ('DECIDED') {
+        Payments from your team that you or another senior colleague have already decided.
+      }
+      @case ('MY_REFERRALS') {
+        Payments you recommended that were above your own limit, and what happened to them.
+      }
+    }
+  </p>
 
-    @if (result(); as page) {
-      @if (page.content.length === 0) {
-        <div class="empty-state">
-          <span class="ms" aria-hidden="true">{{
-            current === 'TO_REVIEW' ? 'check_circle' : 'inbox'
-          }}</span>
-          {{ current === 'TO_REVIEW' ? 'Nothing waiting for you' : 'No referrals yet' }}
-        </div>
-      } @else {
-        <div class="table-wrap">
-          <table class="data-table">
-            <thead>
-              <tr>
-                <th>Claim</th>
-                <th class="right">Recommended</th>
-                @if (current !== 'MY_REFERRALS') {
-                  <th>Recommended by</th>
-                }
-                <th>Referred</th>
-                <th>Status</th>
-                <th>Reviewed by</th>
-                <th><span class="visually-hidden">Action</span></th>
-              </tr>
-            </thead>
-            <tbody>
-              @for (approval of page.content; track approval.claimId) {
-                <tr
-                  class="clickable"
-                  tabindex="0"
-                  (click)="open(approval)"
-                  (keydown.enter)="open(approval)"
-                >
-                  <td>
-                    <div class="primary-cell">
-                      <strong>{{ approval.claimNumber }}</strong>
-                      <span class="muted small">
-                        {{ marketName(approval.market) }} · {{ approval.claimType | label }}
-                      </span>
-                    </div>
-                  </td>
-                  <td class="right">
-                    <div class="primary-cell amounts">
-                      <strong class="amount">
-                        {{ approval.recommendedAmount | currency: approval.currency : 'code' }}
-                      </strong>
-                      <span class="muted small amount">
-                        of {{ approval.claimedAmount | currency: approval.currency : 'code' }}
-                      </span>
-                    </div>
-                  </td>
-                  @if (current !== 'MY_REFERRALS') {
-                    <td>
-                      <span class="person">
-                        <app-user-avatar [username]="approval.referredBy" size="sm" />
-                        {{ approval.referredBy }}
-                      </span>
-                    </td>
-                  }
-                  <td class="muted">{{ approval.referredAt | date: 'd MMM, HH:mm' }}</td>
-                  <td>
-                    <span class="tag" [class]="'tag ' + statusTone[approval.status]">
-                      {{ approval.status | label }}
-                    </span>
-                  </td>
-                  <td class="muted">
-                    {{ approval.reviewedBy ?? '—' }}
-                    @if (approval.reviewedAt) {
-                      <span class="small">· {{ approval.reviewedAt | date: 'd MMM' }}</span>
-                    }
-                  </td>
-                  <td class="right">
-                    @if (approval.canReview) {
-                      <button
-                        type="button"
-                        class="btn btn-primary review"
-                        (click)="open(approval); $event.stopPropagation()"
-                      >
-                        Review
-                      </button>
+  @if (result(); as page) {
+    @if (page.content.length === 0) {
+      <div class="surface-card empty-state">
+        <span class="ms" aria-hidden="true">{{
+          current === 'TO_REVIEW' ? 'check_circle' : 'inbox'
+        }}</span>
+        @switch (current) {
+          @case ('TO_REVIEW') {
+            You're all caught up. Nothing is waiting for your decision.
+          }
+          @case ('DECIDED') {
+            Nothing decided yet.
+          }
+          @case ('MY_REFERRALS') {
+            You haven't sent any payments for sign-off yet.
+          }
+        }
+      </div>
+    } @else {
+      <ul class="approvals">
+        @for (approval of page.content; track approval.claimId) {
+          <li class="surface-card approval" [class.pending]="approval.status === 'PENDING'">
+            <div class="head">
+              <span class="tag" [class]="'tag ' + status[approval.status].tone">
+                {{ status[approval.status].label }}
+              </span>
+              <span class="claim">
+                <strong>{{ approval.claimNumber }}</strong>
+                <span class="muted small">
+                  {{ marketName(approval.market) }} · {{ approval.claimType | label }}
+                </span>
+              </span>
+            </div>
+
+            <div class="body">
+              <div class="money">
+                <span class="muted small">Recommended payment</span>
+                <strong class="amount">{{
+                  approval.recommendedAmount | currency: approval.currency : 'code'
+                }}</strong>
+                <span class="muted small amount">
+                  of {{ approval.claimedAmount | currency: approval.currency : 'code' }} claimed
+                </span>
+              </div>
+
+              <div class="who">
+                <app-user-avatar [username]="approval.referredBy" size="sm" />
+                <div>
+                  <span>
+                    @if (current === 'MY_REFERRALS') {
+                      Recommended by <strong>you</strong>
                     } @else {
-                      <span class="ms muted" aria-hidden="true">chevron_right</span>
+                      Recommended by <strong>{{ people.nameOf(approval.referredBy) }}</strong>
                     }
-                  </td>
-                </tr>
+                  </span>
+                  <span class="muted small" [title]="approval.referredAt | date: 'd MMM y, HH:mm'">
+                    @if (approval.status === 'PENDING') {
+                      Waiting {{ since(approval.referredAt) }}
+                    } @else {
+                      {{ approval.referredAt | date: 'd MMM, HH:mm' }}
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <blockquote class="reason">“{{ approval.reason }}”</blockquote>
+            </div>
+
+            <div class="foot">
+              @if (approval.reviewedBy) {
+                <span class="muted small">
+                  {{ status[approval.status].verb }} by
+                  <strong>{{ people.nameOf(approval.reviewedBy) }}</strong>
+                  · {{ approval.reviewedAt | date: 'd MMM, HH:mm' }}
+                </span>
+              } @else if (current === 'MY_REFERRALS') {
+                <span class="muted small">
+                  Waiting for a senior colleague in your team to sign off.
+                </span>
+              } @else {
+                <span></span>
               }
-            </tbody>
-          </table>
-        </div>
-      }
+              <a
+                class="btn approval-link"
+                [class.btn-primary]="approval.canReview"
+                [class.btn-outline]="!approval.canReview"
+                [routerLink]="['/claims', approval.claimId]"
+              >
+                {{ approval.canReview ? 'Review and decide' : 'View claim' }}
+                <span class="ms" aria-hidden="true">arrow_forward</span>
+              </a>
+            </div>
+          </li>
+        }
+      </ul>
       <app-pager
         [page]="page.page"
         [size]="pageSize"
         [total]="page.totalElements"
         (pageChange)="pageIndex.set($event)"
       />
-    } @else {
-      <div class="empty-state"><span class="ms" aria-hidden="true">sync</span>Loading…</div>
     }
-  </section>
+  } @else {
+    <div class="surface-card empty-state">
+      <span class="ms" aria-hidden="true">sync</span>Loading…
+    </div>
+  }
 } @else {
   <div class="empty-state"><span class="ms" aria-hidden="true">sync</span>Loading…</div>
 }

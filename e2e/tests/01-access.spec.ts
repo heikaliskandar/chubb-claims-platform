@@ -2,9 +2,24 @@ import { expect, test } from '../support/fixtures';
 
 test.describe('R8 One application for every user type, adapted to role', () => {
   const homes = [
-    { user: 'claimant1', url: /\/claims\/active$/, menu: ['New claim', 'My claims'], hidden: ['Approvals', 'Queue'] },
-    { user: 'officer1', url: /\/claims\/queue$/, menu: ['Queue', 'Assigned to me', 'Approvals', 'Performance'], hidden: ['New claim'] },
-    { user: 'manager1', url: /\/manager$/, menu: ['Dashboard', 'All open', 'Approvals', 'People'], hidden: ['New claim', 'Queue'] },
+    {
+      user: 'claimant1',
+      url: /\/claims\/active$/,
+      menu: ['New claim', 'My claims'],
+      hidden: ['Approvals', 'Queue'],
+    },
+    {
+      user: 'officer1',
+      url: /\/claims\/queue$/,
+      menu: ['Queue', 'Assigned to me', 'Approvals', 'Performance'],
+      hidden: ['New claim'],
+    },
+    {
+      user: 'manager1',
+      url: /\/manager$/,
+      menu: ['Dashboard', 'All open', 'Approvals', 'People'],
+      hidden: ['New claim', 'Queue'],
+    },
   ];
 
   for (const { user, url, menu, hidden } of homes) {

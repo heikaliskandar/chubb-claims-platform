@@ -70,10 +70,6 @@
   font-weight: 600;
 }
 
-.highlight {
-  background: color-mix(in srgb, var(--app-warning) 7%, var(--app-surface));
-}
-
 .timeline {
   position: relative;
   margin: 0;
@@ -126,10 +122,13 @@
   transform: translateY(3px);
 }
 
-.highlight {
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, var(--app-warning) 45%, transparent),
-    var(--app-shadow);
+.hint {
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: var(--app-radius-sm);
+  background: var(--app-primary-soft);
+  color: var(--app-text);
+  font-size: 14px;
 }
 
 .dialog-form {

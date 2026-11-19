@@ -1,19 +1,146 @@
+.how {
+  margin-bottom: 20px;
+}
+
+.how-title {
+  margin: 0 0 14px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--app-heading);
+}
+
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+  }
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.step-icon {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--app-primary-soft);
+  color: var(--app-primary-strong);
+
+  .ms {
+    font-size: 20px;
+  }
+}
+
+.tabs {
+  margin-bottom: 8px;
+}
+
 .intro {
-  margin-bottom: 14px;
+  margin: 12px 0 16px;
 }
 
-.amounts {
-  align-items: flex-end;
+.approvals {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin: 0 0 16px;
+  padding: 0;
+  list-style: none;
 }
 
-.person {
-  display: inline-flex;
+.approval {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  &.pending {
+    box-shadow:
+      inset 4px 0 0 var(--app-warning),
+      var(--app-shadow);
+  }
+}
+
+.head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   align-items: center;
-  gap: 8px;
-  white-space: nowrap;
 }
 
-.review {
-  height: 34px;
-  padding: 0 14px;
+.claim {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+
+.body {
+  display: grid;
+  grid-template-columns: minmax(180px, auto) minmax(200px, 1fr) minmax(0, 1.4fr);
+  gap: 20px;
+  align-items: start;
+}
+
+.money {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+
+  strong {
+    font-size: 22px;
+    color: var(--app-heading);
+  }
+}
+
+.who {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+
+  div {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+}
+
+.reason {
+  margin: 0;
+  padding: 10px 14px;
+  border-left: 3px solid var(--app-border);
+  border-radius: 0 8px 8px 0;
+  background: var(--app-surface-2);
+  color: var(--app-text);
+  font-size: 14px;
+}
+
+.foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--app-border);
+}
+
+@media (max-width: 900px) {
+  .steps,
+  .body {
+    grid-template-columns: 1fr;
+  }
 }

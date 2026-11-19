@@ -64,7 +64,7 @@ sequenceDiagram
     K--)I: exposure increases
     O->>API: Approve amount above own limit
     API-->>O: Pending approval (referred)
-    L->>API: Approvals → To review → Approve
+    L->>API: Approvals → Waiting for me → Approve payment
     API--)K: ClaimApproved
     O->>API: Mark settled
     API--)K: ClaimSettled
@@ -107,7 +107,7 @@ flowchart LR
     W -->|Claimant responds| R
     R -->|Assess: set reserve| R
     R -->|Approve within limit| AP[Approved]
-    R -->|Approve above limit| P[Pending approval:<br/>appears in My referrals]
+    R -->|Approve above limit| P[Pending approval:<br/>appears in Sent by me]
     R -->|Reject with reason| X[Rejected]
     AP -->|Mark settled| S[Settled]
 ```
@@ -118,7 +118,7 @@ flowchart LR
 | Review and assess | **Start review**, **Request info**, **Assess** | Each assessment is kept; the latest sets the reserve that drives exposure. |
 | Decide | **Approve** or **Reject** | Above the officer's limit for that currency, approval becomes a referral to someone above them. |
 | Settle | **Mark settled** | Releases the reserve from exposure. |
-| See own workload | **Claims → Assigned to me**, **Approvals → My referrals** | |
+| See own workload | **Claims → Assigned to me**, **Approvals → Sent by me** | |
 | See the team | **Team → Performance**, **Team → People** | Open claims by officer and status, decisions, average time to decision. |
 
 Officers see unassigned claims plus their own. They cannot see claims held by colleagues at the same level.
@@ -127,11 +127,11 @@ Officers see unassigned claims plus their own. They cannot see claims held by co
 
 ```mermaid
 flowchart LR
-    I[Approvals → To review] -->|Review| D[Claim page:<br/>recommendation, assessment, history]
-    D -->|Approve| A[Approved]
-    D -->|Return with what needs to change| R[Back to the officer:<br/>Under review]
-    D -->|Reject with reason| X[Rejected]
-    I --> H[Decided tab:<br/>everything reviewed]
+    I[Approvals → Waiting for me] -->|Review and decide| D[Approval needed panel:<br/>why it needs you, amounts, reason]
+    D -->|Approve payment| A[Approved]
+    D -->|Send back for changes| R[Back to the officer:<br/>Under review]
+    D -->|Decline the claim| X[Rejected]
+    I --> H[Decided tab:<br/>everything signed off]
     T[Team → Performance] --> W[Workload per officer,<br/>decisions, avg hours]
 ```
 
@@ -163,7 +163,7 @@ A fresh stack (`docker compose down -v && docker compose up --build -d`) contain
 | CLM-PH-2026-000003 | Assigned | officer3 | Picked up, review not started | `officer3`: Start review |
 | CLM-SG-2026-000004 | Under review | officer1 | Question asked **and answered**, assessed at SGD 6,500, within officer1's limit | `officer1`: Approve SGD 6,500, then Mark settled |
 | CLM-TH-2026-000005 | Info requested | Claimant | Officer is waiting for the police report | `claimant2`: banner → Respond |
-| CLM-SG-2026-000006 | Pending approval | Approver | officer1 recommended SGD 78,000, above the SGD 10,000 limit | `lead1`: Approvals → To review → Review |
+| CLM-SG-2026-000006 | Pending approval | Approver | officer1 recommended SGD 78,000, above the SGD 10,000 limit | `lead1`: Approvals → Waiting for me → Review and decide |
 | CLM-HK-2026-000007 | Approved | officer2 | Referral already approved by lead1 (four-eyes complete) | `officer2`: Mark settled; `lead1`: Approvals → Decided |
 | CLM-PH-2026-000008 | Rejected | Nobody | Rejection with the policy exclusion as the reason | `claimant2`: History |
 | CLM-ID-2026-000009 | Settled | Nobody | Full lifecycle completed | `claimant1`: History → decision |
@@ -175,7 +175,7 @@ Together they cover all six markets and every status, and give the manager dashb
 1. **Claimant reports.** Sign in as `claimant1` → **New claim** → submit a Singapore motor claim for SGD 30,000. Point out the claim number, status and next step.
 2. **Officer picks up.** Sign in as `officer1` → **Queue** → open the new claim → **Assign to me** → **Start review** → **Request info**.
 3. **Claimant answers.** As `claimant1`, the **We need more information** banner appears → **Respond**.
-4. **Officer assesses and decides above their limit.** As `officer1` → **Assess** SGD 30,000 → **Approve** SGD 30,000 → status becomes **Pending approval**; **Approvals → My referrals** shows it as Pending.
-5. **Team lead approves.** As `lead1` → **Approvals → To review** → **Review** → **Approve**. Show that `lead2` never sees it.
+4. **Officer assesses and decides above their limit.** As `officer1` → **Assess** SGD 30,000 → **Approve** SGD 30,000 → status becomes **Pending approval**; **Approvals → Sent by me** shows it as Pending.
+5. **Team lead approves.** As `lead1` → **Approvals → Waiting for me** → **Review and decide**. The panel explains why it needs sign-off; choose **Approve payment**. Show that `lead2` never sees it.
 6. **Officer settles; claimant sees the decision.** `officer1` → **Mark settled**; `claimant1` → **History** → decision card.
 7. **Manager sees the effect.** `manager1` → **Overview**: SGD exposure rose at assessment and fell at settlement. Open Kafka UI (http://localhost:8090) to show the events behind it.

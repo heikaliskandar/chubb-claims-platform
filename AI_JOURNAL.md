@@ -166,6 +166,12 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✅ Audit of what a reviewer would hit: `npm test` failed because the frontend had no unit tests although the docs advertised it; architecture.md still said the integration tests had never run; no CI.
 - ✅ Added 11 Vitest tests (session, error interceptor, label pipe, and a regression test for the tab bug that I confirmed fails when the fix is removed), and a GitHub Actions pipeline running backend, frontend and the Playwright suite against the Compose stack.
 
+## Phase 21: Approvals for non-technical users
+
+- ❓ I asked for an approvals flow a non-technical approver can follow. The AI took screenshots of the existing screens first: they worked, but used internal words (referral, reserve, return), showed usernames, and never said why a claim needed sign-off.
+- ✅ New inbox: plain tabs (Waiting for me, Decided, Sent by me), a three-step explainer, cards that read like a sentence with real names and "waiting 3 hours". New "Approval needed" panel on the claim: progress tracker, the officer's limit vs the amount, amounts as bars, and three explained choices (Approve payment, Send back for changes, Decline the claim). Checked on desktop and phone.
+- 🐞 The e2e suite caught that each choice button's accessible name included its whole description; fixed with `aria-labelledby`/`aria-describedby`. Also caught that officers saw their team lead as "lead1": names now include your own manager, which the visibility rules already allow. Backend unchanged.
+
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.

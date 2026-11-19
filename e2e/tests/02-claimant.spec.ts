@@ -27,7 +27,9 @@ test.describe('R1 Claimants report an incident', () => {
 
     const summary = page.getByRole('alert');
     await expect(summary).toBeFocused();
-    const policyLink = summary.getByRole('link', { name: 'Enter your policy number.' });
+    const policyLink = summary.getByRole('link', {
+      name: 'Enter your policy number.',
+    });
     await expect(policyLink).toBeVisible();
     await expect(summary.getByRole('link', { name: /Enter an amount like 1250/ })).toBeVisible();
     await policyLink.click();

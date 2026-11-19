@@ -1,0 +1,115 @@
+<section class="surface-card panel" aria-labelledby="approval-title">
+  <div class="title-row">
+    <h2 id="approval-title" class="card-title">Approval needed</h2>
+    <span class="tag tag-warn">Waiting {{ since(referral().referredAt) }}</span>
+  </div>
+
+  <ol class="tracker" aria-label="Approval progress">
+    <li class="done">
+      <span class="dot"><span class="ms" aria-hidden="true">check</span></span>
+      <div>
+        <strong>Officer recommended</strong>
+        <span class="muted small">
+          {{ officerName() }} · {{ referral().referredAt | date: 'd MMM, HH:mm' }}
+        </span>
+      </div>
+    </li>
+    <li class="current" aria-current="step">
+      <span class="dot"><span class="ms" aria-hidden="true">hourglass_top</span></span>
+      <div>
+        <strong>Senior sign-off</strong>
+        <span class="muted small">
+          {{ choices().length ? 'Your decision' : 'Team lead or manager' }}
+        </span>
+      </div>
+    </li>
+    <li>
+      <span class="dot"><span class="ms" aria-hidden="true">payments</span></span>
+      <div>
+        <strong>Approved for payment</strong>
+        <span class="muted small">Officer arranges payment</span>
+      </div>
+    </li>
+  </ol>
+
+  <p class="headline">
+    <strong>{{ isRecommender() ? 'You' : officerName() }}</strong>
+    {{ isRecommender() ? 'recommended' : 'recommends' }} paying
+    <strong class="amount">{{ referral().amount | currency: claim().currency : 'code' }}</strong>.
+  </p>
+  <p class="why">
+    @if (officerLimit(); as limit) {
+      That's above {{ officerFirstName() }} approval limit of
+      <strong class="amount">{{ limit | currency: claim().currency : 'code' }}</strong>,
+    } @else {
+      That's above {{ officerFirstName() }} approval limit,
+    }
+    so a more senior colleague has to sign it off. No large payment is approved by one person alone.
+  </p>
+
+  <div class="bars" role="list" aria-label="Amounts">
+    @for (row of bars().rows; track row.label) {
+      <div class="bar-row" role="listitem">
+        <span class="bar-label">{{ row.label }}</span>
+        <span class="bar-track">
+          <span class="bar" [class]="'bar ' + row.tone" [style.width.%]="row.width"></span>
+          @if (bars().limitAt !== null) {
+            <span class="limit" [style.left.%]="bars().limitAt" aria-hidden="true"></span>
+          }
+        </span>
+        <span class="bar-value amount">{{ row.amount | currency: claim().currency : 'code' }}</span>
+      </div>
+    }
+    @if (bars().limitAt !== null) {
+      <span class="legend muted small">
+        <span class="limit-key" aria-hidden="true"></span>
+        {{ isRecommender() ? 'Your' : officerFirstName() }} approval limit
+      </span>
+    }
+  </div>
+
+  <figure class="reason">
+    <figcaption class="muted small">
+      {{ isRecommender() ? 'Your reason' : 'Reason from ' + officerName() }}
+    </figcaption>
+    <blockquote>“{{ referral().reason }}”</blockquote>
+  </figure>
+
+  @if (choices().length) {
+    <h3 class="decide-title">Your decision</h3>
+    <div class="choices">
+      @for (choice of choices(); track choice.action) {
+        <button
+          type="button"
+          class="choice"
+          [class]="'choice ' + choice.tone"
+          [attr.aria-labelledby]="'choice-title-' + choice.action"
+          [attr.aria-describedby]="'choice-' + choice.action"
+          (click)="decide.emit(choice.action)"
+        >
+          <span class="ms" aria-hidden="true">{{ choice.icon }}</span>
+          <span class="choice-text">
+            <strong [id]="'choice-title-' + choice.action">{{ choice.title }}</strong>
+            <span class="small" [id]="'choice-' + choice.action">{{ choice.description }}</span>
+          </span>
+        </button>
+      }
+    </div>
+  } @else if (isRecommender()) {
+    <p class="note">
+      <span class="ms" aria-hidden="true">info</span>
+      <span
+        >Sent for sign-off. Anyone above you in your team with a high enough limit, usually your
+        team lead, can decide. You'll see the result here and under
+        <strong>Approvals → Sent by me</strong>.</span
+      >
+    </p>
+  } @else {
+    <p class="note">
+      <span class="ms" aria-hidden="true">info</span>
+      <span
+        >Waiting for a senior colleague above {{ officerName() }} with a high enough limit.</span
+      >
+    </p>
+  }
+</section>

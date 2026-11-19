@@ -1,6 +1,6 @@
 @if (claim(); as claim) {
   <app-page-header [title]="claim.claimNumber" [crumbs]="crumbs()">
-    @for (action of claim.allowedActions; track action) {
+    @for (action of headerActions(); track action) {
       <button
         type="button"
         class="btn"
@@ -16,6 +16,10 @@
 
   <div class="layout-main-side">
     <div class="stack">
+      @if (showApprovalPanel()) {
+        <app-approval-panel [claim]="claim" (decide)="choose($event)" />
+      }
+
       <section class="surface-card">
         <div class="summary">
           <div>
@@ -26,7 +30,7 @@
           </div>
           @if (claim.reserveAmount !== null) {
             <div>
-              <span class="muted small">Reserve</span>
+              <span class="muted small">Expected cost</span>
               <div class="headline amount">
                 {{ claim.reserveAmount | currency: claim.currency : 'code' }}
               </div>
@@ -130,26 +134,13 @@
         <p class="muted small">{{ claim.nextStep }}</p>
       </section>
 
-      @if (claim.referral && claim.status === 'PENDING_APPROVAL') {
-        <section class="surface-card highlight">
-          <h2 class="card-title">Referred for approval</h2>
-          <div class="headline amount">
-            {{ claim.referral.amount | currency: claim.currency : 'code' }}
-          </div>
-          <p class="reason">{{ claim.referral.reason }}</p>
-          <span class="muted small"
-            >{{ claim.referral.referredBy }} ·
-            {{ claim.referral.referredAt | date: 'd MMM, HH:mm' }}</span
-          >
-        </section>
-      }
-
       @if (claim.decision; as decision) {
         <section class="surface-card">
           <h2 class="card-title">Decision</h2>
           <p class="reason">{{ decision.reason }}</p>
           <span class="muted small"
-            >{{ decision.decidedBy }} · {{ decision.decidedAt | date: 'd MMM, HH:mm' }}</span
+            >Decided by {{ isStaff() ? people.nameOf(decision.decidedBy) : 'the claims team' }} ·
+            {{ decision.decidedAt | date: 'd MMM, HH:mm' }}</span
           >
         </section>
       }
@@ -180,6 +171,9 @@
   >
     @if (activeAction(); as action) {
       <form class="dialog-form" (submit)="$event.preventDefault(); run(action)">
+        @if (actions[action].hint; as hint) {
+          <p class="hint">{{ hint }}</p>
+        }
         @if (action === 'RESPOND_TO_INFORMATION_REQUEST' && openRequest(); as request) {
           <div class="question">
             <span class="ms" aria-hidden="true">help</span>{{ request.question }}

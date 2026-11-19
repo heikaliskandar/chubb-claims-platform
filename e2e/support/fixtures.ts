@@ -41,6 +41,19 @@ export class App {
     await expect(dialog).toBeHidden();
   }
 
+  async decide(choice: string, text?: string): Promise<void> {
+    await this.page
+      .getByRole('region', { name: 'Approval needed' })
+      .getByRole('button', { name: choice, exact: true })
+      .click();
+    const dialog = this.page.getByRole('dialog', { name: choice });
+    if (text !== undefined) {
+      await dialog.locator('#text').fill(text);
+    }
+    await dialog.getByRole('button', { name: choice, exact: true }).click();
+    await expect(dialog).toBeHidden();
+  }
+
   async expectStatus(label: string): Promise<void> {
     await expect(this.page.locator('app-status-tag').first()).toHaveText(label);
   }

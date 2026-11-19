@@ -19,9 +19,15 @@ test.describe('R5-R7 Staff pick up, review, assess and settle claims', () => {
     await app.expectStatus('Assigned');
     await app.act('Start review');
     await app.expectStatus('Under review');
-    await app.act('Assess', { amount: 6_000, text: 'Workshop quote verified.' });
+    await app.act('Assess', {
+      amount: 6_000,
+      text: 'Workshop quote verified.',
+    });
     await expect(page.getByRole('heading', { name: 'Assessments' })).toBeVisible();
-    await app.act('Approve', { amount: 6_000, text: 'Covered under comprehensive motor policy.' });
+    await app.act('Approve', {
+      amount: 6_000,
+      text: 'Covered under comprehensive motor policy.',
+    });
     await app.expectStatus('Approved');
     await app.act('Mark settled');
     await app.expectStatus('Settled');
@@ -43,7 +49,9 @@ test.describe('R5-R7 Staff pick up, review, assess and settle claims', () => {
 
     await app.signIn('officer1');
     await app.openClaim(claim.id, claim.claimNumber);
-    await app.act('Reject', { text: 'Incident falls outside the policy period.' });
+    await app.act('Reject', {
+      text: 'Incident falls outside the policy period.',
+    });
     await app.expectStatus('Rejected');
   });
 

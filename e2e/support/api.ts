@@ -13,7 +13,11 @@ export interface Claim {
   currency: string;
   claimedAmount: number;
   allowedActions: string[];
-  informationRequests: { id: string; question: string; response: string | null }[];
+  informationRequests: {
+    id: string;
+    question: string;
+    response: string | null;
+  }[];
   assignedOfficerId: string | null;
 }
 
@@ -72,7 +76,9 @@ export class ClaimsApi {
 
   async requestInformation(id: string, question: string): Promise<Claim> {
     return this.json(
-      await this.context.post(`/api/v1/claims/${id}/information-requests`, { data: { question } }),
+      await this.context.post(`/api/v1/claims/${id}/information-requests`, {
+        data: { question },
+      }),
     );
   }
 
@@ -87,12 +93,23 @@ export class ClaimsApi {
   async approve(id: string, approvedAmount: number): Promise<Claim> {
     return this.json(
       await this.context.post(`/api/v1/claims/${id}/decision`, {
-        data: { outcome: 'APPROVED', approvedAmount, reason: 'Covered under policy terms.' },
+        data: {
+          outcome: 'APPROVED',
+          approvedAmount,
+          reason: 'Covered under policy terms.',
+        },
       }),
     );
   }
 
-  async exposure(): Promise<{ lines: { market: string; currency: string; openClaims: number; outstandingReserve: number }[] }> {
+  async exposure(): Promise<{
+    lines: {
+      market: string;
+      currency: string;
+      openClaims: number;
+      outstandingReserve: number;
+    }[];
+  }> {
     return this.json(await this.context.get('/api/v1/insights/exposure'));
   }
 

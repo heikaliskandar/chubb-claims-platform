@@ -1,29 +1,38 @@
 import { CurrencyPipe, DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { Router } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { filter, switchMap } from 'rxjs';
 import { ClaimsApiService } from '../../core/claims-api.service';
 import { EmployeesApiService } from '../../core/employees-api.service';
 import { Approval, ApprovalStatus, ApprovalView, PageResponse } from '../../core/models';
+import { PeopleService } from '../../core/people.service';
 import { PageHeaderComponent } from '../../layout/page-header/page-header.component';
+import { durationSince } from '../../shared/duration';
 import { LabelPipe } from '../../shared/label.pipe';
 import { marketName } from '../../shared/markets';
 import { PagerComponent } from '../../shared/pager/pager.component';
 import { poll } from '../../shared/polling';
 import { UserAvatarComponent } from '../../shared/user-avatar/user-avatar.component';
 
-const TABS: { value: ApprovalView; label: string; icon: string; approverOnly: boolean }[] = [
-  { value: 'TO_REVIEW', label: 'To review', icon: 'how_to_reg', approverOnly: true },
+interface Tab {
+  value: ApprovalView;
+  label: string;
+  icon: string;
+  approverOnly: boolean;
+}
+
+const TABS: Tab[] = [
+  { value: 'TO_REVIEW', label: 'Waiting for me', icon: 'how_to_reg', approverOnly: true },
   { value: 'DECIDED', label: 'Decided', icon: 'check_circle', approverOnly: true },
-  { value: 'MY_REFERRALS', label: 'My referrals', icon: 'send', approverOnly: false },
+  { value: 'MY_REFERRALS', label: 'Sent by me', icon: 'send', approverOnly: false },
 ];
 
-const STATUS_TONE: Record<ApprovalStatus, string> = {
-  PENDING: 'tag-warn',
-  APPROVED: 'tag-success',
-  RETURNED: 'tag-info',
-  REJECTED: 'tag-danger',
+const STATUS: Record<ApprovalStatus, { label: string; tone: string; verb: string }> = {
+  PENDING: { label: 'Waiting for decision', tone: 'tag-warn', verb: '' },
+  APPROVED: { label: 'Approved', tone: 'tag-success', verb: 'Approved' },
+  RETURNED: { label: 'Sent back to officer', tone: 'tag-info', verb: 'Sent back' },
+  REJECTED: { label: 'Declined', tone: 'tag-danger', verb: 'Declined' },
 };
 
 const PAGE_SIZE = 10;
@@ -34,6 +43,7 @@ const PAGE_SIZE = 10;
     CurrencyPipe,
     DatePipe,
     LabelPipe,
+    RouterLink,
     PageHeaderComponent,
     PagerComponent,
     UserAvatarComponent,
@@ -43,11 +53,12 @@ const PAGE_SIZE = 10;
 })
 export class ApprovalsComponent {
   private readonly api = inject(ClaimsApiService);
-  private readonly router = inject(Router);
+  protected readonly people = inject(PeopleService);
 
   protected readonly pageSize = PAGE_SIZE;
   protected readonly marketName = marketName;
-  protected readonly statusTone = STATUS_TONE;
+  protected readonly status = STATUS;
+  protected readonly since = durationSince;
   protected readonly isApprover = signal<boolean | null>(null);
   protected readonly tabs = computed(() =>
     TABS.filter((tab) => this.isApprover() || !tab.approverOnly),
@@ -57,6 +68,7 @@ export class ApprovalsComponent {
   protected readonly result = signal<PageResponse<Approval> | null>(null);
 
   constructor() {
+    this.people.load();
     inject(EmployeesApiService)
       .profile('me')
       .pipe(takeUntilDestroyed())
@@ -81,10 +93,6 @@ export class ApprovalsComponent {
     this.result.set(null);
     this.pageIndex.set(0);
     this.view.set(view);
-  }
-
-  protected open(approval: Approval): void {
-    this.router.navigate(['/claims', approval.claimId]);
   }
 
   private start(isApprover: boolean): void {

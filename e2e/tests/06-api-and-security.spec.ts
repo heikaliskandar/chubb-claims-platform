@@ -24,7 +24,7 @@ test.describe('API contract and security', () => {
     expect(response.headers()['www-authenticate']).toBeUndefined();
   });
 
-  test('a role cannot call another role\'s endpoints', async ({ apiAs }) => {
+  test("a role cannot call another role's endpoints", async ({ apiAs }) => {
     const claimant = await apiAs('claimant1');
     expect((await claimant.raw.get('/api/v1/claims')).status()).toBe(403);
     const officer = await apiAs('officer1');

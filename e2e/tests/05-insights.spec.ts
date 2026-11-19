@@ -17,7 +17,10 @@ test.describe('R9 Managers see outstanding claims and liability exposure', () =>
     const before = await reserveFor();
 
     const officer = await apiAs('officer1');
-    const claim = await officer.underReview({ market: 'TH', claimType: 'MOTOR', claimedAmount: 80_000 }, await apiAs('claimant1'));
+    const claim = await officer.underReview(
+      { market: 'TH', claimType: 'MOTOR', claimedAmount: 80_000 },
+      await apiAs('claimant1'),
+    );
     await officer.assess(claim.id, 77_777);
 
     await expect.poll(reserveFor, { timeout: 20_000 }).toBeCloseTo(before + 77_777, 2);

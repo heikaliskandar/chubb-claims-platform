@@ -6,6 +6,7 @@ import { Observable, switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth.service';
 import { ClaimsApiService } from '../../../core/claims-api.service';
 import { ClaimAction, ClaimDetail } from '../../../core/models';
+import { PeopleService } from '../../../core/people.service';
 import { ToastService } from '../../../core/toast.service';
 import { Crumb, PageHeaderComponent } from '../../../layout/page-header/page-header.component';
 import { LabelPipe } from '../../../shared/label.pipe';
@@ -13,6 +14,7 @@ import { marketName } from '../../../shared/markets';
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { poll } from '../../../shared/polling';
 import { StatusTagComponent } from '../../../shared/status-tag/status-tag.component';
+import { ApprovalPanelComponent } from './approval-panel/approval-panel.component';
 
 interface ActionConfig {
   label: string;
@@ -20,6 +22,7 @@ interface ActionConfig {
   style: 'btn-primary' | 'btn-success' | 'btn-outline' | 'btn-danger';
   text?: { label: string; optional?: boolean };
   amount?: { label: string; allowZero?: boolean };
+  hint?: string;
 }
 
 const ACTIONS: Record<ClaimAction, ActionConfig> = {
@@ -41,7 +44,7 @@ const ACTIONS: Record<ClaimAction, ActionConfig> = {
     label: 'Assess',
     icon: 'calculate',
     style: 'btn-outline',
-    amount: { label: 'Reserve', allowZero: true },
+    amount: { label: 'Expected cost (reserve)', allowZero: true },
     text: { label: 'Notes', optional: true },
   },
   APPROVE: {
@@ -53,25 +56,30 @@ const ACTIONS: Record<ClaimAction, ActionConfig> = {
   },
   REJECT: { label: 'Reject', icon: 'close', style: 'btn-danger', text: { label: 'Reason' } },
   APPROVE_REFERRAL: {
-    label: 'Approve',
+    label: 'Approve payment',
     icon: 'check_circle',
     style: 'btn-success',
-    text: { label: 'Comment', optional: true },
+    text: { label: 'Note for the officer', optional: true },
+    hint: 'The claim will be approved at the recommended amount, and the officer can then arrange payment.',
   },
   RETURN_REFERRAL: {
-    label: 'Return',
+    label: 'Send back for changes',
     icon: 'undo',
     style: 'btn-outline',
-    text: { label: 'What needs to change' },
+    text: { label: 'What should the officer change?' },
+    hint: 'The claim goes back to the officer for review. Nothing is approved or rejected yet.',
   },
   REJECT_REFERRAL: {
-    label: 'Reject',
+    label: 'Decline the claim',
     icon: 'block',
     style: 'btn-danger',
-    text: { label: 'Reason' },
+    text: { label: 'Reason (shared with the customer)' },
+    hint: 'The claim will be rejected and the customer will see your reason.',
   },
   SETTLE: { label: 'Mark settled', icon: 'account_balance_wallet', style: 'btn-success' },
 };
+
+const REVIEW_ACTIONS: ClaimAction[] = ['APPROVE_REFERRAL', 'RETURN_REFERRAL', 'REJECT_REFERRAL'];
 
 @Component({
   selector: 'app-claim-detail',
@@ -83,6 +91,7 @@ const ACTIONS: Record<ClaimAction, ActionConfig> = {
     ModalComponent,
     PageHeaderComponent,
     StatusTagComponent,
+    ApprovalPanelComponent,
   ],
   templateUrl: './claim-detail.component.html',
   styleUrl: './claim-detail.component.scss',
@@ -91,6 +100,7 @@ export class ClaimDetailComponent {
   private readonly api = inject(ClaimsApiService);
   private readonly auth = inject(AuthService);
   private readonly toasts = inject(ToastService);
+  protected readonly people = inject(PeopleService);
 
   readonly id = input.required<string>();
 
@@ -105,6 +115,14 @@ export class ClaimDetailComponent {
   protected readonly openRequest = computed(() =>
     this.claim()?.informationRequests.find((request) => request.status === 'OPEN'),
   );
+  protected readonly isStaff = computed(() => this.auth.user()?.role !== 'CLAIMANT');
+  protected readonly headerActions = computed(() =>
+    (this.claim()?.allowedActions ?? []).filter((action) => !REVIEW_ACTIONS.includes(action)),
+  );
+  protected readonly showApprovalPanel = computed(() => {
+    const claim = this.claim();
+    return this.isStaff() && claim?.status === 'PENDING_APPROVAL' && claim.referral !== null;
+  });
   protected readonly crumbs = computed<Crumb[]>(() => {
     const isClaimant = this.auth.user()?.role === 'CLAIMANT';
     return [
@@ -116,6 +134,9 @@ export class ClaimDetailComponent {
   });
 
   constructor() {
+    if (this.isStaff()) {
+      this.people.load();
+    }
     toObservable(this.id)
       .pipe(
         switchMap((id) => poll(() => this.api.get(id))),

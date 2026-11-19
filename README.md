@@ -70,7 +70,7 @@ Step-by-step flows for every user type, with diagrams, the demo data and a ten-m
 | REST and Kafka, with a reason for each ([doc](docs/features/events-and-messaging.md)) | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
 | Async processing across both tiers | Outbox → Kafka → read model; the UI polls and shows "Updated hh:mm:ss" on dashboards |
 
-**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 151 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 61 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
+**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 151 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 62 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
 
 ## Architecture at a glance
 
@@ -220,8 +220,8 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 cd services/claims-service && ./mvnw test      # 138 unit + web-layer tests, no Docker needed
 cd services/insights-service && ./mvnw test    # 13 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
-cd frontend && npm test -- --watch=false       # 11 frontend unit tests (Vitest)
-cd e2e && npm ci && npx playwright test        # 61 end-to-end tests against the running stack
+cd frontend && npm test -- --watch=false       # 13 frontend unit tests (Vitest)
+cd e2e && npm ci && npx playwright test        # 62 end-to-end tests against the running stack
 ```
 
 Every push runs all of these in **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.yml)): both services' unit and Testcontainers suites, frontend formatting, unit tests and production build, then the full stack in Docker Compose with the Playwright suite. On failure the Playwright report, traces and service logs are uploaded.
