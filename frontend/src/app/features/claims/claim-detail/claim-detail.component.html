@@ -1,164 +1,236 @@
 @if (claim(); as claim) {
-  <header class="header">
-    <div>
-      <h1>{{ claim.claimNumber }} <app-status-chip [status]="claim.status" /></h1>
-      <p class="next-step">{{ claim.nextStep }}</p>
-    </div>
-    <div class="waiting">
-      Waiting on<br /><strong>{{ claim.waitingOn | label }}</strong>
-    </div>
-  </header>
+  <app-page-header [title]="claim.claimNumber" [crumbs]="crumbs()">
+    @for (action of claim.allowedActions; track action) {
+      <p-button
+        [label]="actions[action].label"
+        [icon]="actions[action].icon"
+        [severity]="actions[action].severity"
+        [outlined]="!!actions[action].outlined"
+        [disabled]="busy()"
+        (onClick)="choose(action)"
+      />
+    }
+  </app-page-header>
 
-  @if (claim.allowedActions.length > 0) {
-    <mat-card class="actions">
-      <mat-card-header><mat-card-title>What you can do</mat-card-title></mat-card-header>
-      <mat-card-content>
-        @if (claim.status === 'INFO_REQUESTED' && openRequest(); as request) {
-          <p class="question"><strong>Question:</strong> {{ request.question }}</p>
-        }
-        @if (claim.referral && claim.status === 'PENDING_APPROVAL') {
-          <p class="question">
-            <strong>{{ claim.referral.referredBy }}</strong> recommends approving
-            <strong>{{ claim.referral.amount | currency: claim.currency : 'code' }}</strong>:
-            {{ claim.referral.reason }}
-          </p>
-        }
-        <div class="buttons">
-          @for (action of claim.allowedActions; track action) {
-            <button
-              mat-flat-button
-              [class.danger]="action === 'REJECT' || action === 'REJECT_REFERRAL'"
-              [disabled]="busy()"
-              (click)="choose(action)"
-            >
-              {{ actions[action].label }}
-            </button>
+  <div class="layout-main-side">
+    <div class="stack">
+      <section class="surface-card">
+        <div class="summary">
+          <div>
+            <span class="muted small">Claimed</span>
+            <div class="headline amount">
+              {{ claim.claimedAmount | currency: claim.currency : 'code' }}
+            </div>
+          </div>
+          @if (claim.reserveAmount !== null) {
+            <div>
+              <span class="muted small">Reserve</span>
+              <div class="headline amount">
+                {{ claim.reserveAmount | currency: claim.currency : 'code' }}
+              </div>
+            </div>
+          }
+          @if (claim.decision?.approvedAmount; as approved) {
+            <div>
+              <span class="muted small">Approved</span>
+              <div class="headline amount success">
+                {{ approved | currency: claim.currency : 'code' }}
+              </div>
+            </div>
           }
         </div>
 
-        @if (activeAction(); as action) {
-          <form class="action-form" (ngSubmit)="run(action)">
-            @if (actions[action].amount; as amountField) {
-              <mat-form-field appearance="outline">
-                <mat-label>{{ amountField.label }} ({{ claim.currency }})</mat-label>
-                <input matInput type="number" step="0.01" min="0" [formControl]="amount" />
-              </mat-form-field>
-            }
-            @if (actions[action].text; as textField) {
-              <mat-form-field appearance="outline">
-                <mat-label
-                  >{{ textField.label }}{{ textField.optional ? ' (optional)' : '' }}</mat-label
-                >
-                <textarea matInput rows="3" maxlength="1000" [formControl]="text"></textarea>
-              </mat-form-field>
-            }
-            <div class="buttons">
-              <button mat-flat-button type="submit" [disabled]="!canSubmit(action)">
-                {{ actions[action].label }}
-              </button>
-              <button mat-button type="button" (click)="activeAction.set(null)">Cancel</button>
-            </div>
-          </form>
-        }
-      </mat-card-content>
-    </mat-card>
-  }
-
-  <div class="grid">
-    <mat-card>
-      <mat-card-header><mat-card-title>Claim</mat-card-title></mat-card-header>
-      <mat-card-content>
-        <dl>
-          <dt>Policy</dt>
-          <dd>{{ claim.policyNumber }}</dd>
-          <dt>Market / type</dt>
-          <dd>{{ claim.market }} · {{ claim.claimType | label }}</dd>
-          <dt>Incident date</dt>
-          <dd>{{ claim.incidentDate | date: 'mediumDate' }}</dd>
-          <dt>Claimed</dt>
-          <dd>{{ claim.claimedAmount | currency: claim.currency : 'code' }}</dd>
-          @if (claim.reserveAmount !== null) {
-            <dt>Reserve</dt>
-            <dd>{{ claim.reserveAmount | currency: claim.currency : 'code' }}</dd>
-          }
-          <dt>Officer</dt>
-          <dd>{{ claim.assignedOfficerId ?? 'Not yet assigned' }}</dd>
+        <dl class="kv">
+          <div>
+            <dt>Policy</dt>
+            <dd>{{ claim.policyNumber }}</dd>
+          </div>
+          <div>
+            <dt>Market</dt>
+            <dd>{{ marketName(claim.market) }}</dd>
+          </div>
+          <div>
+            <dt>Type</dt>
+            <dd>{{ claim.claimType | label }}</dd>
+          </div>
+          <div>
+            <dt>Incident</dt>
+            <dd>{{ claim.incidentDate | date: 'd MMM y' }}</dd>
+          </div>
+          <div>
+            <dt>Claimant</dt>
+            <dd>{{ claim.claimantId }}</dd>
+          </div>
+          <div>
+            <dt>Officer</dt>
+            <dd>{{ claim.assignedOfficerId ?? '—' }}</dd>
+          </div>
         </dl>
+
         <p class="description">{{ claim.incidentDescription }}</p>
-      </mat-card-content>
-    </mat-card>
+      </section>
 
-    @if (claim.decision; as decision) {
-      <mat-card>
-        <mat-card-header><mat-card-title>Decision</mat-card-title></mat-card-header>
-        <mat-card-content>
-          <p>
-            <strong>{{ decision.outcome | label }}</strong>
-            @if (decision.approvedAmount !== null) {
-              · {{ decision.approvedAmount | currency: claim.currency : 'code' }}
-            }
-          </p>
-          <p>{{ decision.reason }}</p>
-          <p class="meta">
-            by {{ decision.decidedBy }} · {{ decision.decidedAt | date: 'medium' }}
-          </p>
-        </mat-card-content>
-      </mat-card>
-    }
-
-    @if (claim.informationRequests.length > 0) {
-      <mat-card>
-        <mat-card-header><mat-card-title>Information requests</mat-card-title></mat-card-header>
-        <mat-card-content>
+      @if (claim.informationRequests.length > 0) {
+        <section class="surface-card">
+          <h3 class="card-title">Information requests</h3>
           @for (request of claim.informationRequests; track request.id) {
-            <div class="entry">
-              <p><strong>Q:</strong> {{ request.question }}</p>
-              <p><strong>A:</strong> {{ request.response ?? 'Awaiting answer' }}</p>
-              <p class="meta">
-                asked by {{ request.requestedBy }} · {{ request.requestedAt | date: 'medium' }}
-              </p>
+            <div class="qa">
+              <div class="question">
+                <i class="pi pi-question-circle"></i>{{ request.question }}
+              </div>
+              @if (request.response) {
+                <div class="answer"><i class="pi pi-reply"></i>{{ request.response }}</div>
+              } @else {
+                <div class="answer pending"><i class="pi pi-clock"></i>Awaiting answer</div>
+              }
+              <div class="muted small">
+                {{ request.requestedBy }} · {{ request.requestedAt | date: 'd MMM, HH:mm' }}
+              </div>
             </div>
           }
-        </mat-card-content>
-      </mat-card>
-    }
+        </section>
+      }
 
-    @if (claim.assessments?.length) {
-      <mat-card>
-        <mat-card-header><mat-card-title>Assessments</mat-card-title></mat-card-header>
-        <mat-card-content>
+      @if (claim.assessments?.length) {
+        <section class="surface-card">
+          <h3 class="card-title">Assessments</h3>
           @for (assessment of claim.assessments; track assessment.assessedAt) {
-            <div class="entry">
-              <p>
-                <strong>{{
+            <div class="row-item">
+              <div>
+                <strong class="amount">{{
                   assessment.assessedAmount | currency: assessment.currency : 'code'
                 }}</strong>
-                {{ assessment.notes }}
-              </p>
-              <p class="meta">
-                by {{ assessment.officerId }} · {{ assessment.assessedAt | date: 'medium' }}
-              </p>
+                @if (assessment.notes) {
+                  <div class="muted">{{ assessment.notes }}</div>
+                }
+              </div>
+              <span class="muted small"
+                >{{ assessment.officerId }} ·
+                {{ assessment.assessedAt | date: 'd MMM, HH:mm' }}</span
+              >
             </div>
           }
-        </mat-card-content>
-      </mat-card>
-    }
+        </section>
+      }
+    </div>
 
-    <mat-card>
-      <mat-card-header><mat-card-title>Timeline</mat-card-title></mat-card-header>
-      <mat-card-content>
-        <ol class="timeline">
-          @for (change of claim.statusHistory; track $index) {
-            <li>
-              <strong>{{ change.toStatus | label }}</strong> by {{ change.changedBy }}
-              <span class="meta">· {{ change.changedAt | date: 'medium' }}</span>
+    <aside class="stack">
+      <section class="surface-card status-card">
+        <app-status-tag [status]="claim.status" />
+        <div class="waiting">
+          <i class="pi pi-clock"></i>
+          <span>{{ claim.waitingOn | label }}</span>
+        </div>
+        <p class="muted small">{{ claim.nextStep }}</p>
+      </section>
+
+      @if (claim.referral && claim.status === 'PENDING_APPROVAL') {
+        <section class="surface-card highlight">
+          <h3 class="card-title">Referred for approval</h3>
+          <div class="headline amount">
+            {{ claim.referral.amount | currency: claim.currency : 'code' }}
+          </div>
+          <p>{{ claim.referral.reason }}</p>
+          <span class="muted small"
+            >{{ claim.referral.referredBy }} ·
+            {{ claim.referral.referredAt | date: 'd MMM, HH:mm' }}</span
+          >
+        </section>
+      }
+
+      @if (claim.decision; as decision) {
+        <section class="surface-card">
+          <h3 class="card-title">Decision</h3>
+          <p>{{ decision.reason }}</p>
+          <span class="muted small"
+            >{{ decision.decidedBy }} · {{ decision.decidedAt | date: 'd MMM, HH:mm' }}</span
+          >
+        </section>
+      }
+
+      <section class="surface-card">
+        <h3 class="card-title">Activity</h3>
+        <p-timeline [value]="claim.statusHistory" align="left">
+          <ng-template #marker let-change>
+            <span class="marker"></span>
+          </ng-template>
+          <ng-template #content let-change>
+            <div class="event">
+              <strong>{{ change.toStatus | label }}</strong>
+              <span class="muted small"
+                >{{ change.changedBy }} · {{ change.changedAt | date: 'd MMM, HH:mm' }}</span
+              >
               @if (change.reason) {
-                <div class="reason">{{ change.reason }}</div>
+                <span class="small">{{ change.reason }}</span>
               }
-            </li>
-          }
-        </ol>
-      </mat-card-content>
-    </mat-card>
+            </div>
+          </ng-template>
+        </p-timeline>
+      </section>
+    </aside>
   </div>
+
+  <p-dialog
+    [visible]="activeAction() !== null"
+    (onHide)="activeAction.set(null)"
+    [header]="activeAction() ? actions[activeAction()!].label : ''"
+    [modal]="true"
+    [draggable]="false"
+    [style]="{ width: '440px' }"
+  >
+    @if (activeAction(); as action) {
+      <form class="dialog-form" (ngSubmit)="run(action)">
+        @if (action === 'RESPOND_TO_INFORMATION_REQUEST' && openRequest(); as request) {
+          <div class="question"><i class="pi pi-question-circle"></i>{{ request.question }}</div>
+        }
+        @if (actions[action].amount; as amountField) {
+          <div class="field">
+            <label for="amount">{{ amountField.label }}</label>
+            <p-inputnumber
+              inputId="amount"
+              [formControl]="amount"
+              mode="currency"
+              [currency]="claim.currency"
+              currencyDisplay="code"
+              locale="en-US"
+              [min]="0"
+            />
+          </div>
+        }
+        @if (actions[action].text; as textField) {
+          <div class="field">
+            <label for="text"
+              >{{ textField.label }}
+              @if (textField.optional) {
+                <span class="muted"> · optional</span>
+              }
+            </label>
+            <textarea
+              pTextarea
+              id="text"
+              rows="4"
+              maxlength="1000"
+              [formControl]="text"
+              [autoResize]="true"
+            ></textarea>
+          </div>
+        }
+        <div class="form-actions">
+          <p-button
+            label="Cancel"
+            severity="secondary"
+            [text]="true"
+            (onClick)="activeAction.set(null)"
+          />
+          <p-button
+            type="submit"
+            [label]="actions[action].label"
+            [severity]="actions[action].severity"
+            [loading]="busy()"
+            [disabled]="!canSubmit(action)"
+          />
+        </div>
+      </form>
+    }
+  </p-dialog>
 }

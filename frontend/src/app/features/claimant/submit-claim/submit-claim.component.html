@@ -1,0 +1,96 @@
+<app-page-header
+  title="New claim"
+  [crumbs]="[{ label: 'My claims', routerLink: '/claimant' }, { label: 'New claim' }]"
+/>
+
+<form class="surface-card form-card" [formGroup]="form" (ngSubmit)="submit()">
+  <div class="form-grid">
+    <div class="field full">
+      <label>Claim type</label>
+      <p-selectbutton
+        [options]="claimTypes"
+        formControlName="claimType"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+      >
+        <ng-template #item let-option>
+          <i [class]="option.icon"></i>
+          <span>{{ option.label }}</span>
+        </ng-template>
+      </p-selectbutton>
+    </div>
+
+    <div class="field">
+      <label for="market">Market</label>
+      <p-select
+        inputId="market"
+        [options]="markets"
+        formControlName="market"
+        optionValue="code"
+        optionLabel="name"
+      >
+        <ng-template #item let-market>
+          {{ market.name }} <span class="muted small">{{ market.currency }}</span>
+        </ng-template>
+      </p-select>
+    </div>
+
+    <div class="field">
+      <label for="policy">Policy number</label>
+      <input pInputText id="policy" formControlName="policyNumber" maxlength="50" />
+    </div>
+
+    <div class="field">
+      <label for="date">Incident date</label>
+      <p-datepicker
+        inputId="date"
+        formControlName="incidentDate"
+        [maxDate]="today"
+        [showIcon]="true"
+        dateFormat="d M yy"
+      />
+    </div>
+
+    <div class="field">
+      <label for="amount">Claimed amount</label>
+      <p-inputnumber
+        inputId="amount"
+        formControlName="claimedAmount"
+        mode="currency"
+        [currency]="currency()"
+        currencyDisplay="code"
+        locale="en-US"
+        [min]="0"
+      />
+    </div>
+
+    <div class="field full">
+      <label for="description">What happened</label>
+      <textarea
+        pTextarea
+        id="description"
+        rows="5"
+        formControlName="incidentDescription"
+        maxlength="2000"
+        [autoResize]="true"
+      ></textarea>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <p-button
+      label="Cancel"
+      severity="secondary"
+      [text]="true"
+      (onClick)="router.navigate(['/claimant'])"
+    />
+    <p-button
+      type="submit"
+      label="Submit claim"
+      icon="pi pi-send"
+      [loading]="busy()"
+      [disabled]="form.invalid"
+    />
+  </div>
+</form>

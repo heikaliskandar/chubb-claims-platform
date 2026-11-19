@@ -1,86 +1,102 @@
-.header {
+.summary {
   display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-}
-
-.next-step {
-  color: var(--mat-sys-on-surface-variant);
-  margin-top: -8px;
-}
-
-.waiting {
-  text-align: right;
-  font-size: 13px;
-}
-
-.actions {
-  margin-bottom: 16px;
-}
-
-.buttons {
-  display: flex;
+  gap: 40px;
   flex-wrap: wrap;
-  gap: 8px;
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--app-border);
 }
 
-.danger {
-  --mat-button-filled-container-color: var(--mat-sys-error);
+.headline {
+  font-size: 22px;
+  font-weight: 700;
+  margin-top: 4px;
 }
 
-.action-form {
-  display: flex;
-  flex-direction: column;
-  margin-top: 16px;
-  max-width: 560px;
-}
-
-.question {
-  margin-bottom: 12px;
-}
-
-.grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-  gap: 16px;
-}
-
-dl {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 4px 16px;
-}
-
-dt {
-  color: var(--mat-sys-on-surface-variant);
-}
-
-dd {
-  margin: 0;
+.success {
+  color: #15803d;
 }
 
 .description {
+  margin: 20px 0 0;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 
-.entry + .entry {
-  border-top: 1px solid var(--mat-sys-outline-variant);
-  padding-top: 8px;
+.qa + .qa,
+.row-item + .row-item {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--app-border);
 }
 
-.meta {
-  color: var(--mat-sys-on-surface-variant);
-  font-size: 12px;
+.question,
+.answer {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  margin-bottom: 6px;
 }
 
-.timeline {
-  padding-left: 20px;
+.question {
+  font-weight: 600;
 }
 
-.timeline li {
-  margin-bottom: 8px;
+.pending {
+  color: #b45309;
 }
 
-.reason {
-  font-style: italic;
+.row-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.status-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+
+  p {
+    margin: 0;
+  }
+}
+
+.waiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+}
+
+.highlight {
+  border-color: #fcd34d;
+  background: #fffbeb;
+}
+
+.marker {
+  display: block;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--app-primary);
+  box-shadow: 0 0 0 4px var(--app-primary-soft);
+}
+
+.event {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding-bottom: 12px;
+}
+
+.dialog-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .form-actions {
+    margin-top: 4px;
+  }
 }

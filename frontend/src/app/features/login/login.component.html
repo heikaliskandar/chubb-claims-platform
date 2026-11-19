@@ -1,0 +1,59 @@
+<div class="login">
+  <section class="brand-panel">
+    <div class="brand">
+      <span class="logo"><i class="pi pi-shield"></i></span>
+      <span>APAC Claims</span>
+    </div>
+    <div class="hero">
+      <h2>Motor &amp; property claims, one place.</h2>
+      <div class="markets">
+        @for (market of ['SG', 'MY', 'HK', 'TH', 'ID', 'PH']; track market) {
+          <span>{{ market }}</span>
+        }
+      </div>
+    </div>
+  </section>
+
+  <section class="form-panel">
+    <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+      <h1>Sign in</h1>
+
+      <div class="field">
+        <label for="username">Username</label>
+        <input pInputText id="username" formControlName="username" autocomplete="username" />
+      </div>
+
+      <div class="field">
+        <label for="password">Password</label>
+        <p-password
+          inputId="password"
+          formControlName="password"
+          [feedback]="false"
+          [toggleMask]="true"
+          autocomplete="current-password"
+          [fluid]="true"
+        />
+      </div>
+
+      <p-button
+        type="submit"
+        label="Sign in"
+        [fluid]="true"
+        [loading]="busy()"
+        [disabled]="form.invalid"
+      />
+
+      <div class="demo">
+        <span class="muted small">Demo accounts</span>
+        <div class="demo-list">
+          @for (account of demoAccounts; track account.username) {
+            <button type="button" class="demo-account" (click)="useDemo(account.username)">
+              <i [class]="account.icon"></i>
+              {{ account.label }}
+            </button>
+          }
+        </div>
+      </div>
+    </form>
+  </section>
+</div>

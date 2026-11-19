@@ -1,139 +1,114 @@
-<h1>Outstanding claims</h1>
+<app-page-header title="Overview" [crumbs]="[{ label: 'Overview' }]">
+  @if (dashboard()?.exposure?.asOf; as asOf) {
+    <span class="updated"><i class="pi pi-sync"></i>{{ asOf | date: 'HH:mm:ss' }}</span>
+  }
+</app-page-header>
 
 @if (dashboard(); as dashboard) {
-  <p class="as-of">
-    Data as of
-    {{ dashboard.exposure.asOf ? (dashboard.exposure.asOf | date: 'medium') : 'no events yet' }} ·
-    refreshes every 10 seconds
-  </p>
+  <div class="stats">
+    <div class="surface-card stat">
+      <span class="icon indigo"><i class="pi pi-folder-open"></i></span>
+      <div>
+        <span class="muted small">Open claims</span><strong>{{ openClaims() }}</strong>
+      </div>
+    </div>
+    <div class="surface-card stat">
+      <span class="icon sky"><i class="pi pi-inbox"></i></span>
+      <div>
+        <span class="muted small">Unassigned</span
+        ><strong>{{ dashboard.workload.unassignedClaims }}</strong>
+      </div>
+    </div>
+    <div class="surface-card stat">
+      <span class="icon amber"><i class="pi pi-user-edit"></i></span>
+      <div>
+        <span class="muted small">Awaiting approval</span><strong>{{ pendingApproval() }}</strong>
+      </div>
+    </div>
+    <div class="surface-card stat">
+      <span class="icon green"><i class="pi pi-stopwatch"></i></span>
+      <div>
+        <span class="muted small">Avg. hours to decision</span>
+        <strong>{{ averageHours() === null ? '—' : (averageHours() | number: '1.0-1') }}</strong>
+      </div>
+    </div>
+  </div>
 
-  <section class="totals">
-    @for (total of dashboard.exposure.totalsByCurrency; track total.currency) {
-      <mat-card class="total">
-        <div class="currency">{{ total.currency }}</div>
-        <div class="value">{{ total.outstandingReserve | currency: total.currency : 'code' }}</div>
-        <div class="meta">{{ total.openClaims }} open claims</div>
-      </mat-card>
-    } @empty {
-      <p>No outstanding exposure.</p>
-    }
+  <section class="surface-card">
+    <h3 class="card-title">Outstanding reserve <span class="muted small">by currency</span></h3>
+    <div class="currencies">
+      @for (total of dashboard.exposure.totalsByCurrency; track total.currency) {
+        <div class="currency">
+          <span class="code">{{ total.currency }}</span>
+          <strong class="amount">{{
+            total.outstandingReserve | currency: total.currency : '' : '1.0-0'
+          }}</strong>
+          <span class="muted small">{{ total.openClaims }} open</span>
+        </div>
+      } @empty {
+        <div class="empty-state"><i class="pi pi-check-circle"></i>No exposure</div>
+      }
+    </div>
   </section>
 
-  <div class="grid">
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Liability exposure</mat-card-title>
-        <mat-card-subtitle
-          >Reserves on open claims, per currency; no FX conversion</mat-card-subtitle
-        >
-      </mat-card-header>
-      <mat-card-content>
-        <table>
-          <thead>
-            <tr>
-              <th>Market</th>
-              <th>Type</th>
-              <th class="number">Open</th>
-              <th class="number">Reserve</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (
-              line of dashboard.exposure.lines;
-              track line.market + line.claimType + line.currency
-            ) {
-              <tr>
-                <td>{{ line.market }}</td>
-                <td>{{ line.claimType | label }}</td>
-                <td class="number">{{ line.openClaims }}</td>
-                <td class="number">
-                  {{ line.outstandingReserve | currency: line.currency : 'code' }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </mat-card-content>
-    </mat-card>
+  <div class="layout-main-side">
+    <section class="surface-card">
+      <h3 class="card-title">Workload by officer</h3>
+      <div class="chart">
+        <p-chart type="bar" [data]="chartData()" [options]="chartOptions" height="300px" />
+      </div>
+    </section>
 
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Team workload</mat-card-title>
-        <mat-card-subtitle
-          >{{ dashboard.workload.unassignedClaims }} claims waiting to be picked
-          up</mat-card-subtitle
-        >
-      </mat-card-header>
-      <mat-card-content>
-        <table>
-          <thead>
-            <tr>
-              <th>Team / officer</th>
-              <th class="number">Open</th>
-              <th>By status</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (team of dashboard.workload.teams; track team.team) {
-              <tr class="team-row">
-                <td>{{ team.team }}</td>
-                <td class="number">{{ team.openClaims }}</td>
-                <td></td>
-              </tr>
-              @for (officer of team.officers; track officer.officerId) {
-                <tr>
-                  <td class="indent">{{ officer.officerId }}</td>
-                  <td class="number">{{ officer.openClaims }}</td>
-                  <td class="meta">
-                    @for (entry of officer.claimsByStatus | keyvalue; track entry.key) {
-                      {{ entry.key | label }}: {{ entry.value }}&nbsp;&nbsp;
-                    }
-                  </td>
-                </tr>
-              }
-            }
-          </tbody>
-        </table>
-      </mat-card-content>
-    </mat-card>
-
-    <mat-card>
-      <mat-card-header>
-        <mat-card-title>Team performance</mat-card-title>
-        <mat-card-subtitle
-          >Decisions and average time from submission to decision</mat-card-subtitle
-        >
-      </mat-card-header>
-      <mat-card-content>
-        <table>
-          <thead>
-            <tr>
-              <th>Team</th>
-              <th class="number">Approved</th>
-              <th class="number">Rejected</th>
-              <th class="number">Closed</th>
-              <th class="number">Avg hours</th>
-            </tr>
-          </thead>
-          <tbody>
-            @for (team of dashboard.performance.teams; track team.team) {
-              <tr>
-                <td>{{ team.team }}</td>
-                <td class="number">{{ team.approved }}</td>
-                <td class="number">{{ team.rejected }}</td>
-                <td class="number">{{ team.closed }}</td>
-                <td class="number">
-                  {{
-                    team.averageHoursToDecision === null
-                      ? '—'
-                      : (team.averageHoursToDecision | number: '1.1-1')
-                  }}
-                </td>
-              </tr>
-            }
-          </tbody>
-        </table>
-      </mat-card-content>
-    </mat-card>
+    <section class="surface-card">
+      <h3 class="card-title">Teams</h3>
+      @for (team of dashboard.performance.teams; track team.team) {
+        <div class="team">
+          <div class="team-head">
+            <strong>{{ team.team }}</strong>
+            <span class="muted small">
+              {{
+                team.averageHoursToDecision === null
+                  ? '—'
+                  : (team.averageHoursToDecision | number: '1.0-1') + ' h avg'
+              }}
+            </span>
+          </div>
+          <div class="team-stats">
+            <span><i class="pi pi-check green-text"></i>{{ team.approved }}</span>
+            <span><i class="pi pi-times red-text"></i>{{ team.rejected }}</span>
+            <span><i class="pi pi-lock muted"></i>{{ team.closed }}</span>
+          </div>
+        </div>
+      }
+    </section>
   </div>
+
+  <section class="surface-card">
+    <h3 class="card-title">Exposure by market</h3>
+    <p-table [value]="dashboard.exposure.lines" [rowHover]="true">
+      <ng-template #header>
+        <tr>
+          <th>Market</th>
+          <th>Type</th>
+          <th class="right">Open</th>
+          <th class="right">Reserve</th>
+        </tr>
+      </ng-template>
+      <ng-template #body let-line>
+        <tr>
+          <td>{{ marketName(line.market) }}</td>
+          <td>{{ line.claimType | label }}</td>
+          <td class="right">{{ line.openClaims }}</td>
+          <td class="right amount">
+            {{ line.outstandingReserve | currency: line.currency : 'code' }}
+          </td>
+        </tr>
+      </ng-template>
+      <ng-template #emptymessage>
+        <tr>
+          <td colspan="4"><div class="empty-state">No open claims</div></td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </section>
 }

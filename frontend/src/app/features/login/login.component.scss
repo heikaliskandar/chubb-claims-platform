@@ -1,0 +1,118 @@
+.login {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  min-height: 100vh;
+}
+
+.brand-panel {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 40px 48px;
+  color: #fff;
+  background:
+    radial-gradient(circle at 80% 20%, rgb(255 255 255 / 12%), transparent 40%),
+    linear-gradient(150deg, #4f46e5 0%, #312e81 100%);
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: rgb(255 255 255 / 18%);
+}
+
+.hero h2 {
+  font-size: 40px;
+  line-height: 1.15;
+  font-weight: 700;
+  max-width: 420px;
+}
+
+.markets {
+  display: flex;
+  gap: 8px;
+  margin-top: 24px;
+
+  span {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: rgb(255 255 255 / 14%);
+    font-size: 12px;
+    font-weight: 600;
+  }
+}
+
+.form-panel {
+  display: grid;
+  place-items: center;
+  padding: 32px;
+  background: var(--app-surface);
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  width: 100%;
+  max-width: 380px;
+
+  h1 {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+}
+
+.demo {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+  padding-top: 20px;
+  border-top: 1px solid var(--app-border);
+}
+
+.demo-list {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.demo-account {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--app-border);
+  border-radius: 10px;
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-weight: 500;
+  cursor: pointer;
+
+  &:hover {
+    border-color: var(--app-primary);
+    color: var(--app-primary);
+  }
+}
+
+@media (max-width: 860px) {
+  .login {
+    grid-template-columns: 1fr;
+  }
+
+  .brand-panel {
+    display: none;
+  }
+}

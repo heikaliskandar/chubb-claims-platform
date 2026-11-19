@@ -1,0 +1,155 @@
+.shell {
+  min-height: 100vh;
+}
+
+.sidebar {
+  position: fixed;
+  inset: 0 auto 0 0;
+  width: var(--app-sidebar-width);
+  background: var(--app-surface);
+  border-right: 1px solid var(--app-border);
+  padding: 20px 16px;
+  box-sizing: border-box;
+  z-index: 20;
+  transition: transform 0.2s ease;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 8px 24px;
+  color: var(--app-text);
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.logo {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: var(--app-primary);
+  color: #fff;
+}
+
+.section {
+  display: block;
+  padding: 0 12px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--app-muted);
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  margin-bottom: 4px;
+  border-radius: 10px;
+  color: var(--app-text);
+  font-weight: 500;
+
+  &:hover {
+    background: var(--app-bg);
+  }
+
+  &.active {
+    background: var(--app-primary);
+    color: #fff;
+    box-shadow: 0 6px 14px rgb(79 70 229 / 25%);
+  }
+}
+
+.main {
+  margin-left: var(--app-sidebar-width);
+}
+
+.topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  height: var(--app-topbar-height);
+  padding: 0 28px;
+  background: rgb(244 246 251 / 85%);
+  backdrop-filter: blur(8px);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.menu-toggle {
+  display: none;
+}
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 12px;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+
+  &:hover {
+    background: var(--app-surface);
+  }
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+}
+
+.content {
+  padding: 4px 28px 32px;
+  max-width: 1320px;
+}
+
+.backdrop {
+  display: none;
+}
+
+@media (max-width: 960px) {
+  .sidebar {
+    transform: translateX(-100%);
+  }
+
+  .main {
+    margin-left: 0;
+  }
+
+  .menu-toggle {
+    display: inline-flex;
+  }
+
+  .sidebar-open {
+    .sidebar {
+      transform: none;
+    }
+
+    .backdrop {
+      display: block;
+      position: fixed;
+      inset: 0;
+      z-index: 15;
+      background: rgb(16 24 40 / 35%);
+    }
+  }
+
+  .content,
+  .topbar {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}

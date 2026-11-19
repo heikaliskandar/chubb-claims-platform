@@ -1,7 +1,7 @@
 import { HttpErrorResponse, HttpInterceptorFn } from '@angular/common/http';
 import { inject } from '@angular/core';
-import { MatSnackBar } from '@angular/material/snack-bar';
 import { Router } from '@angular/router';
+import { MessageService } from 'primeng/api';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from './auth.service';
 import { ProblemDetail } from './models';
@@ -9,7 +9,7 @@ import { ProblemDetail } from './models';
 export const errorInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
-  const snackBar = inject(MatSnackBar);
+  const messages = inject(MessageService);
 
   return next(request).pipe(
     catchError((error: HttpErrorResponse) => {
@@ -17,19 +17,24 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
         auth.logout();
         router.navigate(['/login']);
       } else {
-        snackBar.open(messageOf(error), 'Dismiss', { duration: 6000 });
+        const problem = error.error as ProblemDetail | null;
+        messages.add({
+          severity: error.status >= 500 || error.status === 0 ? 'error' : 'warn',
+          summary: problem?.title ?? 'Request failed',
+          detail: detailOf(problem),
+          life: 6000,
+        });
       }
       return throwError(() => error);
     }),
   );
 };
 
-function messageOf(error: HttpErrorResponse): string {
-  const problem = error.error as ProblemDetail | null;
+function detailOf(problem: ProblemDetail | null): string {
   if (problem?.errors) {
     return Object.entries(problem.errors)
       .map(([field, message]) => `${field}: ${message}`)
-      .join('; ');
+      .join(' · ');
   }
-  return problem?.detail ?? problem?.title ?? 'Something went wrong. Please try again.';
+  return problem?.detail ?? 'Please try again.';
 }

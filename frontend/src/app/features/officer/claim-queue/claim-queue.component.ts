@@ -1,71 +1,66 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
-import { MatButtonModule } from '@angular/material/button';
-import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { FormsModule } from '@angular/forms';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { switchMap } from 'rxjs';
 import { AuthService } from '../../../core/auth.service';
 import { ClaimsApiService, QueueFilter } from '../../../core/claims-api.service';
 import { ClaimSummary, PageResponse } from '../../../core/models';
+import { PageHeaderComponent } from '../../../layout/page-header/page-header.component';
 import { ClaimTableComponent } from '../../../shared/claim-table/claim-table.component';
 import { poll } from '../../../shared/polling';
 
 type View = 'unassigned' | 'mine' | 'approvals' | 'all';
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 @Component({
   selector: 'app-claim-queue',
-  imports: [MatButtonToggleModule, MatButtonModule, ClaimTableComponent],
+  imports: [FormsModule, SelectButtonModule, PageHeaderComponent, ClaimTableComponent],
   template: `
-    <h1>Claims</h1>
-    <mat-button-toggle-group [value]="view()" (change)="show($event.value)" aria-label="Queue">
-      @if (isOfficer()) {
-        <mat-button-toggle value="unassigned">Unassigned</mat-button-toggle>
-        <mat-button-toggle value="mine">My claims</mat-button-toggle>
-      }
-      <mat-button-toggle value="approvals">Awaiting approval</mat-button-toggle>
-      <mat-button-toggle value="all">All claims</mat-button-toggle>
-    </mat-button-toggle-group>
+    <app-page-header title="Claims" [crumbs]="[{ label: 'Claims' }]" />
 
-    @if (result(); as page) {
-      <app-claim-table [claims]="page.content" />
-      <div class="pager">
-        <span
-          >{{ page.totalElements }} claims · page {{ page.page + 1 }} of
-          {{ page.totalPages || 1 }}</span
-        >
-        <button mat-button [disabled]="page.page === 0" (click)="pageIndex.set(page.page - 1)">
-          Previous
-        </button>
-        <button
-          mat-button
-          [disabled]="page.page + 1 >= page.totalPages"
-          (click)="pageIndex.set(page.page + 1)"
-        >
-          Next
-        </button>
+    <div class="surface-card">
+      <div class="toolbar">
+        <p-selectbutton
+          [options]="views()"
+          [ngModel]="view()"
+          (ngModelChange)="show($event)"
+          optionLabel="label"
+          optionValue="value"
+          [allowEmpty]="false"
+        />
+        <span class="muted small">{{ result()?.totalElements ?? 0 }} claims</span>
       </div>
-    }
+      <app-claim-table [page]="result()" [rows]="pageSize" (pageChange)="pageIndex.set($event)" />
+    </div>
   `,
   styles: `
-    mat-button-toggle-group {
-      margin-bottom: 16px;
-    }
-    .pager {
+    .toolbar {
       display: flex;
       align-items: center;
-      justify-content: flex-end;
-      gap: 8px;
-      margin-top: 8px;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
     }
   `,
 })
 export class ClaimQueueComponent {
   private readonly api = inject(ClaimsApiService);
   private readonly auth = inject(AuthService);
+  private readonly isOfficer = this.auth.user()?.role === 'OFFICER';
 
-  protected readonly isOfficer = computed(() => this.auth.user()?.role === 'OFFICER');
-  protected readonly view = signal<View>(this.isOfficer() ? 'unassigned' : 'approvals');
+  protected readonly pageSize = PAGE_SIZE;
+  protected readonly views = signal(
+    [
+      { label: 'Unassigned', value: 'unassigned' as View, officerOnly: true },
+      { label: 'Mine', value: 'mine' as View, officerOnly: true },
+      { label: 'Awaiting approval', value: 'approvals' as View, officerOnly: false },
+      { label: 'All', value: 'all' as View, officerOnly: false },
+    ].filter((view) => this.isOfficer || !view.officerOnly),
+  );
+  protected readonly view = signal<View>(this.isOfficer ? 'unassigned' : 'approvals');
   protected readonly pageIndex = signal(0);
   protected readonly result = signal<PageResponse<ClaimSummary> | null>(null);
 
@@ -79,6 +74,7 @@ export class ClaimQueueComponent {
   }
 
   protected show(view: View): void {
+    this.result.set(null);
     this.view.set(view);
     this.pageIndex.set(0);
   }
