@@ -1,6 +1,6 @@
 # Deployment
 
-Two free ways to run the platform for other people. Both run the same Docker Compose stack as local development.
+Free ways to run the platform for other people. Both run the same Docker Compose stack as local development.
 
 | | **A. GitHub Codespaces** | **B. Oracle Cloud Always Free VM** |
 |---|---|---|
@@ -12,6 +12,24 @@ Two free ways to run the platform for other people. Both run the same Docker Com
 | Needs | A GitHub account with access to the repo | An Oracle account (card for verification only) and a free DuckDNS name |
 
 Free PaaS tiers (Render, Railway, Fly.io, Koyeb) were considered and ruled out: their free machines have about 512 MB of memory, which can't hold PostgreSQL, Kafka and two JVM services.
+
+---
+
+## Quickest public link: Cloudflare Tunnel from your own machine
+
+No account, no card, no server. The stack runs on your machine, and Cloudflare gives it a temporary public HTTPS address. It's ideal for an interview or a review session; the link works while the machine is on and the stack is running.
+
+1. Start the stack as usual: `docker compose up -d`.
+2. Download `cloudflared` from [its releases](https://github.com/cloudflare/cloudflared/releases), for example `cloudflared-windows-amd64.exe`.
+3. Run:
+   ```bash
+   cloudflared tunnel --no-autoupdate --url http://localhost:4200
+   ```
+4. Copy the `https://<random-words>.trycloudflare.com` address it prints, and share it. The app and `/api/docs` work there with the demo accounts.
+
+Only the web app (port 4200) is exposed; the database, Kafka, the services and Kafka UI are not. Stop the tunnel (Ctrl+C, or end the `cloudflared` process) to take the link offline. Each start gives a new address. A fixed address needs a free Cloudflare account and a domain (a *named tunnel*).
+
+This was checked end to end: 41 read-only end-to-end tests (access, navigation for all eight users, accessibility, API docs) passed against the public tunnel URL.
 
 ---
 
