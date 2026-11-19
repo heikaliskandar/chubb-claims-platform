@@ -163,7 +163,7 @@ The services are stateless, so the first lever at any volume is more instances b
 
 ## Known limitations
 
-- The integration tests (Testcontainers) and the full `docker compose up` run were not executed on the development machine, which had no Docker. Unit and web-layer tests were run, and both services were booted against a real PostgreSQL 17 (embedded, without Kafka) to check migrations, seeding, security and the main API flows.
+- Login lockout is held in memory per service instance; with several instances, or after a restart, the count is not shared. The identity provider owns this in production.
 - Security configuration is duplicated across the two services. A shared OIDC resource-server setup would replace it.
 - An `Idempotency-Key` reused with a different request body is not detected (that would need a stored request hash).
 - insights-service dashboards are not filtered by reporting line; workload and performance are visible to all officers.

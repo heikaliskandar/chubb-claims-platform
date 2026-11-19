@@ -70,6 +70,7 @@ Every runtime and library in the platform, with its version, licence and why it 
 | Technology | Version | Licence | Used for |
 |---|---|---|---|
 | Docker Compose | v2 | Apache 2.0 | One command starts the whole stack |
+| GitHub Actions | — | — | CI: backend, frontend and end-to-end jobs on every push |
 | Eclipse Temurin images | 21 JDK (build) / 21 JRE (run) | GPLv2 + CE | Multi-stage service images |
 | Node | 24 (Alpine, build only) | MIT | Builds the Angular app |
 | nginx | 1.31 (Alpine) | BSD-2 | Serves the app, proxies `/api`, sets security and cache headers |

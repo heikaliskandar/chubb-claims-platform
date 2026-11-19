@@ -4,6 +4,7 @@ A claims platform for motor and property claims across six APAC markets: one Ang
 
 ![Claims portal prototype](docs/images/claims-portal-mockup.webp)
 
+[![CI](https://github.com/heikaliskandar/chubb-claims-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/heikaliskandar/chubb-claims-platform/actions/workflows/ci.yml)
 ![Java](https://img.shields.io/badge/Java_21-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
 ![Spring Boot](https://img.shields.io/badge/Spring_Boot_4.1-6DB33F?style=flat-square&logo=springboot&logoColor=white)
 ![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=flat-square&logo=springsecurity&logoColor=white)
@@ -219,8 +220,11 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 cd services/claims-service && ./mvnw test      # 138 unit + web-layer tests, no Docker needed
 cd services/insights-service && ./mvnw test    # 13 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
+cd frontend && npm test -- --watch=false       # 11 frontend unit tests (Vitest)
 cd e2e && npm ci && npx playwright test        # 61 end-to-end tests against the running stack
 ```
+
+Every push runs all of these in **GitHub Actions** ([.github/workflows/ci.yml](.github/workflows/ci.yml)): both services' unit and Testcontainers suites, frontend formatting, unit tests and production build, then the full stack in Docker Compose with the Playwright suite. On failure the Playwright report, traces and service logs are uploaded.
 
 | Area | What is tested |
 |---|---|
@@ -228,6 +232,7 @@ cd e2e && npm ci && npx playwright test        # 61 end-to-end tests against the
 | Business rules | Money validation, assignment, info requests, assessment, approval limits, referral, four-eyes, allowed actions (`ClaimTest`, `AuthorityLimitsTest`) |
 | API and security | Authentication, roles, validation errors, Problem Details mapping, idempotent submit (`ClaimControllerTest`, `DashboardControllerTest`) |
 | Money and reporting | Per-currency totals that are never mixed, weighted team averages, workload grouping (`ExposureReportTest`, `PerformanceReportTest`, `WorkloadReportTest`) |
+| Frontend unit (Vitest) | Session kept per tab and cleared on sign-out, error interceptor (401 sign-out, Problem Details toasts), the tab re-select regression, label formatting |
 | End to end (Playwright, [e2e/](e2e/README.md)) | Every brief requirement driven through the browser as claimant, officer, team lead and manager, on desktop and mobile; Kafka read model updates; four-eyes approvals; security headers; WCAG 2.1 AA with axe-core |
 | Integration (Testcontainers, PostgreSQL 17 + Kafka 4.4) | Flyway schema matches the entities; claim and outbox event commit together; a failed command writes no event; events reach Kafka in order; optimistic-lock conflict; duplicate and stale events are ignored; poison messages go to the DLT |
 

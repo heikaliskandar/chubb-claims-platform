@@ -161,6 +161,11 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✅ Added a crawl test (`08-navigation`): as each of the 8 users it clicks every sidebar link, the profile entry, and every row on every list and tab, failing on any 401, 403 or 404 API call. All sidebar links were fine for every role.
 - 🐞 Found the dead end: on **People** and **Approvals**, clicking the tab you were already on cleared the list and never reloaded it, leaving the page stuck on "Loading…". Fixed by ignoring a re-select of the current tab. 61 e2e tests pass, twice in a row.
 
+## Phase 20: Closing gaps
+
+- ✅ Audit of what a reviewer would hit: `npm test` failed because the frontend had no unit tests although the docs advertised it; architecture.md still said the integration tests had never run; no CI.
+- ✅ Added 11 Vitest tests (session, error interceptor, label pipe, and a regression test for the tab bug that I confirmed fails when the fix is removed), and a GitHub Actions pipeline running backend, frontend and the Playwright suite against the Compose stack.
+
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.

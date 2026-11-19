@@ -70,6 +70,6 @@ Shared classes: `.btn` (primary, dark, success, outline, danger, ghost, icon), `
 cd frontend
 npm ci
 npm start          # http://localhost:4200, proxies /api to localhost:8081 and :8082
-npm test           # Vitest
+npm test           # Vitest unit tests
 npx ng build       # production build in dist/
 ```
