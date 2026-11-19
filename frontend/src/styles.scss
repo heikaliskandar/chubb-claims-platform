@@ -1,15 +1,44 @@
 :root {
   --app-bg: #f4f7fc;
   --app-surface: #ffffff;
+  --app-surface-2: #f7f9fd;
   --app-border: #edf0f6;
   --app-text: #1d2433;
+  --app-heading: #0f1f3d;
   --app-muted: #6b7385;
   --app-primary: #4f7df3;
   --app-primary-soft: #eef4ff;
+  --app-input-bg: #edf2fb;
+  --app-cta: #0f1f3d;
+  --app-cta-hover: #1c3260;
+  --app-success: #0fa57c;
+  --app-warning: #b45309;
+  --app-danger: #ec5f56;
+  --app-sidebar-bg: linear-gradient(180deg, #1c2130 0%, #0e121b 100%);
   --app-radius: 16px;
   --app-shadow: 0 1px 3px rgb(42 67 155 / 5%), 0 10px 30px -8px rgb(42 67 155 / 10%);
-  --app-sidebar-width: 256px;
-  --app-topbar-height: 64px;
+  color-scheme: light;
+}
+
+:root.app-dark {
+  --app-bg: #0b0f17;
+  --app-surface: #141a25;
+  --app-surface-2: #1a2130;
+  --app-border: #232b3a;
+  --app-text: #e3e7ef;
+  --app-heading: #f1f4f9;
+  --app-muted: #8d96a8;
+  --app-primary: #6f97f8;
+  --app-primary-soft: rgb(111 151 248 / 14%);
+  --app-input-bg: #1c2433;
+  --app-cta: #4f7df3;
+  --app-cta-hover: #6f97f8;
+  --app-success: #34c99b;
+  --app-warning: #f5b454;
+  --app-danger: #f2706b;
+  --app-sidebar-bg: linear-gradient(180deg, #161c28 0%, #0d1119 100%);
+  --app-shadow: 0 1px 2px rgb(0 0 0 / 30%), 0 10px 30px -8px rgb(0 0 0 / 45%);
+  color-scheme: dark;
 }
 
 html,

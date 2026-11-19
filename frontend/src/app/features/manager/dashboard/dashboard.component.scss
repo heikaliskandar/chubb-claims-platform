@@ -96,26 +96,26 @@
 }
 
 .blue {
-  background: #eef4ff;
+  background: color-mix(in srgb, #4f7df3 14%, transparent);
   color: #4f7df3;
 }
 .sky {
-  background: #e6f6fe;
+  background: color-mix(in srgb, #1aa3e8 14%, transparent);
   color: #1aa3e8;
 }
 .amber {
-  background: #fef5e5;
+  background: color-mix(in srgb, #e8920c 14%, transparent);
   color: #e8920c;
 }
 .green {
-  background: #e3f8f2;
+  background: color-mix(in srgb, #0fa57c 14%, transparent);
   color: #0fa57c;
 }
 .green-text {
-  color: #0fa57c;
+  color: var(--app-success);
 }
 .red-text {
-  color: #ec5f56;
+  color: var(--app-danger);
 }
 
 .currencies {

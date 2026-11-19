@@ -14,7 +14,7 @@
 }
 
 .success {
-  color: #0fa57c;
+  color: var(--app-success);
 }
 
 .description {
@@ -43,7 +43,7 @@
 }
 
 .pending {
-  color: #b45309;
+  color: var(--app-warning);
 }
 
 .row-item {
@@ -71,8 +71,8 @@
 }
 
 .highlight {
-  border-color: #fcd34d;
-  background: #fffbeb;
+  border-color: color-mix(in srgb, #f5b82e 60%, transparent);
+  background: color-mix(in srgb, #f5b82e 10%, var(--app-surface));
 }
 
 .marker {

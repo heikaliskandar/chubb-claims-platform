@@ -1,59 +1,112 @@
-<div class="login">
-  <section class="brand-panel">
-    <div class="brand">
-      <span class="logo"><i class="pi pi-shield"></i></span>
-      <span>APAC Claims</span>
-    </div>
-    <div class="hero">
-      <h2>Motor &amp; property claims, one place.</h2>
-      <div class="markets">
-        @for (market of ['SG', 'MY', 'HK', 'TH', 'ID', 'PH']; track market) {
-          <span>{{ market }}</span>
-        }
+<div class="page">
+  <div class="frame">
+    <section class="hero" [class.has-image]="loginImage()" aria-hidden="true">
+      @if (loginImage(); as image) {
+        <img class="hero-image" [src]="image" alt="" />
+      } @else {
+        <svg class="arcs" viewBox="0 0 600 800" preserveAspectRatio="xMaxYMid slice">
+          <circle cx="760" cy="420" r="460" />
+          <circle cx="760" cy="420" r="340" />
+          <circle cx="760" cy="420" r="220" class="fill" />
+          <circle cx="392" cy="232" r="14" class="node accent" />
+          <circle cx="318" cy="470" r="18" class="node ring" />
+          <circle cx="545" cy="660" r="22" class="node" />
+        </svg>
+        <app-logo class="hero-mark" />
+      }
+      <span class="dots top"></span>
+      <span class="dots bottom"></span>
+
+      <div class="greeting">
+        <p class="typed">{{ typed() }}<span class="caret"></span></p>
+        <p class="tagline">Motor &amp; property claims across six markets.</p>
       </div>
-    </div>
-  </section>
+    </section>
 
-  <section class="form-panel">
-    <form class="form" [formGroup]="form" (ngSubmit)="submit()">
-      <h1>Sign in</h1>
-
-      <div class="field">
-        <label for="username">Username</label>
-        <input pInputText id="username" formControlName="username" autocomplete="username" />
-      </div>
-
-      <div class="field">
-        <label for="password">Password</label>
-        <p-password
-          inputId="password"
-          formControlName="password"
-          [feedback]="false"
-          [toggleMask]="true"
-          autocomplete="current-password"
-          [fluid]="true"
+    <section class="panel">
+      <header class="panel-top">
+        <app-logo class="brand" product="Claims" />
+        <p-button
+          [icon]="dark() ? 'pi pi-sun' : 'pi pi-moon'"
+          [text]="true"
+          [rounded]="true"
+          severity="secondary"
+          [ariaLabel]="dark() ? 'Switch to light mode' : 'Switch to dark mode'"
+          (onClick)="toggleTheme()"
         />
-      </div>
+      </header>
 
-      <p-button
-        type="submit"
-        label="Sign in"
-        [fluid]="true"
-        [loading]="busy()"
-        [disabled]="form.invalid"
-      />
-
-      <div class="demo">
-        <span class="muted small">Demo accounts</span>
-        <div class="demo-list">
-          @for (account of demoAccounts; track account.username) {
-            <button type="button" class="demo-account" (click)="useDemo(account.username)">
-              <i [class]="account.icon"></i>
-              {{ account.label }}
-            </button>
-          }
+      <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+        <div class="heading">
+          <h1>Sign in to your account</h1>
+          <p class="muted">Welcome back — enter your credentials to continue</p>
         </div>
-      </div>
-    </form>
-  </section>
+
+        <div class="field">
+          <label for="username">Username</label>
+          <p-iconfield>
+            <p-inputicon class="pi pi-user" />
+            <input
+              pInputText
+              id="username"
+              formControlName="username"
+              autocomplete="username"
+              placeholder="e.g. officer1"
+            />
+          </p-iconfield>
+        </div>
+
+        <div class="field">
+          <label for="password">Password</label>
+          <p-iconfield>
+            <p-inputicon class="pi pi-lock" />
+            <input
+              pInputText
+              id="password"
+              [type]="showPassword() ? 'text' : 'password'"
+              formControlName="password"
+              autocomplete="current-password"
+              placeholder="Your password"
+            />
+            <p-inputicon>
+              <button
+                type="button"
+                class="reveal"
+                [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
+                (click)="showPassword.update((shown) => !shown)"
+              >
+                <i [class]="showPassword() ? 'pi pi-eye-slash' : 'pi pi-eye'"></i>
+              </button>
+            </p-inputicon>
+          </p-iconfield>
+        </div>
+
+        <p-button
+          type="submit"
+          label="Login"
+          styleClass="login-button"
+          [fluid]="true"
+          [rounded]="true"
+          [loading]="busy()"
+          [disabled]="form.invalid"
+        />
+
+        <div class="demo">
+          <span class="demo-title">Demo accounts</span>
+          <div class="demo-list">
+            @for (account of demoAccounts; track account.username) {
+              <button type="button" class="demo-account" (click)="useDemo(account.username)">
+                <i [class]="account.icon"></i>
+                <span>{{ account.label }}</span>
+              </button>
+            }
+          </div>
+        </div>
+      </form>
+
+      <footer class="panel-footer">
+        <span>© {{ year }} Chubb · All rights reserved.</span>
+      </footer>
+    </section>
+  </div>
 </div>

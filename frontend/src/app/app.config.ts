@@ -24,6 +24,29 @@ const ClaimsTheme = definePreset(Aura, {
       900: '#283c7a',
       950: '#1b254b',
     },
+    colorScheme: {
+      dark: {
+        surface: {
+          0: '#ffffff',
+          50: '#f4f6fa',
+          100: '#e3e7ef',
+          200: '#c9cfdb',
+          300: '#a3acbd',
+          400: '#8d96a8',
+          500: '#6b7385',
+          600: '#4a5266',
+          700: '#323a4b',
+          800: '#232b3a',
+          900: '#141a25',
+          950: '#0b0f17',
+        },
+      },
+    },
+  },
+  components: {
+    breadcrumb: {
+      root: { background: 'transparent', padding: '0' },
+    },
   },
 });
 

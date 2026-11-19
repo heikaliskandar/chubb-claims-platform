@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
 import { ToastModule } from 'primeng/toast';
+import { ThemeService } from './core/theme.service';
 
 @Component({
   selector: 'app-root',
@@ -10,4 +11,8 @@ import { ToastModule } from 'primeng/toast';
     <p-toast position="top-right" />
   `,
 })
-export class App {}
+export class App {
+  constructor() {
+    inject(ThemeService);
+  }
+}

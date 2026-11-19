@@ -86,7 +86,12 @@ export class DashboardComponent {
     },
     scales: {
       x: { stacked: true, grid: { display: false } },
-      y: { stacked: true, beginAtZero: true, ticks: { precision: 0 }, grid: { color: '#eef0f5' } },
+      y: {
+        stacked: true,
+        beginAtZero: true,
+        ticks: { precision: 0 },
+        grid: { color: 'rgba(127, 135, 155, 0.15)' },
+      },
     },
   };
 
