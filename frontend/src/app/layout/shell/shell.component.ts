@@ -216,7 +216,7 @@ export class ShellComponent {
       {
         label: 'Reset sign-in image',
         icon: 'refresh',
-        disabled: !this.branding.loginImage(),
+        disabled: !this.branding.customLoginImage(),
         run: () => {
           this.branding.resetLoginImage();
           this.toasts.show('info', 'Sign-in image reset to default');

@@ -1,31 +1,20 @@
 <div class="page">
   <div class="frame">
-    <section class="hero" [class.has-image]="loginImage()" aria-hidden="true">
-      @if (loginImage(); as image) {
-        <img class="hero-image" [src]="image" alt="" />
-      } @else {
-        <svg class="arcs" viewBox="0 0 600 800" preserveAspectRatio="xMaxYMid slice">
-          <circle cx="760" cy="420" r="460" />
-          <circle cx="760" cy="420" r="340" />
-          <circle cx="760" cy="420" r="220" class="fill" />
-          <circle cx="392" cy="232" r="14" class="node accent" />
-          <circle cx="318" cy="470" r="18" class="node ring" />
-          <circle cx="545" cy="660" r="22" class="node" />
-        </svg>
-        <app-logo class="hero-mark" />
-      }
-      <span class="dots top"></span>
-      <span class="dots bottom"></span>
+    <section class="hero">
+      <img class="hero-image" [src]="loginImage()" alt="" fetchpriority="high" />
 
-      <div class="greeting">
+      <header class="hero-bar">
+        <app-logo class="hero-logo" product="Claims" />
+      </header>
+
+      <div class="greeting" aria-hidden="true">
         <p class="typed">{{ typed() }}<span class="caret"></span></p>
-        <p class="tagline">Motor &amp; property claims across six markets.</p>
+        <p class="tagline">Motor, property &amp; enterprise claims across six markets.</p>
       </div>
     </section>
 
     <section class="panel">
       <header class="panel-top">
-        <app-logo class="brand" product="Claims" />
         <button
           type="button"
           class="btn btn-ghost btn-icon"
@@ -36,67 +25,85 @@
         </button>
       </header>
 
-      <form class="form" [formGroup]="form" (ngSubmit)="submit()">
+      <form class="form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
         <div class="heading">
-          <h1>Sign in to your account</h1>
-          <p class="muted">Welcome back — enter your credentials to continue</p>
+          <span class="eyebrow">Claims portal</span>
+          <h1>Sign in</h1>
         </div>
 
-        <div class="field">
+        @if (error(); as message) {
+          <p class="alert" role="alert">{{ message }}</p>
+        }
+
+        <div class="row">
           <label for="username">Username</label>
-          <div class="input-group">
-            <span class="ms" aria-hidden="true">person</span>
-            <input
-              class="input"
-              id="username"
-              formControlName="username"
-              autocomplete="username"
-              placeholder="e.g. officer1"
-            />
-          </div>
+          <input
+            class="control"
+            id="username"
+            formControlName="username"
+            autocomplete="username"
+            autocapitalize="none"
+            spellcheck="false"
+            [attr.aria-invalid]="invalid('username')"
+            [attr.aria-describedby]="invalid('username') ? 'username-error' : null"
+          />
+          @if (invalid('username')) {
+            <span class="hint error" id="username-error">Enter your username.</span>
+          }
         </div>
 
-        <div class="field">
-          <label for="password">Password</label>
-          <div class="input-group">
-            <span class="ms" aria-hidden="true">lock</span>
-            <input
-              class="input"
-              id="password"
-              [type]="showPassword() ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="current-password"
-              placeholder="Your password"
-            />
-            <button
-              type="button"
-              class="btn btn-ghost btn-icon trailing"
-              [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
-              (click)="showPassword.update((shown) => !shown)"
-            >
-              <span class="ms" aria-hidden="true">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+        <div class="row">
+          <div class="label-line">
+            <label for="password">Password</label>
+            <button type="button" class="reveal" (click)="showPassword.update((shown) => !shown)">
+              {{ showPassword() ? 'Hide' : 'Show' }}
             </button>
           </div>
+          <input
+            class="control"
+            id="password"
+            [type]="showPassword() ? 'text' : 'password'"
+            formControlName="password"
+            autocomplete="current-password"
+            [attr.aria-invalid]="invalid('password')"
+            [attr.aria-describedby]="passwordHintId()"
+            (keyup)="checkCapsLock($event)"
+            (keydown)="checkCapsLock($event)"
+            (blur)="capsLock.set(false)"
+          />
+          @if (invalid('password')) {
+            <span class="hint error" id="password-error">Enter your password.</span>
+          } @else if (capsLock()) {
+            <span class="hint" id="password-caps">Caps Lock is on.</span>
+          }
         </div>
 
-        <button
-          type="submit"
-          class="btn btn-dark btn-lg btn-block"
-          [disabled]="form.invalid || busy()"
-        >
-          {{ busy() ? 'Signing in…' : 'Login' }}
+        <button type="submit" class="submit" [disabled]="busy()">
+          {{ busy() ? 'Signing in…' : 'Sign in' }}
         </button>
 
+        <p class="support">Need access? Contact your claims administrator.</p>
+
         <div class="demo">
-          <span class="demo-title">Demo accounts</span>
-          <div class="demo-list">
-            @for (account of demoAccounts; track account.username) {
-              <button type="button" class="demo-account" (click)="useDemo(account.username)">
-                <span class="ms" aria-hidden="true">{{ account.icon }}</span>
-                <span>{{ account.label }}</span>
+          <span class="tag">Demo environment</span>
+          <p>
+            <span class="demo-label">Sign in as</span>
+            @for (account of demoAccounts; track account.username; let last = $last) {
+              <button
+                type="button"
+                class="demo-link"
+                [attr.title]="account.label"
+                (click)="useDemo(account.username)"
+              >
+                {{ account.username }}
               </button>
+              @if (!last) {
+                <span class="sep">·</span>
+              }
             }
-          </div>
+            <br />
+            Password for all: <code>password</code>
+          </p>
         </div>
       </form>
 

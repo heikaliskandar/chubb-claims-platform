@@ -1,6 +1,8 @@
 <app-page-header title="Overview" [crumbs]="[{ label: 'Overview' }]">
   @if (dashboard()?.exposure?.asOf; as asOf) {
-    <span class="updated"><span class="ms" aria-hidden="true">sync</span>Updated {{ asOf | date: 'HH:mm:ss' }}</span>
+    <span class="updated"
+      ><span class="ms" aria-hidden="true">sync</span>Updated {{ asOf | date: 'HH:mm:ss' }}</span
+    >
   }
 </app-page-header>
 
@@ -20,14 +22,18 @@
             </div>
           </div>
           <div class="metric">
-            <span class="icon-badge amber"><span class="ms" aria-hidden="true">how_to_reg</span></span>
+            <span class="icon-badge amber"
+              ><span class="ms" aria-hidden="true">how_to_reg</span></span
+            >
             <div>
               <strong>{{ pendingApproval() }}</strong>
               <span class="muted small">Awaiting approval</span>
             </div>
           </div>
           <div class="metric">
-            <span class="icon-badge blue"><span class="ms" aria-hidden="true">folder_open</span></span>
+            <span class="icon-badge blue"
+              ><span class="ms" aria-hidden="true">folder_open</span></span
+            >
             <div>
               <strong>{{ openClaims() }}</strong>
               <span class="muted small">In progress</span>
@@ -63,8 +69,12 @@
             <span title="Approved"
               ><span class="ms green-text" aria-hidden="true">check</span>{{ team.approved }}</span
             >
-            <span title="Rejected"><span class="ms red-text" aria-hidden="true">close</span>{{ team.rejected }}</span>
-            <span title="Closed"><span class="ms muted" aria-hidden="true">lock</span>{{ team.closed }}</span>
+            <span title="Rejected"
+              ><span class="ms red-text" aria-hidden="true">close</span>{{ team.rejected }}</span
+            >
+            <span title="Closed"
+              ><span class="ms muted" aria-hidden="true">lock</span>{{ team.closed }}</span
+            >
           </div>
         </div>
       }
@@ -83,7 +93,9 @@
           <span class="muted small">{{ total.openClaims }} open</span>
         </div>
       } @empty {
-        <div class="empty-state"><span class="ms" aria-hidden="true">check_circle</span>No exposure</div>
+        <div class="empty-state">
+          <span class="ms" aria-hidden="true">check_circle</span>No exposure
+        </div>
       }
     </div>
   </section>
@@ -97,7 +109,9 @@
     <section class="surface-card">
       <h2 class="card-title">Exposure by market</h2>
       @if (dashboard.exposure.lines.length === 0) {
-        <div class="empty-state"><span class="ms" aria-hidden="true">check_circle</span>No open claims</div>
+        <div class="empty-state">
+          <span class="ms" aria-hidden="true">check_circle</span>No open claims
+        </div>
       } @else {
         <table class="data-table compact">
           <thead>

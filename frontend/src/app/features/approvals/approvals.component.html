@@ -37,7 +37,9 @@
     @if (result(); as page) {
       @if (page.content.length === 0) {
         <div class="empty-state">
-          <span class="ms" aria-hidden="true">{{ current === 'TO_REVIEW' ? 'check_circle' : 'inbox' }}</span>
+          <span class="ms" aria-hidden="true">{{
+            current === 'TO_REVIEW' ? 'check_circle' : 'inbox'
+          }}</span>
           {{ current === 'TO_REVIEW' ? 'Nothing waiting for you' : 'No referrals yet' }}
         </div>
       } @else {
@@ -53,7 +55,7 @@
                 <th>Referred</th>
                 <th>Status</th>
                 <th>Reviewed by</th>
-                <th></th>
+                <th><span class="visually-hidden">Action</span></th>
               </tr>
             </thead>
             <tbody>

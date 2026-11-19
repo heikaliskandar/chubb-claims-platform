@@ -1,7 +1,5 @@
 <div class="shell" [class.collapsed]="collapsed()" [class.mobile-open]="mobileOpen()">
   <aside class="sidebar" aria-label="Main navigation">
-    <span class="dots" aria-hidden="true"></span>
-
     <div class="sidebar-head">
       <a class="brand" [routerLink]="homeLink()">
         <app-logo [product]="collapsed() ? undefined : 'Claims'" />
@@ -81,7 +79,7 @@
             [attr.aria-expanded]="menuOpen()"
             (click)="menuOpen.update((open) => !open)"
           >
-            <app-user-avatar [username]="user.username" size="lg" />
+            <app-user-avatar [username]="user.username" />
             <span class="who">
               <strong>{{ user.username }}</strong>
               <span>{{ user.position ?? user.role | label }}</span>

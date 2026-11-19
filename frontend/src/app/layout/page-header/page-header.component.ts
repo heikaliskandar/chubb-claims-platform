@@ -14,7 +14,9 @@ export interface Crumb {
     <div class="page-header">
       <div class="titles">
         <nav class="crumbs" aria-label="Breadcrumb">
-          <a [routerLink]="home()" aria-label="Home"><span class="ms" aria-hidden="true">home</span></a>
+          <a [routerLink]="home()" aria-label="Home"
+            ><span class="ms" aria-hidden="true">home</span></a
+          >
           @for (crumb of crumbs(); track $index) {
             <span class="ms sep" aria-hidden="true">chevron_right</span>
             @if (crumb.routerLink) {
@@ -38,7 +40,7 @@ export interface Crumb {
       justify-content: space-between;
       gap: 16px;
       flex-wrap: wrap;
-      margin-bottom: 24px;
+      margin-bottom: 18px;
     }
     .titles {
       min-width: 0;

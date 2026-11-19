@@ -1,23 +1,25 @@
-import { Injectable, signal } from '@angular/core';
+import { computed, Injectable, signal } from '@angular/core';
 
 const STORAGE_KEY = 'claims.login-image';
 const MAX_EDGE = 1600;
+const DEFAULT_LOGIN_IMAGE = 'images/login-image-default.webp';
 
 @Injectable({ providedIn: 'root' })
 export class BrandingService {
-  readonly loginImage = signal<string | null>(readStored());
+  readonly customLoginImage = signal<string | null>(readStored());
+  readonly loginImage = computed(() => this.customLoginImage() ?? DEFAULT_LOGIN_IMAGE);
 
   async setLoginImage(file: File): Promise<void> {
     const dataUrl = await toScaledJpeg(file);
     localStorage.setItem(STORAGE_KEY, dataUrl);
-    this.loginImage.set(dataUrl);
+    this.customLoginImage.set(dataUrl);
   }
 
   resetLoginImage(): void {
     try {
       localStorage.removeItem(STORAGE_KEY);
     } catch {}
-    this.loginImage.set(null);
+    this.customLoginImage.set(null);
   }
 }
 

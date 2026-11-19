@@ -40,7 +40,7 @@ import { Component, input, output } from '@angular/core';
       max-height: calc(100dvh - 48px);
       overflow-y: auto;
       padding: 20px 24px 24px;
-      border-radius: 18px;
+      border-radius: var(--app-radius);
       background: var(--app-surface);
       box-shadow: var(--app-shadow-pop);
       transform: translate(-50%, -50%);
@@ -72,7 +72,7 @@ import { Component, input, output } from '@angular/core';
         top: auto;
         bottom: 0;
         width: 100%;
-        border-radius: 20px 20px 0 0;
+        border-radius: var(--app-radius) var(--app-radius) 0 0;
         transform: translateX(-50%);
         animation: none;
       }

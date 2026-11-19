@@ -26,7 +26,7 @@ test.describe('R8 One application for every user type, adapted to role', () => {
     await page.getByLabel('Username').fill('officer1');
     await page.getByLabel('Password', { exact: true }).fill('not-the-password');
     await page.getByRole('button', { name: 'Sign in' }).click();
-    await expect(page.getByRole('status')).toBeVisible();
+    await expect(page.getByRole('alert')).toContainText("don't match");
     await expect(page).toHaveURL(/\/login$/);
   });
 
@@ -39,8 +39,20 @@ test.describe('R8 One application for every user type, adapted to role', () => {
     await expect(page).not.toHaveURL(/\/approvals$/);
   });
 
-  test('a page reload signs the user out because credentials are never persisted', async ({ app, page }) => {
+  test('the session survives a reload but is scoped to the tab', async ({ app, page, newSession }) => {
     await app.signIn('officer1');
+    await page.reload();
+    await expect(page).toHaveURL(/\/claims\/queue$/);
+
+    const otherTab = await newSession();
+    await otherTab.page.goto('/claims/queue');
+    await expect(otherTab.page).toHaveURL(/\/login$/);
+  });
+
+  test('signing out clears the session', async ({ app, page }) => {
+    await app.signIn('officer1');
+    await page.getByRole('button', { name: 'Sign out' }).first().click();
+    await expect(page).toHaveURL(/\/login$/);
     await page.reload();
     await expect(page).toHaveURL(/\/login$/);
   });

@@ -76,7 +76,7 @@ export interface OrgNode {
       width: min(100%, 420px);
       padding: 10px 14px;
       border: 1px solid var(--app-border);
-      border-radius: 14px;
+      border-radius: var(--app-radius-md);
       background: var(--app-surface);
       text-align: left;
       cursor: pointer;
@@ -106,7 +106,7 @@ export interface OrgNode {
     }
     .count {
       padding: 2px 8px;
-      border-radius: 999px;
+      border-radius: var(--app-radius-full);
       background: var(--app-primary-soft);
       color: var(--app-primary);
       font-size: 12px;

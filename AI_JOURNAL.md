@@ -149,6 +149,12 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✏️ Kept docs/ASSESSMENT_BRIEF.md and docs/MASTER_PROMPT.md unchanged: they are the inputs to the work, and editing them would misrepresent how the AI was directed.
 - ✅ Checked every factual claim in the new docs against the code (event types, retry count, sort order, test names, versions) and every relative link (26 files, none broken).
 
+## Phase 18: Sign-in and form redesign
+
+- ✅ Redesigned the sign-in page (default cover image, inline error, demo-account hints) and the new-claim form (validation on blur and submit, a focused error summary linking to each field, input normalisation, server errors mapped to fields).
+- ✏️ Changed my earlier decision to keep credentials in memory only: losing the session on every reload was poor UX. The session now lives in `sessionStorage` (one tab, cleared on close and sign-out), with the strict CSP as the mitigation. OIDC with an `HttpOnly` cookie remains the production answer.
+- 🐞 The AI's axe-core check caught a contrast failure in the new sidebar section labels and a table column without a header; both fixed. e2e tests updated to the new behaviour, plus a new test that sign-out clears the session: 37 passing.
+
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.

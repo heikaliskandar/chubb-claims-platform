@@ -1,3 +1,4 @@
+import { HttpErrorResponse } from '@angular/common/http';
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,10 +8,10 @@ import { ThemeService } from '../../core/theme.service';
 import { LogoComponent } from '../../shared/logo/logo.component';
 
 const DEMO_ACCOUNTS = [
-  { label: 'Claimant', username: 'claimant1', icon: 'person' },
-  { label: 'Officer', username: 'officer1', icon: 'work' },
-  { label: 'Team lead', username: 'lead1', icon: 'group' },
-  { label: 'Manager', username: 'manager1', icon: 'bar_chart' },
+  { label: 'Claimant', username: 'claimant1' },
+  { label: 'Claims officer', username: 'officer1' },
+  { label: 'Team lead', username: 'lead1' },
+  { label: 'Claims manager', username: 'manager1' },
 ];
 
 const GREETINGS = ['Welcome', 'Selamat datang', 'Maligayang pagdating', 'ยินดีต้อนรับ', '歡迎'];
@@ -35,6 +36,9 @@ export class LoginComponent {
   protected readonly year = new Date().getFullYear();
   protected readonly busy = signal(false);
   protected readonly showPassword = signal(false);
+  protected readonly capsLock = signal(false);
+  protected readonly error = signal<string | null>(null);
+  protected readonly submitted = signal(false);
   protected readonly typed = signal(GREETINGS[0]);
   protected readonly form = inject(FormBuilder).nonNullable.group({
     username: ['', Validators.required],
@@ -51,16 +55,47 @@ export class LoginComponent {
     this.theme.toggle();
   }
 
+  protected passwordHintId(): string | null {
+    if (this.invalid('password')) {
+      return 'password-error';
+    }
+    return this.capsLock() ? 'password-caps' : null;
+  }
+
+  protected invalid(name: 'username' | 'password'): boolean {
+    const control = this.form.controls[name];
+    return control.invalid && (control.touched || this.submitted());
+  }
+
+  protected checkCapsLock(event: KeyboardEvent): void {
+    this.capsLock.set(event.getModifierState?.('CapsLock') ?? false);
+  }
+
   protected useDemo(username: string): void {
     this.form.setValue({ username, password: 'password' });
+    this.error.set(null);
   }
 
   protected submit(): void {
+    this.submitted.set(true);
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
     const { username, password } = this.form.getRawValue();
     this.busy.set(true);
+    this.error.set(null);
     this.auth.login(username, password).subscribe({
       next: (user) => this.router.navigateByUrl(this.auth.homeFor(user.role)),
-      error: () => this.busy.set(false),
+      error: (failure: HttpErrorResponse) => {
+        this.busy.set(false);
+        if (failure.status === 401) {
+          this.error.set("That username and password don't match. Check them and try again.");
+          this.form.controls.password.reset();
+          this.submitted.set(false);
+          document.getElementById('password')?.focus();
+        }
+      },
     });
   }
 

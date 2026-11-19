@@ -13,9 +13,11 @@ export const errorInterceptor: HttpInterceptorFn = (request, next) => {
 
   return next(request).pipe(
     catchError((error: HttpErrorResponse) => {
-      if (error.status === 401 && auth.user()) {
-        auth.logout();
-        router.navigate(['/login']);
+      if (error.status === 401) {
+        if (auth.user()) {
+          auth.logout();
+          router.navigate(['/login']);
+        }
       } else if (error.status === 0 || error.status >= 502) {
         toasts.show(
           'error',

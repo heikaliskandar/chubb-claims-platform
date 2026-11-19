@@ -1,6 +1,8 @@
 .shell {
   --gap: 20px;
   --sidebar: 256px;
+  --topbar: 56px;
+  --inset: 16px;
   min-height: 100dvh;
 }
 
@@ -13,48 +15,29 @@
   display: flex;
   flex-direction: column;
   width: var(--sidebar);
-  padding: 24px 14px 14px;
+  padding: 0 14px 14px;
   box-sizing: border-box;
   background: var(--app-sidebar-bg);
-  color: #c9ceda;
-  border-radius: 22px;
-  box-shadow: var(--app-shadow);
+  color: #a1a1a6;
+  border-radius: var(--app-radius);
   transition:
     width 0.2s ease,
     transform 0.25s ease;
   overflow: hidden;
-  isolation: isolate;
-
-  &::before {
-    content: '';
-    position: absolute;
-    right: -120px;
-    bottom: -120px;
-    z-index: -1;
-    width: 300px;
-    height: 300px;
-    border-radius: 50%;
-    border: 1px solid rgb(111 151 248 / 25%);
-    background: radial-gradient(circle, rgb(79 125 243 / 18%), transparent 70%);
-  }
 }
 
-.dots {
-  position: absolute;
-  bottom: 110px;
-  left: 22px;
-  z-index: -1;
-  width: 60px;
-  height: 60px;
-  background-image: radial-gradient(rgb(143 176 255 / 35%) 1.5px, transparent 2px);
-  background-size: 12px 12px;
+:host-context(.app-dark) .sidebar {
+  border: 1px solid #1f1f22;
 }
 
 .sidebar-head {
   display: flex;
+  flex: none;
   align-items: center;
   justify-content: space-between;
-  padding: 0 8px 30px;
+  height: var(--topbar);
+  padding: 0 8px;
+  margin-bottom: 8px;
 }
 
 .brand {
@@ -62,7 +45,7 @@
   align-items: center;
   min-height: 40px;
   color: #fff;
-  font-size: 24px;
+  font-size: 22px;
   white-space: nowrap;
 }
 
@@ -70,10 +53,14 @@
   display: none;
   padding: 8px;
   border: 0;
-  border-radius: 10px;
-  background: rgb(255 255 255 / 8%);
+  border-radius: var(--app-radius-sm);
+  background: transparent;
   color: #fff;
   cursor: pointer;
+
+  &:hover {
+    background: rgb(255 255 255 / 8%);
+  }
 }
 
 nav {
@@ -83,23 +70,23 @@ nav {
 
 .section {
   display: block;
-  padding: 18px 14px 8px;
+  padding: 16px 12px 8px;
   font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
-  color: #6f7789;
+  color: #8e8e93;
 }
 
 .nav-item {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  margin-bottom: 4px;
-  border-radius: 12px;
-  color: #c9ceda;
+  gap: 12px;
+  padding: 9px 12px;
+  margin-bottom: 2px;
+  border-radius: var(--app-radius-sm);
+  color: #a1a1a6;
   font-weight: 500;
   white-space: nowrap;
   transition:
@@ -107,29 +94,22 @@ nav {
     color 0.15s;
 
   .ms {
-    font-size: 21px;
+    font-size: 20px;
   }
 
   &:hover {
-    background: rgb(255 255 255 / 6%);
     color: #fff;
   }
 
   &.active {
-    background: linear-gradient(90deg, rgb(79 125 243 / 35%), rgb(79 125 243 / 12%));
+    background: rgb(255 255 255 / 10%);
     color: #fff;
     font-weight: 600;
+  }
 
-    &::before {
-      content: '';
-      position: absolute;
-      top: 10px;
-      bottom: 10px;
-      left: 0;
-      width: 3px;
-      border-radius: 0 3px 3px 0;
-      background: #8fb0ff;
-    }
+  &:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: -2px;
   }
 }
 
@@ -137,10 +117,8 @@ nav {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 12px;
-  border-radius: 14px;
-  background: rgb(255 255 255 / 6%);
-  border: 1px solid rgb(255 255 255 / 6%);
+  padding: 14px 4px 0;
+  border-top: 1px solid rgb(255 255 255 / 10%);
 }
 
 .who {
@@ -171,7 +149,7 @@ nav {
   }
 
   span {
-    color: #8d96a8;
+    color: #8a8a90;
   }
 }
 
@@ -182,13 +160,13 @@ nav {
   height: 34px;
   flex: none;
   border: 0;
-  border-radius: 10px;
+  border-radius: var(--app-radius-sm);
   background: transparent;
-  color: #c9ceda;
+  color: #a1a1a6;
   cursor: pointer;
 
   &:hover {
-    background: rgb(255 255 255 / 10%);
+    background: rgb(255 255 255 / 8%);
     color: #fff;
   }
 }
@@ -206,13 +184,13 @@ nav {
   z-index: 10;
   display: flex;
   align-items: center;
-  gap: 6px;
-  height: 68px;
-  padding: 0 14px;
-  margin-bottom: 28px;
+  gap: 4px;
+  height: var(--topbar);
+  padding: 0 8px 0 calc(var(--inset) - 8px);
+  margin-bottom: 20px;
   background: color-mix(in srgb, var(--app-surface) 88%, transparent);
   backdrop-filter: blur(12px);
-  border-radius: 18px;
+  border-radius: var(--app-radius);
   box-shadow: var(--app-shadow);
 }
 
@@ -231,11 +209,12 @@ nav {
 .profile {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   min-width: 0;
-  padding: 6px 10px 6px 6px;
+  height: 44px;
+  padding: 0 8px 0 4px;
   border: 0;
-  border-radius: 14px;
+  border-radius: var(--app-radius-sm);
   background: transparent;
   color: var(--app-text);
   text-align: left;
@@ -252,8 +231,7 @@ nav {
 }
 
 .content {
-  max-width: 1400px;
-  margin: 0 auto;
+  padding-inline: var(--inset);
 }
 
 .backdrop {
@@ -264,8 +242,7 @@ nav {
   .collapsed {
     --sidebar: 84px;
 
-    .label,
-    .dots {
+    .label {
       display: none;
     }
 
@@ -301,7 +278,7 @@ nav {
     bottom: 0;
     left: 0;
     width: min(290px, 85vw);
-    border-radius: 0 22px 22px 0;
+    border-radius: 0;
     transform: translateX(-105%);
     visibility: hidden;
     transition:
@@ -318,10 +295,17 @@ nav {
     padding: var(--gap);
   }
 
+  .shell {
+    --topbar: 52px;
+    --inset: 12px;
+  }
+
+  .sidebar {
+    padding-top: 8px;
+  }
+
   .topbar {
-    height: 60px;
-    padding: 0 8px;
-    margin-bottom: 20px;
+    margin-bottom: 16px;
   }
 
   .mobile-brand {
@@ -329,7 +313,8 @@ nav {
   }
 
   .profile {
-    padding: 4px;
+    height: auto;
+    padding: 2px;
 
     .who,
     .chevron {
@@ -357,6 +342,7 @@ nav {
 @media (max-width: 420px) {
   .shell {
     --gap: 8px;
+    --inset: 8px;
   }
 
   .mobile-brand {
@@ -376,7 +362,7 @@ nav {
   min-width: 220px;
   padding: 6px;
   border: 1px solid var(--app-border);
-  border-radius: 14px;
+  border-radius: var(--app-radius-md);
   background: var(--app-surface);
   box-shadow: var(--app-shadow-pop);
 
@@ -393,7 +379,7 @@ nav {
     width: 100%;
     padding: 10px 12px;
     border: 0;
-    border-radius: 10px;
+    border-radius: var(--app-radius-xs);
     background: transparent;
     color: var(--app-text);
     text-align: left;

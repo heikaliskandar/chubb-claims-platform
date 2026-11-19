@@ -1,6 +1,8 @@
 <app-page-header title="Team performance" [crumbs]="[{ label: 'Team' }, { label: 'Performance' }]">
   @if (data()?.workload?.asOf; as asOf) {
-    <span class="updated"><span class="ms" aria-hidden="true">sync</span>Updated {{ asOf | date: 'HH:mm:ss' }}</span>
+    <span class="updated"
+      ><span class="ms" aria-hidden="true">sync</span>Updated {{ asOf | date: 'HH:mm:ss' }}</span
+    >
   }
 </app-page-header>
 

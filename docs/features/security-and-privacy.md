@@ -9,6 +9,7 @@
 | Mechanism | HTTP Basic over a stateless API (no server session). OIDC with MFA is the production path ([README](../../README.md#path-to-production)). |
 | Passwords | Hashed with Spring Security's delegating encoder (bcrypt). |
 | Brute force | **5 consecutive failures lock the account for 15 minutes**, in both services. The lockout is written to the audit log. |
+| Session in the browser | `sessionStorage`, scoped to one tab: survives a reload, cleared on tab close and sign-out. Never `localStorage` or cookies. |
 | No browser pop-up | 401 responses carry no `WWW-Authenticate` header, so the browser never shows its own login dialog. |
 
 ## Authorization

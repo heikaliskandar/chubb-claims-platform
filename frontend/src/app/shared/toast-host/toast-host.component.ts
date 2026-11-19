@@ -50,7 +50,7 @@ const ICONS: Record<ToastSeverity, string> = {
       gap: 12px;
       padding: 12px 8px 12px 14px;
       border-left: 4px solid var(--accent);
-      border-radius: 12px;
+      border-radius: var(--app-radius-md);
       background: var(--app-surface);
       box-shadow: var(--app-shadow-pop);
       animation: slide-in 0.2s ease-out;

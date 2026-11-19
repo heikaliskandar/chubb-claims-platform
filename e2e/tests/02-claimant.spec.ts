@@ -23,7 +23,16 @@ test.describe('R1 Claimants report an incident', () => {
     await app.signIn('claimant1');
     await app.open('/claims/new');
     await page.getByLabel('Claimed amount').fill('-5');
-    await expect(page.getByRole('button', { name: 'Submit claim' })).toBeDisabled();
+    await page.getByRole('button', { name: 'Submit claim' }).click();
+
+    const summary = page.getByRole('alert');
+    await expect(summary).toBeFocused();
+    const policyLink = summary.getByRole('link', { name: 'Enter your policy number.' });
+    await expect(policyLink).toBeVisible();
+    await expect(summary.getByRole('link', { name: /Enter an amount like 1250/ })).toBeVisible();
+    await policyLink.click();
+    await expect(page.getByLabel('Policy number')).toBeFocused();
+    await expect(page).toHaveURL(/\/claims\/new$/);
   });
 });
 

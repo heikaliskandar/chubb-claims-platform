@@ -42,7 +42,9 @@
 
     @if (result(); as page) {
       @if (page.content.length === 0) {
-        <div class="empty-state"><span class="ms" aria-hidden="true">group</span>No people found</div>
+        <div class="empty-state">
+          <span class="ms" aria-hidden="true">group</span>No people found
+        </div>
       } @else {
         <div class="table-wrap">
           <table class="data-table">

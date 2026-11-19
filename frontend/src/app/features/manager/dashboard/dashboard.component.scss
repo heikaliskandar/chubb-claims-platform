@@ -109,7 +109,7 @@
   flex-direction: column;
   gap: 2px;
   padding: 14px 16px;
-  border-radius: 12px;
+  border-radius: var(--app-radius-md);
   background: var(--app-bg);
 
   .code {

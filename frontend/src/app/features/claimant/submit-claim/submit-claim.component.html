@@ -3,85 +3,155 @@
   [crumbs]="[{ label: 'My claims', routerLink: '/claims/active' }, { label: 'New claim' }]"
 />
 
-<form class="surface-card form-card" [formGroup]="form" (ngSubmit)="submit()">
-  <div class="form-grid">
-    <div class="field full">
-      <label id="type-label">Claim type</label>
-      <div class="type-options" role="radiogroup" aria-labelledby="type-label">
-        @for (type of claimTypes; track type.value) {
-          <button
-            type="button"
-            role="radio"
-            class="type-option"
-            [class.selected]="claimType() === type.value"
-            [attr.aria-checked]="claimType() === type.value"
-            (click)="form.controls.claimType.setValue(type.value)"
-          >
-            <span class="ms" aria-hidden="true">{{ type.icon }}</span>
-            {{ type.label }}
-          </button>
-        }
-      </div>
-    </div>
+<form class="surface-card claim-form" [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <p class="intro">Fields marked <span class="req">*</span> are required.</p>
 
-    <div class="field">
-      <label for="market">Market</label>
-      <select class="select" id="market" formControlName="market">
+  @if (showSummary() && problems().length) {
+    <div class="summary" role="alert" tabindex="-1" #summary>
+      <strong>
+        {{ problems().length === 1 ? 'Fix 1 field' : 'Fix ' + problems().length + ' fields' }}
+        to submit your claim
+      </strong>
+      <ul>
+        @for (problem of problems(); track problem.id) {
+          <li>
+            <a [href]="'#' + problem.id" (click)="focusField($event, problem.id)">{{
+              problem.message
+            }}</a>
+          </li>
+        }
+      </ul>
+    </div>
+  }
+
+  <fieldset class="row">
+    <legend>Claim type <span class="req" aria-hidden="true">*</span></legend>
+    <div class="types" role="radiogroup" aria-required="true">
+      @for (type of claimTypes; track type.value) {
+        <label class="type" [class.selected]="claimType() === type.value">
+          <input type="radio" formControlName="claimType" [value]="type.value" />
+          <span class="type-text">
+            <strong>{{ type.label }}</strong>
+            <span>{{ type.description }}</span>
+          </span>
+        </label>
+      }
+    </div>
+  </fieldset>
+
+  <div class="grid">
+    <div class="row">
+      <label for="market">Market <span class="req" aria-hidden="true">*</span></label>
+      <select
+        class="control"
+        id="market"
+        formControlName="market"
+        aria-required="true"
+        aria-describedby="market-hint"
+      >
         @for (market of markets; track market.code) {
-          <option [value]="market.code">{{ market.name }} · {{ market.currency }}</option>
+          <option [value]="market.code">{{ market.name }} ({{ market.currency }})</option>
         }
       </select>
+      <span class="hint" id="market-hint">Sets the claim currency and handling team.</span>
     </div>
 
-    <div class="field">
-      <label for="policy">Policy number</label>
+    <div class="row">
+      <label for="policyNumber">Policy number <span class="req" aria-hidden="true">*</span></label>
       <input
-        class="input"
-        id="policy"
+        class="control"
+        id="policyNumber"
         formControlName="policyNumber"
-        maxlength="50"
-        placeholder="e.g. POL-SG-1001"
+        aria-required="true"
+        autocomplete="off"
+        spellcheck="false"
+        [attr.aria-invalid]="!!error('policyNumber')"
+        aria-describedby="policyNumber-message"
+        (blur)="normalisePolicyNumber()"
       />
+      <span class="hint" id="policyNumber-message" [class.error]="error('policyNumber')">
+        {{ error('policyNumber') ?? 'From your policy schedule, e.g. POL-SG-1001.' }}
+      </span>
     </div>
 
-    <div class="field">
-      <label for="date">Incident date</label>
-      <input class="input" id="date" type="date" formControlName="incidentDate" [max]="today" />
+    <div class="row">
+      <label for="incidentDate">Incident date <span class="req" aria-hidden="true">*</span></label>
+      <input
+        class="control"
+        id="incidentDate"
+        type="date"
+        formControlName="incidentDate"
+        aria-required="true"
+        [max]="today"
+        [attr.aria-invalid]="!!error('incidentDate')"
+        aria-describedby="incidentDate-message"
+      />
+      <span class="hint" id="incidentDate-message" [class.error]="error('incidentDate')">
+        {{ error('incidentDate') ?? 'The day the loss or damage happened.' }}
+      </span>
     </div>
 
-    <div class="field">
-      <label for="amount">Claimed amount</label>
-      <div class="input-prefix">
-        <span>{{ currency() }}</span>
+    <div class="row">
+      <label for="claimedAmount"
+        >Claimed amount <span class="req" aria-hidden="true">*</span></label
+      >
+      <div class="money" [class.invalid]="error('claimedAmount')">
+        <span class="currency" aria-hidden="true">{{ currency() }}</span>
         <input
-          class="input"
-          id="amount"
-          type="number"
+          class="control"
+          id="claimedAmount"
+          type="text"
           inputmode="decimal"
-          min="0.01"
-          step="0.01"
           formControlName="claimedAmount"
-          placeholder="0.00"
+          aria-required="true"
+          autocomplete="off"
+          [attr.aria-invalid]="!!error('claimedAmount')"
+          aria-describedby="claimedAmount-message"
+          (blur)="normaliseAmount()"
         />
       </div>
+      <span class="hint" id="claimedAmount-message" [class.error]="error('claimedAmount')">
+        {{
+          error('claimedAmount') ??
+            'Your estimate in ' + currency() + '. The final amount is assessed.'
+        }}
+      </span>
     </div>
 
-    <div class="field full">
-      <label for="description">What happened</label>
+    <div class="row full">
+      <div class="label-line">
+        <label for="incidentDescription"
+          >What happened <span class="req" aria-hidden="true">*</span></label
+        >
+        <span class="count" [class.over]="descriptionLength() > maxDescription">
+          {{ descriptionLength() }} / {{ maxDescription }}
+        </span>
+      </div>
       <textarea
-        class="textarea"
-        id="description"
-        rows="5"
+        class="control"
+        id="incidentDescription"
+        rows="4"
         formControlName="incidentDescription"
-        maxlength="2000"
+        aria-required="true"
+        [attr.aria-invalid]="!!error('incidentDescription')"
+        aria-describedby="incidentDescription-message"
       ></textarea>
+      <span
+        class="hint"
+        id="incidentDescription-message"
+        [class.error]="error('incidentDescription')"
+      >
+        {{
+          error('incidentDescription') ??
+            'Where and how it happened, what was damaged, and anyone else involved.'
+        }}
+      </span>
     </div>
   </div>
 
-  <div class="form-actions">
-    <a class="btn btn-ghost" routerLink="/claims/active">Cancel</a>
-    <button type="submit" class="btn btn-primary" [disabled]="form.invalid || busy()">
-      <span class="ms" aria-hidden="true">send</span>
+  <div class="actions">
+    <a class="cancel" routerLink="/claims/active">Cancel</a>
+    <button type="submit" class="submit" [disabled]="busy()">
       {{ busy() ? 'Submitting…' : 'Submit claim' }}
     </button>
   </div>

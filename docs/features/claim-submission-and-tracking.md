@@ -23,7 +23,7 @@ The form asks for:
 - the claimed amount, which must be positive with at most 2 decimals;
 - a description of what happened.
 
-Validation runs in the browser and again on the server (Bean Validation). A server error comes back as RFC 7807 Problem Details, with a message for each field.
+Validation runs in the browser and again on the server (Bean Validation). In the browser, errors appear when a field is left and, on submit, as an **error summary**: it takes focus, is announced by screen readers, and its links jump to each field. Policy numbers are trimmed and upper-cased, and thousands separators are stripped from the amount. Server errors come back as RFC 7807 Problem Details and are shown against the matching field.
 
 On success the claim gets a number such as `CLM-SG-2026-000001`, made of the market, the year and a database sequence. The claim starts in `SUBMITTED`, waiting on the claims team.
 
