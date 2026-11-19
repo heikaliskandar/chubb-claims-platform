@@ -26,7 +26,7 @@ const SIZES = { sm: 32, md: 40, lg: 48, xl: 88 };
       overflow: hidden;
       border-radius: 50%;
       background: var(--app-primary-soft);
-      color: var(--app-primary);
+      color: var(--app-primary-strong);
       font-size: calc(var(--size) * 0.36);
       font-weight: 700;
     }

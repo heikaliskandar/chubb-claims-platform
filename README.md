@@ -25,7 +25,7 @@ A claims platform for motor and property claims across six APAC markets:
 | REST and Kafka, with a reason for each | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
 | Async processing across both tiers | Outbox → Kafka → read model; the UI polls and shows "Updated hh:mm:ss" on dashboards |
 
-**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, and 146 unit and web tests plus Testcontainers integration tests.
+**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 148 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, and Lighthouse 100 for accessibility and best practices on every signed-in page.
 
 ## Architecture at a glance
 
@@ -170,8 +170,8 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 ## Tests
 
 ```bash
-cd services/claims-service && ./mvnw test      # 134 unit + web-layer tests, no Docker needed
-cd services/insights-service && ./mvnw test    # 12 unit + web-layer tests
+cd services/claims-service && ./mvnw test      # 135 unit + web-layer tests, no Docker needed
+cd services/insights-service && ./mvnw test    # 13 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
 ```
 
@@ -181,7 +181,32 @@ cd services/insights-service && ./mvnw test    # 12 unit + web-layer tests
 | Business rules | Money validation, assignment, info requests, assessment, approval limits, referral, four-eyes, allowed actions (`ClaimTest`, `AuthorityLimitsTest`) |
 | API and security | Authentication, roles, validation errors, Problem Details mapping, idempotent submit (`ClaimControllerTest`, `DashboardControllerTest`) |
 | Money and reporting | Per-currency totals that are never mixed, weighted team averages, workload grouping (`ExposureReportTest`, `PerformanceReportTest`, `WorkloadReportTest`) |
-| Integration (Testcontainers) | Flyway schema matches the entities; claim and outbox event commit together; a failed command writes no event; events reach Kafka in order; optimistic-lock conflict; duplicate and stale events are ignored; poison messages go to the DLT |
+| Integration (Testcontainers, PostgreSQL 17 + Kafka 4.4) | Flyway schema matches the entities; claim and outbox event commit together; a failed command writes no event; events reach Kafka in order; optimistic-lock conflict; duplicate and stale events are ignored; poison messages go to the DLT |
+
+## Security and performance
+
+| Area | What is in place |
+|---|---|
+| Authentication | HTTP Basic over a stateless API. The SPA keeps the credentials in memory only (nothing in `localStorage` or cookies), so a reload or closed tab signs the user out. |
+| Authorization | Role and position checks on every endpoint (`@PreAuthorize`); reporting-line scoping returns 404, not 403, for claims and people outside your scope, so their existence isn't leaked. |
+| Browser hardening | nginx sends a strict Content Security Policy (no inline scripts except two pinned by SHA-256 hash; no third-party scripts), `X-Frame-Options: DENY`, `nosniff`, `Referrer-Policy`, `Permissions-Policy` and `Cross-Origin-Opener-Policy`. Server version is hidden. |
+| Errors | RFC 7807 Problem Details with no stack traces or SQL in responses. |
+| Caching | Hashed JS/CSS bundles are cached for a year as `immutable`; `index.html` is `no-cache`, so a deploy is picked up on the next load. API responses are `no-store` (Spring Security default). Static assets are gzip-compressed. |
+| Bundle | 311 kB initial (85 kB over the wire); every feature route is lazy-loaded. |
+| Lighthouse | Login page: Accessibility 100, Best Practices 100. All 11 signed-in pages checked (manager, lead and claimant): Accessibility 100, Best Practices 100. SEO is deliberately low: `robots.txt` blocks indexing because this is an internal application. |
+
+## Path to production
+
+Deliberately not built, to keep the scope honest. The design already leaves room for each:
+
+| Topic | Production approach |
+|---|---|
+| Sessions | OIDC (Entra ID, Okta or Keycloak) with a backend-for-frontend: the browser holds only an `HttpOnly`, `Secure`, `SameSite=Lax` session cookie, tokens stay server-side, CSRF protection is switched back on. This replaces HTTP Basic and the demo user list. |
+| Claimant onboarding | Claimants are not "signed up"; they are matched to a policy (policy number plus date of birth, or a one-time code to the email on the policy), then linked to an identity in the identity provider. |
+| Staff accounts | Provisioned from HR (joiners, movers, leavers) via SCIM into the identity provider. Positions and reporting lines sync from the HR system. |
+| Administration | No single super-user. An admin role manages positions and approval limits, every change is audited, and limit changes need a second approver, the same four-eyes rule used for claims. |
+| Email and SMS | A notification service consumes the existing `claims.claim-events.v1` topic (the insights-service stub already shows where), renders templates per market and language, sends through SES or SendGrid, and retries through a DLT. |
+| Push and live updates | Web Push or FCM from the same notification service; Server-Sent Events in the app instead of polling. |
 
 ## Assumptions
 
@@ -212,11 +237,10 @@ cd services/insights-service && ./mvnw test    # 12 unit + web-layer tests
 
 Most important first:
 
-1. **Run the integration tests and the full stack.** The development machine had no Docker, so the Testcontainers tests and `docker compose up` were not run there. Unit and web-layer tests (141) were run, and both services were booted against a real PostgreSQL 17 (embedded, without Kafka) to check migrations, seeding, security and the main API flows.
-2. **OIDC resource servers** in both services instead of HTTP Basic and duplicated security config.
-3. **Workflow:** SLA timers and escalation, automatic triage and assignment by market and line of business, senior sign-off for high-value rejections, reopening claims. Insights dashboards are not yet filtered by reporting line.
-4. **Contract:** generate the frontend models from `/v3/api-docs`, and detect an `Idempotency-Key` reused with a different request body.
-5. **Operations:** outbox retention job, structured JSON logs with correlation IDs, metrics and alerts on outbox lag and DLT depth, a DLT replay tool.
-6. **UI:** Server-Sent Events instead of polling, frontend component tests, dashboard time filters. Profile photos are resized in the browser and kept in that browser's local storage; storing them server-side needs a file-storage service.
+1. **OIDC resource servers** in both services instead of HTTP Basic and duplicated security config (see [Path to production](#path-to-production)).
+2. **Workflow:** SLA timers and escalation, automatic triage and assignment by market and line of business, senior sign-off for high-value rejections, reopening claims. Insights dashboards are not yet filtered by reporting line.
+3. **Contract:** generate the frontend models from `/v3/api-docs`, and detect an `Idempotency-Key` reused with a different request body.
+4. **Operations:** outbox retention job, structured JSON logs with correlation IDs, metrics and alerts on outbox lag and DLT depth, a DLT replay tool.
+5. **UI:** Server-Sent Events instead of polling, frontend component tests, dashboard time filters. Profile photos are resized in the browser and kept in that browser's local storage; storing them server-side needs a file-storage service.
 
 See [docs/architecture.md](docs/architecture.md#scaling) for what changes at 10x and 100x volume.

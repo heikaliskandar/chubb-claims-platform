@@ -72,7 +72,7 @@
   </div>
 
   <section class="surface-card">
-    <h3 class="card-title">Outstanding reserve <span class="muted small">by currency</span></h3>
+    <h2 class="card-title">Outstanding reserve <span class="muted small">by currency</span></h2>
     <div class="currencies">
       @for (total of dashboard.exposure.totalsByCurrency; track total.currency) {
         <div class="currency">
@@ -90,12 +90,12 @@
 
   <div class="layout-main-side">
     <section class="surface-card">
-      <h3 class="card-title">Workload by officer</h3>
+      <h2 class="card-title">Workload by officer</h2>
       <app-bar-chart [data]="chartData()" />
     </section>
 
     <section class="surface-card">
-      <h3 class="card-title">Exposure by market</h3>
+      <h2 class="card-title">Exposure by market</h2>
       @if (dashboard.exposure.lines.length === 0) {
         <div class="empty-state"><span class="ms">check_circle</span>No open claims</div>
       } @else {

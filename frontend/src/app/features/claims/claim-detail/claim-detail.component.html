@@ -74,7 +74,7 @@
 
       @if (claim.informationRequests.length > 0) {
         <section class="surface-card">
-          <h3 class="card-title">Information requests</h3>
+          <h2 class="card-title">Information requests</h2>
           @for (request of claim.informationRequests; track request.id) {
             <div class="qa">
               <div class="question"><span class="ms">help</span>{{ request.question }}</div>
@@ -93,7 +93,7 @@
 
       @if (claim.assessments?.length) {
         <section class="surface-card">
-          <h3 class="card-title">Assessments</h3>
+          <h2 class="card-title">Assessments</h2>
           @for (assessment of claim.assessments; track assessment.assessedAt) {
             <div class="row-item">
               <div>
@@ -126,7 +126,7 @@
 
       @if (claim.referral && claim.status === 'PENDING_APPROVAL') {
         <section class="surface-card highlight">
-          <h3 class="card-title">Referred for approval</h3>
+          <h2 class="card-title">Referred for approval</h2>
           <div class="headline amount">
             {{ claim.referral.amount | currency: claim.currency : 'code' }}
           </div>
@@ -140,7 +140,7 @@
 
       @if (claim.decision; as decision) {
         <section class="surface-card">
-          <h3 class="card-title">Decision</h3>
+          <h2 class="card-title">Decision</h2>
           <p class="reason">{{ decision.reason }}</p>
           <span class="muted small"
             >{{ decision.decidedBy }} · {{ decision.decidedAt | date: 'd MMM, HH:mm' }}</span
@@ -149,7 +149,7 @@
       }
 
       <section class="surface-card">
-        <h3 class="card-title">Activity</h3>
+        <h2 class="card-title">Activity</h2>
         <ol class="timeline">
           @for (change of claim.statusHistory; track $index) {
             <li>

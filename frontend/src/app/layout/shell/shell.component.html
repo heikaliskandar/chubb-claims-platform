@@ -3,7 +3,7 @@
     <span class="dots" aria-hidden="true"></span>
 
     <div class="sidebar-head">
-      <a class="brand" [routerLink]="homeLink()" aria-label="Home">
+      <a class="brand" [routerLink]="homeLink()">
         <app-logo [product]="collapsed() ? undefined : 'Claims'" />
       </a>
       <button type="button" class="close" aria-label="Close menu" (click)="mobileOpen.set(false)">

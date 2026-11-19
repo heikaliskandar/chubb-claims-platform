@@ -62,7 +62,7 @@
     @case ('overview') {
       <div class="layout-main-side">
         <section class="surface-card">
-          <h3 class="card-title">Employment</h3>
+          <h2 class="card-title">Employment</h2>
           <dl class="kv">
             <div>
               <dt>Employee no.</dt>
@@ -110,7 +110,7 @@
         </section>
 
         <section class="surface-card">
-          <h3 class="card-title">Contact</h3>
+          <h2 class="card-title">Contact</h2>
           <ul class="contact">
             <li>
               <span class="ms">mail</span>
@@ -124,10 +124,10 @@
     }
     @case ('team') {
       <section class="surface-card">
-        <h3 class="card-title">
+        <h2 class="card-title">
           Direct reports
           <span class="muted small">{{ employee.directReports.length }}</span>
-        </h3>
+        </h2>
         @if (employee.directReports.length === 0) {
           <div class="empty-state"><span class="ms">group</span>No direct reports</div>
         } @else {
@@ -145,7 +145,7 @@
     }
     @case ('claims') {
       <section class="surface-card">
-        <h3 class="card-title">Assigned claims</h3>
+        <h2 class="card-title">Assigned claims</h2>
         <app-claim-table
           [page]="claims()"
           [rows]="claimsPageSize"
@@ -155,7 +155,7 @@
     }
     @case ('authority') {
       <section class="surface-card">
-        <h3 class="card-title">Approval limit</h3>
+        <h2 class="card-title">Approval limit</h2>
         @if (employee.approvalAuthority.unlimited) {
           <div class="unlimited"><span class="ms">all_inclusive</span>Unlimited in all markets</div>
         } @else if (employee.approvalAuthority.limits.length === 0) {

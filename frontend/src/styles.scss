@@ -5,22 +5,22 @@
   --app-border: #edf0f6;
   --app-text: #1d2433;
   --app-heading: #0f1f3d;
-  --app-muted: #6b7385;
-  --app-primary: #4f7df3;
-  --app-primary-strong: #3a63e0;
+  --app-muted: #5d6577;
+  --app-primary: #3461d9;
+  --app-primary-strong: #2a50b8;
   --app-primary-soft: #eef4ff;
   --app-input-bg: #edf2fb;
   --app-cta: #0f1f3d;
   --app-cta-hover: #1c3260;
-  --app-success: #0fa57c;
-  --app-warning: #b45309;
-  --app-danger: #e5484d;
+  --app-success: #066b50;
+  --app-warning: #964307;
+  --app-danger: #b42525;
   --app-sidebar-bg: linear-gradient(180deg, #1c2130 0%, #0e121b 100%);
   --app-radius: 16px;
   --app-radius-sm: 12px;
   --app-shadow: 0 1px 3px rgb(42 67 155 / 5%), 0 10px 30px -8px rgb(42 67 155 / 10%);
   --app-shadow-pop: 0 12px 40px -8px rgb(16 24 40 / 25%);
-  --app-focus: 0 0 0 3px rgb(79 125 243 / 25%);
+  --app-focus: 0 0 0 3px rgb(52 97 217 / 25%);
   color-scheme: light;
 }
 
@@ -443,7 +443,7 @@ a {
 
 .tag-info {
   background: var(--app-primary-soft);
-  color: var(--app-primary);
+  color: var(--app-primary-strong);
 }
 
 .tag-success {

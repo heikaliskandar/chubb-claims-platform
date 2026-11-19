@@ -43,8 +43,6 @@ class ClaimEventsIT {
     private static final CurrentUser CLAIMANT = new CurrentUser("claimant1", Role.CLAIMANT, null);
     private static final CurrentUser OFFICER_1 =
             new CurrentUser("officer1", Role.OFFICER, Position.CLAIMS_OFFICER);
-    private static final CurrentUser OFFICER_2 =
-            new CurrentUser("officer2", Role.OFFICER, Position.CLAIMS_OFFICER);
 
     @Autowired
     private ClaimService claimService;
@@ -95,7 +93,7 @@ class ClaimEventsIT {
         UUID claimId = submitClaim();
         claimService.assign(claimId, OFFICER_1);
 
-        assertThatThrownBy(() -> claimService.assign(claimId, OFFICER_2))
+        assertThatThrownBy(() -> claimService.assign(claimId, OFFICER_1))
                 .isInstanceOf(InvalidClaimStateException.class);
 
         assertThat(outboxRowsFor(claimId)).extracting(row -> row.get("event_type"))
