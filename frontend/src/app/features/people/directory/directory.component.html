@@ -7,7 +7,7 @@
       [attr.aria-selected]="view() === 'list'"
       (click)="showView('list')"
     >
-      <span class="ms">list</span>
+      <span class="ms" aria-hidden="true">list</span>
       List
     </button>
     <button
@@ -17,7 +17,7 @@
       [attr.aria-selected]="view() === 'chart'"
       (click)="showView('chart')"
     >
-      <span class="ms">account_tree</span>
+      <span class="ms" aria-hidden="true">account_tree</span>
       Org chart
     </button>
   </div>
@@ -27,7 +27,7 @@
   @if (view() === 'list') {
     <div class="toolbar">
       <div class="input-group search">
-        <span class="ms">search</span>
+        <span class="ms" aria-hidden="true">search</span>
         <input
           class="input"
           type="search"
@@ -42,7 +42,7 @@
 
     @if (result(); as page) {
       @if (page.content.length === 0) {
-        <div class="empty-state"><span class="ms">group</span>No people found</div>
+        <div class="empty-state"><span class="ms" aria-hidden="true">group</span>No people found</div>
       } @else {
         <div class="table-wrap">
           <table class="data-table">
@@ -91,13 +91,13 @@
         (pageChange)="pageIndex.set($event)"
       />
     } @else {
-      <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+      <div class="empty-state"><span class="ms" aria-hidden="true">sync</span>Loading…</div>
     }
   } @else {
     @if (orgChart().length) {
       <app-org-tree [nodes]="orgChart()" (selected)="open($event)" />
     } @else {
-      <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+      <div class="empty-state"><span class="ms" aria-hidden="true">sync</span>Loading…</div>
     }
   }
 </section>

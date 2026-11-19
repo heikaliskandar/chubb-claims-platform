@@ -1,32 +1,32 @@
 <app-page-header title="Team performance" [crumbs]="[{ label: 'Team' }, { label: 'Performance' }]">
   @if (data()?.workload?.asOf; as asOf) {
-    <span class="updated"><span class="ms">sync</span>Updated {{ asOf | date: 'HH:mm:ss' }}</span>
+    <span class="updated"><span class="ms" aria-hidden="true">sync</span>Updated {{ asOf | date: 'HH:mm:ss' }}</span>
   }
 </app-page-header>
 
 @if (data(); as data) {
   <div class="stats">
     <div class="surface-card stat">
-      <span class="icon-badge blue"><span class="ms">folder_open</span></span>
+      <span class="icon-badge blue"><span class="ms" aria-hidden="true">folder_open</span></span>
       <div>
         <span class="muted small">Open claims</span><strong>{{ openClaims() }}</strong>
       </div>
     </div>
     <div class="surface-card stat">
-      <span class="icon-badge sky"><span class="ms">inbox</span></span>
+      <span class="icon-badge sky"><span class="ms" aria-hidden="true">inbox</span></span>
       <div>
         <span class="muted small">Waiting to be picked up</span>
         <strong>{{ data.workload.unassignedClaims }}</strong>
       </div>
     </div>
     <div class="surface-card stat">
-      <span class="icon-badge green"><span class="ms">check_circle</span></span>
+      <span class="icon-badge green"><span class="ms" aria-hidden="true">check_circle</span></span>
       <div>
         <span class="muted small">Decided</span><strong>{{ decided() }}</strong>
       </div>
     </div>
     <div class="surface-card stat">
-      <span class="icon-badge amber"><span class="ms">timer</span></span>
+      <span class="icon-badge amber"><span class="ms" aria-hidden="true">timer</span></span>
       <div>
         <span class="muted small">Avg. hours to decision</span>
         <strong>{{ averageHours() === null ? '—' : (averageHours() | number: '1.0-1') }}</strong>
@@ -105,5 +105,5 @@
     </div>
   </section>
 } @else {
-  <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+  <div class="empty-state"><span class="ms" aria-hidden="true">sync</span>Loading…</div>
 }

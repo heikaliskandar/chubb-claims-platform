@@ -17,7 +17,7 @@
             [attr.aria-checked]="claimType() === type.value"
             (click)="form.controls.claimType.setValue(type.value)"
           >
-            <span class="ms">{{ type.icon }}</span>
+            <span class="ms" aria-hidden="true">{{ type.icon }}</span>
             {{ type.label }}
           </button>
         }
@@ -81,7 +81,7 @@
   <div class="form-actions">
     <a class="btn btn-ghost" routerLink="/claims/active">Cancel</a>
     <button type="submit" class="btn btn-primary" [disabled]="form.invalid || busy()">
-      <span class="ms">send</span>
+      <span class="ms" aria-hidden="true">send</span>
       {{ busy() ? 'Submitting…' : 'Submit claim' }}
     </button>
   </div>

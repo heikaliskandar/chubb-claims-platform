@@ -25,7 +25,7 @@ A claims platform for motor and property claims across six APAC markets:
 | REST and Kafka, with a reason for each | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
 | Async processing across both tiers | Outbox → Kafka → read model; the UI polls and shows "Updated hh:mm:ss" on dashboards |
 
-**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 148 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, and Lighthouse 100 for accessibility and best practices on every signed-in page.
+**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 148 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 36 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
 
 ## Architecture at a glance
 
@@ -173,6 +173,7 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 cd services/claims-service && ./mvnw test      # 135 unit + web-layer tests, no Docker needed
 cd services/insights-service && ./mvnw test    # 13 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
+cd e2e && npm ci && npx playwright test        # 36 end-to-end tests against the running stack
 ```
 
 | Area | What is tested |
@@ -181,6 +182,7 @@ cd services/insights-service && ./mvnw test    # 13 unit + web-layer tests
 | Business rules | Money validation, assignment, info requests, assessment, approval limits, referral, four-eyes, allowed actions (`ClaimTest`, `AuthorityLimitsTest`) |
 | API and security | Authentication, roles, validation errors, Problem Details mapping, idempotent submit (`ClaimControllerTest`, `DashboardControllerTest`) |
 | Money and reporting | Per-currency totals that are never mixed, weighted team averages, workload grouping (`ExposureReportTest`, `PerformanceReportTest`, `WorkloadReportTest`) |
+| End to end (Playwright, [e2e/](e2e/README.md)) | Every brief requirement driven through the browser as claimant, officer, team lead and manager, on desktop and mobile; Kafka read model updates; four-eyes approvals; security headers; WCAG 2.1 AA with axe-core |
 | Integration (Testcontainers, PostgreSQL 17 + Kafka 4.4) | Flyway schema matches the entities; claim and outbox event commit together; a failed command writes no event; events reach Kafka in order; optimistic-lock conflict; duplicate and stale events are ignored; poison messages go to the DLT |
 
 ## Security and performance

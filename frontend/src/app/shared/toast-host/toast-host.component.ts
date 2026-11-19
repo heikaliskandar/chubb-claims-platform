@@ -14,7 +14,7 @@ const ICONS: Record<ToastSeverity, string> = {
     <div class="toasts" aria-live="polite">
       @for (toast of toasts.toasts(); track toast.id) {
         <div class="toast" [class]="'toast ' + toast.severity" role="status">
-          <span class="ms">{{ icons[toast.severity] }}</span>
+          <span class="ms" aria-hidden="true">{{ icons[toast.severity] }}</span>
           <div class="text">
             <strong>{{ toast.summary }}</strong>
             @if (toast.detail) {
@@ -27,7 +27,7 @@ const ICONS: Record<ToastSeverity, string> = {
             aria-label="Dismiss"
             (click)="toasts.dismiss(toast.id)"
           >
-            <span class="ms">close</span>
+            <span class="ms" aria-hidden="true">close</span>
           </button>
         </div>
       }

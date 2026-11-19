@@ -32,7 +32,7 @@
           [attr.aria-label]="dark() ? 'Switch to light mode' : 'Switch to dark mode'"
           (click)="toggleTheme()"
         >
-          <span class="ms">{{ dark() ? 'light_mode' : 'dark_mode' }}</span>
+          <span class="ms" aria-hidden="true">{{ dark() ? 'light_mode' : 'dark_mode' }}</span>
         </button>
       </header>
 
@@ -45,7 +45,7 @@
         <div class="field">
           <label for="username">Username</label>
           <div class="input-group">
-            <span class="ms">person</span>
+            <span class="ms" aria-hidden="true">person</span>
             <input
               class="input"
               id="username"
@@ -59,7 +59,7 @@
         <div class="field">
           <label for="password">Password</label>
           <div class="input-group">
-            <span class="ms">lock</span>
+            <span class="ms" aria-hidden="true">lock</span>
             <input
               class="input"
               id="password"
@@ -74,7 +74,7 @@
               [attr.aria-label]="showPassword() ? 'Hide password' : 'Show password'"
               (click)="showPassword.update((shown) => !shown)"
             >
-              <span class="ms">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
+              <span class="ms" aria-hidden="true">{{ showPassword() ? 'visibility_off' : 'visibility' }}</span>
             </button>
           </div>
         </div>
@@ -92,7 +92,7 @@
           <div class="demo-list">
             @for (account of demoAccounts; track account.username) {
               <button type="button" class="demo-account" (click)="useDemo(account.username)">
-                <span class="ms">{{ account.icon }}</span>
+                <span class="ms" aria-hidden="true">{{ account.icon }}</span>
                 <span>{{ account.label }}</span>
               </button>
             }

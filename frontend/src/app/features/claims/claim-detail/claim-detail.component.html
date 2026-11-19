@@ -8,7 +8,7 @@
         [disabled]="busy()"
         (click)="choose(action)"
       >
-        <span class="ms">{{ actions[action].icon }}</span>
+        <span class="ms" aria-hidden="true">{{ actions[action].icon }}</span>
         {{ actions[action].label }}
       </button>
     }
@@ -77,11 +77,11 @@
           <h2 class="card-title">Information requests</h2>
           @for (request of claim.informationRequests; track request.id) {
             <div class="qa">
-              <div class="question"><span class="ms">help</span>{{ request.question }}</div>
+              <div class="question"><span class="ms" aria-hidden="true">help</span>{{ request.question }}</div>
               @if (request.response) {
-                <div class="answer"><span class="ms">reply</span>{{ request.response }}</div>
+                <div class="answer"><span class="ms" aria-hidden="true">reply</span>{{ request.response }}</div>
               } @else {
-                <div class="answer pending"><span class="ms">schedule</span>Awaiting answer</div>
+                <div class="answer pending"><span class="ms" aria-hidden="true">schedule</span>Awaiting answer</div>
               }
               <div class="muted small">
                 {{ request.requestedBy }} · {{ request.requestedAt | date: 'd MMM, HH:mm' }}
@@ -118,7 +118,7 @@
       <section class="surface-card status-card">
         <app-status-tag [status]="claim.status" />
         <div class="waiting">
-          <span class="ms">schedule</span>
+          <span class="ms" aria-hidden="true">schedule</span>
           <span>{{ claim.waitingOn | label }}</span>
         </div>
         <p class="muted small">{{ claim.nextStep }}</p>
@@ -173,9 +173,9 @@
     (closed)="activeAction.set(null)"
   >
     @if (activeAction(); as action) {
-      <form class="dialog-form" (ngSubmit)="run(action)">
+      <form class="dialog-form" (submit)="$event.preventDefault(); run(action)">
         @if (action === 'RESPOND_TO_INFORMATION_REQUEST' && openRequest(); as request) {
-          <div class="question"><span class="ms">help</span>{{ request.question }}</div>
+          <div class="question"><span class="ms" aria-hidden="true">help</span>{{ request.question }}</div>
         }
         @if (actions[action].amount; as amountField) {
           <div class="field">

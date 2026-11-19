@@ -2,7 +2,7 @@
   <app-page-header [title]="employee.self ? 'My profile' : employee.fullName" [crumbs]="crumbs()">
     @if (employee.self) {
       <button type="button" class="btn btn-outline" (click)="openEdit(employee)">
-        <span class="ms">edit</span>
+        <span class="ms" aria-hidden="true">edit</span>
         Edit contact
       </button>
     }
@@ -17,7 +17,7 @@
         <span class="muted">{{ employee.position | label }} · {{ employee.team }}</span>
       </div>
       <div class="badges">
-        <span class="chip"><span class="ms">badge</span>{{ employee.employeeNumber }}</span>
+        <span class="chip"><span class="ms" aria-hidden="true">badge</span>{{ employee.employeeNumber }}</span>
         <app-employee-status-tag [status]="employee.status" />
       </div>
     </div>
@@ -52,7 +52,7 @@
         [attr.aria-selected]="tab() === option.value"
         (click)="tab.set(option.value)"
       >
-        <span class="ms">{{ option.icon }}</span>
+        <span class="ms" aria-hidden="true">{{ option.icon }}</span>
         {{ option.label }}
       </button>
     }
@@ -113,11 +113,11 @@
           <h2 class="card-title">Contact</h2>
           <ul class="contact">
             <li>
-              <span class="ms">mail</span>
+              <span class="ms" aria-hidden="true">mail</span>
               <a [href]="'mailto:' + employee.email">{{ employee.email }}</a>
             </li>
-            <li><span class="ms">call</span>{{ employee.phone ?? '—' }}</li>
-            <li><span class="ms">apartment</span>{{ employee.officeLocation ?? '—' }}</li>
+            <li><span class="ms" aria-hidden="true">call</span>{{ employee.phone ?? '—' }}</li>
+            <li><span class="ms" aria-hidden="true">apartment</span>{{ employee.officeLocation ?? '—' }}</li>
           </ul>
         </section>
       </div>
@@ -129,7 +129,7 @@
           <span class="muted small">{{ employee.directReports.length }}</span>
         </h2>
         @if (employee.directReports.length === 0) {
-          <div class="empty-state"><span class="ms">group</span>No direct reports</div>
+          <div class="empty-state"><span class="ms" aria-hidden="true">group</span>No direct reports</div>
         } @else {
           <div class="people">
             @for (person of employee.directReports; track person.username) {
@@ -157,9 +157,9 @@
       <section class="surface-card">
         <h2 class="card-title">Approval limit</h2>
         @if (employee.approvalAuthority.unlimited) {
-          <div class="unlimited"><span class="ms">all_inclusive</span>Unlimited in all markets</div>
+          <div class="unlimited"><span class="ms" aria-hidden="true">all_inclusive</span>Unlimited in all markets</div>
         } @else if (employee.approvalAuthority.limits.length === 0) {
-          <div class="empty-state"><span class="ms">lock</span>No approval authority</div>
+          <div class="empty-state"><span class="ms" aria-hidden="true">lock</span>No approval authority</div>
         } @else {
           <div class="limits">
             @for (limit of employee.approvalAuthority.limits; track limit.currency) {
@@ -195,5 +195,5 @@
     </form>
   </app-modal>
 } @else {
-  <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+  <div class="empty-state"><span class="ms" aria-hidden="true">sync</span>Loading…</div>
 }

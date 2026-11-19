@@ -29,7 +29,7 @@ const PAGE_SIZE = 10;
     <app-page-header [title]="title()" [crumbs]="[{ label: 'Claims' }, { label: title() }]">
       @if (isClaimantView()) {
         <a class="btn btn-primary" routerLink="/claims/new">
-          <span class="ms">add</span>
+          <span class="ms" aria-hidden="true">add</span>
           New claim
         </a>
       }
@@ -37,7 +37,7 @@ const PAGE_SIZE = 10;
 
     @if (actionNeeded().length > 0) {
       <section class="surface-card callout">
-        <span class="icon-badge amber"><span class="ms">help</span></span>
+        <span class="icon-badge amber"><span class="ms" aria-hidden="true">help</span></span>
         <div>
           <strong>We need more information</strong>
           <span class="muted">Please answer the open question on:</span>

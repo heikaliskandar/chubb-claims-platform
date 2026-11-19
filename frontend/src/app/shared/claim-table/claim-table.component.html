@@ -1,6 +1,6 @@
 @if (page(); as page) {
   @if (page.content.length === 0) {
-    <div class="empty-state"><span class="ms">inbox</span>No claims</div>
+    <div class="empty-state"><span class="ms" aria-hidden="true">inbox</span>No claims</div>
   } @else {
     <div class="table-wrap">
       <table class="data-table">
@@ -54,5 +54,5 @@
     (pageChange)="pageChange.emit($event)"
   />
 } @else {
-  <div class="empty-state"><span class="ms">sync</span>Loading…</div>
+  <div class="empty-state"><span class="ms" aria-hidden="true">sync</span>Loading…</div>
 }

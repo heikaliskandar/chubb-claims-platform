@@ -15,7 +15,7 @@ import { Component, input, output } from '@angular/core';
             aria-label="Close"
             (click)="closed.emit()"
           >
-            <span class="ms">close</span>
+            <span class="ms" aria-hidden="true">close</span>
           </button>
         </header>
         <ng-content />

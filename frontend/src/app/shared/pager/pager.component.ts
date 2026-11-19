@@ -15,7 +15,7 @@ import { Component, computed, input, output } from '@angular/core';
               [disabled]="page() === 0"
               (click)="pageChange.emit(page() - 1)"
             >
-              <span class="ms">chevron_left</span>
+              <span class="ms" aria-hidden="true">chevron_left</span>
             </button>
             <button
               type="button"
@@ -24,7 +24,7 @@ import { Component, computed, input, output } from '@angular/core';
               [disabled]="page() + 1 >= pages()"
               (click)="pageChange.emit(page() + 1)"
             >
-              <span class="ms">chevron_right</span>
+              <span class="ms" aria-hidden="true">chevron_right</span>
             </button>
           </span>
         }
