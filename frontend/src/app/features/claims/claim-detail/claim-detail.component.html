@@ -1,0 +1,164 @@
+@if (claim(); as claim) {
+  <header class="header">
+    <div>
+      <h1>{{ claim.claimNumber }} <app-status-chip [status]="claim.status" /></h1>
+      <p class="next-step">{{ claim.nextStep }}</p>
+    </div>
+    <div class="waiting">
+      Waiting on<br /><strong>{{ claim.waitingOn | label }}</strong>
+    </div>
+  </header>
+
+  @if (claim.allowedActions.length > 0) {
+    <mat-card class="actions">
+      <mat-card-header><mat-card-title>What you can do</mat-card-title></mat-card-header>
+      <mat-card-content>
+        @if (claim.status === 'INFO_REQUESTED' && openRequest(); as request) {
+          <p class="question"><strong>Question:</strong> {{ request.question }}</p>
+        }
+        @if (claim.referral && claim.status === 'PENDING_APPROVAL') {
+          <p class="question">
+            <strong>{{ claim.referral.referredBy }}</strong> recommends approving
+            <strong>{{ claim.referral.amount | currency: claim.currency : 'code' }}</strong>:
+            {{ claim.referral.reason }}
+          </p>
+        }
+        <div class="buttons">
+          @for (action of claim.allowedActions; track action) {
+            <button
+              mat-flat-button
+              [class.danger]="action === 'REJECT' || action === 'REJECT_REFERRAL'"
+              [disabled]="busy()"
+              (click)="choose(action)"
+            >
+              {{ actions[action].label }}
+            </button>
+          }
+        </div>
+
+        @if (activeAction(); as action) {
+          <form class="action-form" (ngSubmit)="run(action)">
+            @if (actions[action].amount; as amountField) {
+              <mat-form-field appearance="outline">
+                <mat-label>{{ amountField.label }} ({{ claim.currency }})</mat-label>
+                <input matInput type="number" step="0.01" min="0" [formControl]="amount" />
+              </mat-form-field>
+            }
+            @if (actions[action].text; as textField) {
+              <mat-form-field appearance="outline">
+                <mat-label
+                  >{{ textField.label }}{{ textField.optional ? ' (optional)' : '' }}</mat-label
+                >
+                <textarea matInput rows="3" maxlength="1000" [formControl]="text"></textarea>
+              </mat-form-field>
+            }
+            <div class="buttons">
+              <button mat-flat-button type="submit" [disabled]="!canSubmit(action)">
+                {{ actions[action].label }}
+              </button>
+              <button mat-button type="button" (click)="activeAction.set(null)">Cancel</button>
+            </div>
+          </form>
+        }
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <div class="grid">
+    <mat-card>
+      <mat-card-header><mat-card-title>Claim</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <dl>
+          <dt>Policy</dt>
+          <dd>{{ claim.policyNumber }}</dd>
+          <dt>Market / type</dt>
+          <dd>{{ claim.market }} · {{ claim.claimType | label }}</dd>
+          <dt>Incident date</dt>
+          <dd>{{ claim.incidentDate | date: 'mediumDate' }}</dd>
+          <dt>Claimed</dt>
+          <dd>{{ claim.claimedAmount | currency: claim.currency : 'code' }}</dd>
+          @if (claim.reserveAmount !== null) {
+            <dt>Reserve</dt>
+            <dd>{{ claim.reserveAmount | currency: claim.currency : 'code' }}</dd>
+          }
+          <dt>Officer</dt>
+          <dd>{{ claim.assignedOfficerId ?? 'Not yet assigned' }}</dd>
+        </dl>
+        <p class="description">{{ claim.incidentDescription }}</p>
+      </mat-card-content>
+    </mat-card>
+
+    @if (claim.decision; as decision) {
+      <mat-card>
+        <mat-card-header><mat-card-title>Decision</mat-card-title></mat-card-header>
+        <mat-card-content>
+          <p>
+            <strong>{{ decision.outcome | label }}</strong>
+            @if (decision.approvedAmount !== null) {
+              · {{ decision.approvedAmount | currency: claim.currency : 'code' }}
+            }
+          </p>
+          <p>{{ decision.reason }}</p>
+          <p class="meta">
+            by {{ decision.decidedBy }} · {{ decision.decidedAt | date: 'medium' }}
+          </p>
+        </mat-card-content>
+      </mat-card>
+    }
+
+    @if (claim.informationRequests.length > 0) {
+      <mat-card>
+        <mat-card-header><mat-card-title>Information requests</mat-card-title></mat-card-header>
+        <mat-card-content>
+          @for (request of claim.informationRequests; track request.id) {
+            <div class="entry">
+              <p><strong>Q:</strong> {{ request.question }}</p>
+              <p><strong>A:</strong> {{ request.response ?? 'Awaiting answer' }}</p>
+              <p class="meta">
+                asked by {{ request.requestedBy }} · {{ request.requestedAt | date: 'medium' }}
+              </p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+
+    @if (claim.assessments?.length) {
+      <mat-card>
+        <mat-card-header><mat-card-title>Assessments</mat-card-title></mat-card-header>
+        <mat-card-content>
+          @for (assessment of claim.assessments; track assessment.assessedAt) {
+            <div class="entry">
+              <p>
+                <strong>{{
+                  assessment.assessedAmount | currency: assessment.currency : 'code'
+                }}</strong>
+                {{ assessment.notes }}
+              </p>
+              <p class="meta">
+                by {{ assessment.officerId }} · {{ assessment.assessedAt | date: 'medium' }}
+              </p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    }
+
+    <mat-card>
+      <mat-card-header><mat-card-title>Timeline</mat-card-title></mat-card-header>
+      <mat-card-content>
+        <ol class="timeline">
+          @for (change of claim.statusHistory; track $index) {
+            <li>
+              <strong>{{ change.toStatus | label }}</strong> by {{ change.changedBy }}
+              <span class="meta">· {{ change.changedAt | date: 'medium' }}</span>
+              @if (change.reason) {
+                <div class="reason">{{ change.reason }}</div>
+              }
+            </li>
+          }
+        </ol>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}

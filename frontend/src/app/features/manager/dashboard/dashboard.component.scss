@@ -1,0 +1,57 @@
+.as-of,
+.meta {
+  color: var(--mat-sys-on-surface-variant);
+  font-size: 13px;
+}
+
+.totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.total {
+  padding: 12px 16px;
+  min-width: 180px;
+}
+
+.currency {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.value {
+  font-size: 20px;
+  font-weight: 500;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+  gap: 16px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--mat-sys-outline-variant);
+}
+
+.number {
+  text-align: right;
+}
+
+.team-row {
+  font-weight: 600;
+}
+
+.indent {
+  padding-left: 24px;
+}

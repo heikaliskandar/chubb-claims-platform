@@ -17,6 +17,7 @@ A claims platform for motor and property claims across six APAC markets:
 | PostgreSQL 17 | One database and login per service (`claims`, `insights`). | 5432 |
 | Kafka 4.4 (KRaft) | Topic `claims.claim-events.v1`, keyed by claim ID. | 9094 (host) |
 | Kafka UI | Browse topics and messages. | 8090 |
+| `frontend` | Angular 22 app for all roles, served by nginx, which also proxies `/api` to the services. | 4200 |
 
 **REST** is used when a user is waiting for an answer. **Kafka** carries facts that have already happened. Details: _docs/architecture.md (Phase 7)_.
 
@@ -24,7 +25,7 @@ A claims platform for motor and property claims across six APAC markets:
 
 - Docker Desktop (with Compose v2). This is all you need to run the stack.
 - JDK 21 to run the services or tests outside Docker.
-- Node.js LTS for the frontend (Phase 6).
+- Node.js 22+ to run the frontend outside Docker.
 
 ## Running locally
 
@@ -34,6 +35,7 @@ docker compose up --build
 
 | Check | URL |
 |---|---|
+| **Web app** | **http://localhost:4200** |
 | claims-service health | http://localhost:8081/actuator/health |
 | insights-service health | http://localhost:8082/actuator/health |
 | Kafka UI | http://localhost:8090 |
@@ -48,6 +50,12 @@ To run one service from your IDE or with Maven (with Postgres started by Compose
 docker compose up -d postgres
 cd services/claims-service
 DB_PASSWORD=claims_dev_pw DEMO_USER_PASSWORD=password ./mvnw spring-boot:run
+```
+
+Frontend development server (with the backend running in Compose), proxying `/api` to ports 8081 and 8082:
+
+```bash
+cd frontend && npm install && npm start    # http://localhost:4200
 ```
 
 To reset the database (the init script only runs on an empty volume): `docker compose down -v`.

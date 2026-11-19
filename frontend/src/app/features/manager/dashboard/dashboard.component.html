@@ -1,0 +1,139 @@
+<h1>Outstanding claims</h1>
+
+@if (dashboard(); as dashboard) {
+  <p class="as-of">
+    Data as of
+    {{ dashboard.exposure.asOf ? (dashboard.exposure.asOf | date: 'medium') : 'no events yet' }} ·
+    refreshes every 10 seconds
+  </p>
+
+  <section class="totals">
+    @for (total of dashboard.exposure.totalsByCurrency; track total.currency) {
+      <mat-card class="total">
+        <div class="currency">{{ total.currency }}</div>
+        <div class="value">{{ total.outstandingReserve | currency: total.currency : 'code' }}</div>
+        <div class="meta">{{ total.openClaims }} open claims</div>
+      </mat-card>
+    } @empty {
+      <p>No outstanding exposure.</p>
+    }
+  </section>
+
+  <div class="grid">
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Liability exposure</mat-card-title>
+        <mat-card-subtitle
+          >Reserves on open claims, per currency; no FX conversion</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <table>
+          <thead>
+            <tr>
+              <th>Market</th>
+              <th>Type</th>
+              <th class="number">Open</th>
+              <th class="number">Reserve</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (
+              line of dashboard.exposure.lines;
+              track line.market + line.claimType + line.currency
+            ) {
+              <tr>
+                <td>{{ line.market }}</td>
+                <td>{{ line.claimType | label }}</td>
+                <td class="number">{{ line.openClaims }}</td>
+                <td class="number">
+                  {{ line.outstandingReserve | currency: line.currency : 'code' }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Team workload</mat-card-title>
+        <mat-card-subtitle
+          >{{ dashboard.workload.unassignedClaims }} claims waiting to be picked
+          up</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <table>
+          <thead>
+            <tr>
+              <th>Team / officer</th>
+              <th class="number">Open</th>
+              <th>By status</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (team of dashboard.workload.teams; track team.team) {
+              <tr class="team-row">
+                <td>{{ team.team }}</td>
+                <td class="number">{{ team.openClaims }}</td>
+                <td></td>
+              </tr>
+              @for (officer of team.officers; track officer.officerId) {
+                <tr>
+                  <td class="indent">{{ officer.officerId }}</td>
+                  <td class="number">{{ officer.openClaims }}</td>
+                  <td class="meta">
+                    @for (entry of officer.claimsByStatus | keyvalue; track entry.key) {
+                      {{ entry.key | label }}: {{ entry.value }}&nbsp;&nbsp;
+                    }
+                  </td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card>
+      <mat-card-header>
+        <mat-card-title>Team performance</mat-card-title>
+        <mat-card-subtitle
+          >Decisions and average time from submission to decision</mat-card-subtitle
+        >
+      </mat-card-header>
+      <mat-card-content>
+        <table>
+          <thead>
+            <tr>
+              <th>Team</th>
+              <th class="number">Approved</th>
+              <th class="number">Rejected</th>
+              <th class="number">Closed</th>
+              <th class="number">Avg hours</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (team of dashboard.performance.teams; track team.team) {
+              <tr>
+                <td>{{ team.team }}</td>
+                <td class="number">{{ team.approved }}</td>
+                <td class="number">{{ team.rejected }}</td>
+                <td class="number">{{ team.closed }}</td>
+                <td class="number">
+                  {{
+                    team.averageHoursToDecision === null
+                      ? '—'
+                      : (team.averageHoursToDecision | number: '1.1-1')
+                  }}
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </mat-card-content>
+    </mat-card>
+  </div>
+}
