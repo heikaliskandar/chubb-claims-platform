@@ -143,6 +143,12 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✅ Test runs had filled the demo database with around 100 claims. Reset it and rewrote the seed as nine claims, one per lifecycle stage across all six markets, each with a realistic story.
 - ✅ Added docs/user-flows.md: diagrams per role (claimant, officer, team lead, manager), the demo data and what to try with each, and a ten-minute walkthrough.
 
+## Phase 17: Documentation
+
+- ✅ One document per feature in docs/features (screens, endpoints, rules, data, code locations, tests), a data-model ER diagram, a tech-stack page with version, licence and reason for every library, a docs index, and the prototype image and stack badges in the README.
+- ✏️ Kept docs/ASSESSMENT_BRIEF.md and docs/MASTER_PROMPT.md unchanged: they are the inputs to the work, and editing them would misrepresent how the AI was directed.
+- ✅ Checked every factual claim in the new docs against the code (event types, retry count, sort order, test names, versions) and every relative link (26 files, none broken).
+
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.

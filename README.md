@@ -1,12 +1,54 @@
 # Chubb APAC Claims Platform
 
-A claims platform for motor and property claims across six APAC markets:
+A claims platform for motor and property claims across six APAC markets: one Angular app for claimants and claims staff, backed by two Spring Boot services that talk over REST and Kafka.
 
-- **Claimants** submit and track claims, and answer information requests.
-- **Claims officers** pick up, review, assess and decide claims.
-- **Managers** see outstanding liability exposure and team workload.
+![Claims portal prototype](docs/images/claims-portal-mockup.webp)
+
+![Java](https://img.shields.io/badge/Java_21-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot_4.1-6DB33F?style=flat-square&logo=springboot&logoColor=white)
+![Spring Security](https://img.shields.io/badge/Spring_Security-6DB33F?style=flat-square&logo=springsecurity&logoColor=white)
+![Hibernate](https://img.shields.io/badge/Hibernate_7-59666C?style=flat-square&logo=hibernate&logoColor=white)
+![Angular](https://img.shields.io/badge/Angular_22-DD0031?style=flat-square&logo=angular&logoColor=white)
+![TypeScript](https://img.shields.io/badge/TypeScript_6-3178C6?style=flat-square&logo=typescript&logoColor=white)
+![Chart.js](https://img.shields.io/badge/Chart.js_4-FF6384?style=flat-square&logo=chartdotjs&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL_17-4169E1?style=flat-square&logo=postgresql&logoColor=white)
+![Flyway](https://img.shields.io/badge/Flyway-CC0200?style=flat-square&logo=flyway&logoColor=white)
+![Apache Kafka](https://img.shields.io/badge/Kafka_4.4_KRaft-231F20?style=flat-square&logo=apachekafka&logoColor=white)
+![Docker](https://img.shields.io/badge/Docker_Compose-2496ED?style=flat-square&logo=docker&logoColor=white)
+![nginx](https://img.shields.io/badge/nginx-009639?style=flat-square&logo=nginx&logoColor=white)
+![OpenAPI](https://img.shields.io/badge/OpenAPI_3-6BA539?style=flat-square&logo=openapiinitiative&logoColor=white)
+![JUnit 5](https://img.shields.io/badge/JUnit_5-25A162?style=flat-square&logo=junit5&logoColor=white)
+![Testcontainers](https://img.shields.io/badge/Testcontainers-291A3F?style=flat-square&logo=testcontainers&logoColor=white)
+![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=flat-square&logo=playwright&logoColor=white)
+
+Every library, its version, licence and why it was chosen: **[docs/tech-stack.md](docs/tech-stack.md)**. All open source, with no commercial UI library.
+
+| Who | Can |
+|---|---|
+| **Claimants** | Report an incident, track the claim, answer information requests, receive the decision |
+| **Claims officers** | Pick up claims from the queue, review, request information, assess, approve, reject, settle |
+| **Team leads** | Everything an officer can, plus approve referrals above an officer's limit and see the team's performance |
+| **Managers** | Outstanding liability exposure per currency, workload and performance across teams |
 
 > Take-home assessment. The brief is in [docs/ASSESSMENT_BRIEF.md](docs/ASSESSMENT_BRIEF.md). How AI was used is logged in [AI_JOURNAL.md](AI_JOURNAL.md).
+
+## Quick start
+
+```bash
+docker compose up --build -d
+```
+
+Open **http://localhost:4200** and sign in as `claimant1`, `officer1`, `lead1` or `manager1`. The password for all of them is `password`.
+
+## Documentation
+
+| | |
+|---|---|
+| **[User flows](docs/user-flows.md)** | Each user type step by step, with diagrams, the demo data and a ten-minute walkthrough |
+| **[Features](docs/README.md#features)** | [Submission and tracking](docs/features/claim-submission-and-tracking.md) · [Claim handling](docs/features/claim-handling.md) · [Approvals](docs/features/approvals.md) · [Dashboards](docs/features/dashboards-and-insights.md) · [Employees](docs/features/employees-and-hierarchy.md) · [Events](docs/features/events-and-messaging.md) · [Security and privacy](docs/features/security-and-privacy.md) · [Data model](docs/features/data-model.md) · [Frontend](docs/features/frontend.md) · [Testing](docs/features/testing.md) |
+| **[Architecture](docs/architecture.md)** | Services, REST vs Kafka, reliability, scaling |
+| **[Decisions](docs/README.md#decisions-adrs)** | Seven architecture decision records |
+| **[Tech stack](docs/tech-stack.md)** | Frameworks, libraries, versions and licences |
 
 ## How the brief is covered
 
@@ -14,17 +56,17 @@ Step-by-step flows for every user type, with diagrams, the demo data and a ten-m
 
 | Brief requirement | Where it lives |
 |---|---|
-| Claimants report an incident | **Claims → New claim** (`POST /claims`, with `Idempotency-Key` so a double submit can't create two claims) |
+| Claimants report an incident ([doc](docs/features/claim-submission-and-tracking.md)) | **Claims → New claim** (`POST /claims`, with `Idempotency-Key` so a double submit can't create two claims) |
 | Claimants track their claim | **Claims → My claims / History**; claim page with status, "waiting on", next step and full activity timeline; refreshes every 10 s |
 | Claimants provide information when asked | "We need more information" banner on My claims; **Respond** on the claim page |
 | Claimants receive decisions | Decision card with outcome, amount and reason; event-driven notification stub in insights-service |
-| Staff pick up incoming claims | **Claims → Queue** → **Assign to me** (optimistic locking stops two officers taking the same claim) |
+| Staff pick up incoming claims ([doc](docs/features/claim-handling.md)) | **Claims → Queue** → **Assign to me** (optimistic locking stops two officers taking the same claim) |
 | Staff review and assess | **Start review**, **Request info**, **Assess** (sets the reserve; every re-assessment kept) |
-| Staff progress to settlement or rejection | **Approve / Reject / Mark settled**; approvals above the officer's per-currency limit go to **Approvals** for someone above them (four-eyes) |
-| Staff see team workload and performance | **Team → Performance** (open claims by officer and status, decisions, average hours to decision) and **Team → People** (reporting line, profiles) |
+| Staff progress to settlement or rejection ([approvals](docs/features/approvals.md)) | **Approve / Reject / Mark settled**; approvals above the officer's per-currency limit go to **Approvals** for someone above them (four-eyes) |
+| Staff see team workload and performance ([doc](docs/features/dashboards-and-insights.md)) | **Team → Performance** (open claims by officer and status, decisions, average hours to decision) and **Team → People** (reporting line, profiles) |
 | Managers see outstanding claims and liability exposure | **Overview** dashboard: reserve per currency, by market and type, workload chart |
-| Same Angular app for every user type | One app; menus, pages and buttons adapt to role, position and `allowedActions` |
-| REST and Kafka, with a reason for each | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
+| Same Angular app for every user type ([doc](docs/features/frontend.md)) | One app; menus, pages and buttons adapt to role, position and `allowedActions` |
+| REST and Kafka, with a reason for each ([doc](docs/features/events-and-messaging.md)) | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
 | Async processing across both tiers | Outbox → Kafka → read model; the UI polls and shows "Updated hh:mm:ss" on dashboards |
 
 **Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 151 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 36 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
@@ -40,7 +82,7 @@ Step-by-step flows for every user type, with diagrams, the demo data and a ten-m
 | Kafka UI | Browse topics and messages. | 8090 |
 | `frontend` | Angular 22 app for all roles, with its own small component set (no paid UI library), light and dark themes and a responsive sidebar layout. Served by nginx, which also proxies `/api` to the services. | 4200 |
 
-**REST** is used when a user is waiting for an answer. **Kafka** carries facts that have already happened. Details, diagrams and scaling notes: [docs/architecture.md](docs/architecture.md). Key decisions: [docs/adr](docs/adr).
+**REST** is used when a user is waiting for an answer. **Kafka** carries facts that have already happened. Details, diagrams and scaling notes: [docs/architecture.md](docs/architecture.md). Key decisions: [docs/adr](docs/adr). Schema: [data model](docs/features/data-model.md).
 
 ## Prerequisites
 
@@ -99,7 +141,7 @@ A fresh stack is seeded with **nine claims, one at each stage of the lifecycle**
 
 Logins (username, password, role) come from configuration. Positions, teams and the reporting line come from the **employee directory** (`employee` table), the way an identity provider would sync them from HR.
 
-With `DEMO_DATA_ENABLED=true` (the Compose default), the first start seeds eight claims in different states. One of them, `CLM-SG-…` for SGD 78,000 recommended by officer1, is waiting for approval: try approving it as `officer1` (blocked by the four-eyes rule), `lead2` (not above officer1 in the reporting line) and `lead1` (allowed).
+With `DEMO_DATA_ENABLED=true` (the Compose default), `CLM-SG-2026-000006`, for SGD 78,000 recommended by officer1, is waiting for approval: try approving it as `officer1` (blocked by the four-eyes rule), `lead2` (not above officer1 in the reporting line) and `lead1` (allowed).
 
 ## Approval authority
 

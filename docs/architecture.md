@@ -1,5 +1,7 @@
 # Architecture
 
+Feature-level detail (screens, endpoints, rules, code locations, tests) lives in [docs/features](README.md#features). Every framework and library is listed in the [tech stack](tech-stack.md).
+
 ## Overview
 
 ```mermaid
