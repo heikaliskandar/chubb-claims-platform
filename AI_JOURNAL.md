@@ -155,6 +155,12 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✏️ Changed my earlier decision to keep credentials in memory only: losing the session on every reload was poor UX. The session now lives in `sessionStorage` (one tab, cleared on close and sign-out), with the strict CSP as the mitigation. OIDC with an `HttpOnly` cookie remains the production answer.
 - 🐞 The AI's axe-core check caught a contrast failure in the new sidebar section labels and a table column without a header; both fixed. e2e tests updated to the new behaviour, plus a new test that sign-out clears the session: 37 passing.
 
+## Phase 19: Role visibility check
+
+- ❓ I reported menu items that looked clickable but did nothing. Asked the AI to check every role rather than eyeball it.
+- ✅ Added a crawl test (`08-navigation`): as each of the 8 users it clicks every sidebar link, the profile entry, and every row on every list and tab, failing on any 401, 403 or 404 API call. All sidebar links were fine for every role.
+- 🐞 Found the dead end: on **People** and **Approvals**, clicking the tab you were already on cleared the list and never reloaded it, leaving the page stuck on "Loading…". Fixed by ignoring a re-select of the current tab. 61 e2e tests pass, twice in a row.
+
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.

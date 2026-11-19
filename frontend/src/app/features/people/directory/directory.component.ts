@@ -69,6 +69,9 @@ export class DirectoryComponent {
   }
 
   protected showView(view: View): void {
+    if (view === this.view()) {
+      return;
+    }
     this.result.set(null);
     this.view.set(view);
   }

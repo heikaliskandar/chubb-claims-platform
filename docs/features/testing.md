@@ -6,7 +6,7 @@ Tests are layered so most checks are fast and a few are realistic:
 flowchart BT
     U["Unit and web-layer · 151<br/>JUnit 5, AssertJ, MockMvc<br/>seconds, no Docker"]
     I["Integration · Testcontainers<br/>real PostgreSQL 17 + Kafka 4.4"]
-    E["End to end · 37<br/>Playwright + axe-core<br/>real stack, desktop and mobile"]
+    E["End to end · 61<br/>Playwright + axe-core<br/>real stack, desktop and mobile"]
     U --> I --> E
 ```
 

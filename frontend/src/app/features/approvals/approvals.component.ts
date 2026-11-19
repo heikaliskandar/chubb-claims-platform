@@ -75,6 +75,9 @@ export class ApprovalsComponent {
   }
 
   protected show(view: ApprovalView): void {
+    if (view === this.view()) {
+      return;
+    }
     this.result.set(null);
     this.pageIndex.set(0);
     this.view.set(view);
