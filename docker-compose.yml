@@ -53,6 +53,7 @@ services:
 
   claims-service:
     build: ./services/claims-service
+    restart: on-failure
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/claims
       DB_USERNAME: claims_app
@@ -70,6 +71,7 @@ services:
 
   insights-service:
     build: ./services/insights-service
+    restart: on-failure
     environment:
       DB_URL: jdbc:postgresql://postgres:5432/insights
       DB_USERNAME: insights_app
