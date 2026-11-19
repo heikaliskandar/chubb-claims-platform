@@ -37,6 +37,7 @@ export class ClaimsApi {
   static async as(username: string, baseURL: string): Promise<ClaimsApi> {
     const context = await request.newContext({
       baseURL,
+      ignoreHTTPSErrors: process.env.E2E_IGNORE_HTTPS_ERRORS === 'true',
       httpCredentials: { username, password: PASSWORD, send: 'always' },
     });
     return new ClaimsApi(username, context);

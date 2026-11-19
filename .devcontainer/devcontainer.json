@@ -1,0 +1,21 @@
+{
+  "name": "Claims platform",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-24.04",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/java:1": { "version": "21", "jdkDistro": "tem" },
+    "ghcr.io/devcontainers/features/node:1": { "version": "24" }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "8gb" },
+  "postStartCommand": "docker compose up -d --build",
+  "waitFor": "onCreateCommand",
+  "forwardPorts": [4200, 8090],
+  "portsAttributes": {
+    "4200": { "label": "Claims app (and /api/docs)", "onAutoForward": "openBrowser" },
+    "8090": { "label": "Kafka UI", "onAutoForward": "silent" }
+  },
+  "customizations": {
+    "codespaces": { "openFiles": ["docs/deploy.md"] },
+    "vscode": { "extensions": ["vscjava.vscode-java-pack", "angular.ng-template", "ms-playwright.playwright"] }
+  }
+}

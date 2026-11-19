@@ -7,6 +7,7 @@
 | [User flows](user-flows.md) | How claimants, officers, team leads and managers use the platform, with diagrams, the demo data and a ten-minute walkthrough |
 | [Architecture](architecture.md) | Services, REST vs Kafka, write path, reliability, money, scaling to 10x and 100x |
 | [Technology stack](tech-stack.md) | Every framework and library, with version, licence and reason |
+| [Deployment](deploy.md) | Free hosting: Codespaces, or an Oracle Cloud Always Free VM with HTTPS, backups and a one-command setup |
 | [API reference](api/README.md) | Live docs for both services at http://localhost:4200/api/docs, and the committed OpenAPI contract |
 
 ## Features

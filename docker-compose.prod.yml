@@ -1,0 +1,60 @@
+# Production overrides for a single public server. Use with:
+#   docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
+# or simply ./infra/deploy/server-setup.sh, which does it for you.
+# Requires Docker Compose 2.24+ (for !reset). Secrets come from .env on the server.
+
+services:
+  postgres:
+    ports: !reset []
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      CLAIMS_DB_PASSWORD: ${CLAIMS_DB_PASSWORD:?set CLAIMS_DB_PASSWORD in .env}
+      INSIGHTS_DB_PASSWORD: ${INSIGHTS_DB_PASSWORD:?set INSIGHTS_DB_PASSWORD in .env}
+    restart: unless-stopped
+
+  kafka:
+    ports: !reset []
+    restart: unless-stopped
+
+  kafka-ui:
+    profiles: ["debug"]
+
+  claims-service:
+    ports: !reset []
+    environment:
+      DB_PASSWORD: ${CLAIMS_DB_PASSWORD:?set CLAIMS_DB_PASSWORD in .env}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:?set DEMO_USER_PASSWORD in .env}
+      DEMO_DATA_ENABLED: ${DEMO_DATA_ENABLED:-false}
+      API_DOCS_ENABLED: ${API_DOCS_ENABLED:-false}
+    restart: unless-stopped
+
+  insights-service:
+    ports: !reset []
+    environment:
+      DB_PASSWORD: ${INSIGHTS_DB_PASSWORD:?set INSIGHTS_DB_PASSWORD in .env}
+      DEMO_USER_PASSWORD: ${DEMO_USER_PASSWORD:?set DEMO_USER_PASSWORD in .env}
+      API_DOCS_ENABLED: ${API_DOCS_ENABLED:-false}
+    restart: unless-stopped
+
+  frontend:
+    ports: !reset []
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2.10-alpine
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${DOMAIN:?set DOMAIN in .env}
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      - frontend
+
+volumes:
+  caddy-data:
+  caddy-config:

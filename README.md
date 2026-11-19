@@ -41,6 +41,8 @@ docker compose up --build -d
 
 Open **http://localhost:4200** and sign in as `claimant1`, `officer1`, `lead1` or `manager1`. The password for all of them is `password`.
 
+**Without installing anything:** open the repo in **GitHub Codespaces** (*Code → Codespaces → Create*); the app starts by itself. To host it for others for free, see **[docs/deploy.md](docs/deploy.md)**.
+
 ## Documentation
 
 | | |
@@ -51,6 +53,7 @@ Open **http://localhost:4200** and sign in as `claimant1`, `officer1`, `lead1` o
 | **[API reference](docs/api/README.md)** | Live docs at **http://localhost:4200/api/docs** for both services, generated from the code, plus the committed OpenAPI contract |
 | **[Decisions](docs/README.md#decisions-adrs)** | Eight architecture decision records |
 | **[Tech stack](docs/tech-stack.md)** | Frameworks, libraries, versions and licences |
+| **[Deployment](docs/deploy.md)** | Free hosting: GitHub Codespaces in one click, or an Oracle Cloud Always Free VM with HTTPS via one script |
 
 ## How the brief is covered
 
@@ -292,7 +295,7 @@ Deliberately not built, to keep the scope honest. The design already leaves room
 | Policy administration integration | Policy numbers are not validated against a policy system. |
 | Fraud scoring / SIU referral | A separate domain; it would consume the same claim events. |
 | Multi-language UI | English only. |
-| Kubernetes, cloud deployment, CI/CD | Outside a local take-home; the services are stateless containers ready for them. |
+| Kubernetes and managed cloud services | A single VM with Docker Compose is enough for a demo ([deployment](docs/deploy.md)); the services are stateless containers ready for Kubernetes. CI runs in GitHub Actions. |
 
 ## Known limitations and next steps
 

@@ -179,6 +179,13 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✅ API docs: one portal at /api/docs for both services through nginx (try-it-out uses the app's proxy and login), a rich introduction, standard error responses added to every operation automatically, and a committed OpenAPI contract per service checked by `OpenApiContractIT`. I proved the check by tampering with the file: the build failed with the update command.
 - 🐞 Hibernate schema validation caught `CHAR(64)` vs the entity's string before anything shipped. The first spec showed approval endpoints under two tags and submit missing its 201; moved approvals to their own controller. nginx dropped the port on the docs redirect (`absolute_redirect off`).
 
+## Phase 23: Free deployment
+
+- ❓ I asked for a free and easy deployment. The AI compared options first: free PaaS tiers (about 512 MB) can't hold Postgres, Kafka and two JVMs, so the two real options are GitHub Codespaces (quickest, for a live demo) and an Oracle Cloud Always Free VM (permanent HTTPS link).
+- ✅ Finished the server setup I had started (production compose with Caddy, backups): a one-command, re-runnable `server-setup.sh` (Docker, firewall, swap, random secrets, DNS check, start, wait, optional backup cron), backups now include uploaded documents, and a dev container so Codespaces starts the app by itself.
+- ✅ Rehearsed production locally with `DOMAIN=localhost`: HTTPS, an HTTP→HTTPS redirect, HSTS, only ports 80 and 443 open, and all 69 end-to-end tests passing over HTTPS through Caddy; backup dumps and the documents archive checked. The e2e suite now accepts a self-signed certificate, so it doubles as a deployment smoke test.
+- ⚠️ Not verified here: an actual Oracle VM or Codespace (needs my accounts). The image and feature references were checked against their registries.
+
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.
