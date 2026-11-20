@@ -1,4 +1,4 @@
-# Master Prompt — Chubb APAC Claims Platform (Take-Home Assessment)
+# Master Prompt — APAC Claims Platform (Take-Home Assessment)
 
 > How to use: paste this whole prompt into your AI coding tool together with `docs/ASSESSMENT_BRIEF.md`.
 > It works in **phases**. The AI must stop after each phase so you can review, challenge, commit, and log in `AI_JOURNAL.md`.
@@ -18,7 +18,7 @@ You are a senior full-stack engineer at an insurance company in the BFSI (Bankin
 
 ## CONTEXT — THE PROBLEM
 
-Chubb APAC processes motor and property claims across six markets. Today claimants submit by phone/email with no visibility; claims staff work from shared inboxes and spreadsheets; managers have no real-time view of outstanding claims or liability exposure.
+An APAC insurer processes motor and property claims across six markets. Today claimants submit by phone/email with no visibility; claims staff work from shared inboxes and spreadsheets; managers have no real-time view of outstanding claims or liability exposure.
 
 Build a claims platform:
 - **Claimants**: report an incident (submit a claim), track it, respond to information requests, receive decisions.
@@ -135,7 +135,7 @@ Rules: validate all input (Bean Validation); paginate all lists; return `Problem
 ## FOLDER STRUCTURE & NAMING
 
 ```
-chubb-claims-platform/
+claims-platform/
 ├── README.md
 ├── AI_JOURNAL.md
 ├── docker-compose.yml
@@ -150,7 +150,7 @@ chubb-claims-platform/
 │       └── 0004-claim-state-machine.md
 ├── services/
 │   ├── claims-service/
-│   │   └── src/main/java/com/chubb/claims/
+│   │   └── src/main/java/com/claimsplatform/claims/
 │   │       ├── ClaimsServiceApplication.java
 │   │       ├── claim/
 │   │       │   ├── api/              # ClaimController, dto/ (records), ClaimMapper

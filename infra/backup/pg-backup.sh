@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Nightly backup of both databases and the uploaded claim documents. Run from the project root, e.g. via cron:
-#   0 2 * * * cd /opt/chubb-claims-platform && ./infra/backup/pg-backup.sh >> $HOME/backup.log 2>&1
+#   0 2 * * * cd ~/claims && ./infra/backup/pg-backup.sh >> $HOME/backup.log 2>&1
 set -euo pipefail
 
 BACKUP_DIR="${BACKUP_DIR:-$HOME/backups}"

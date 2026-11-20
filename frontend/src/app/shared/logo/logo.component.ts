@@ -3,8 +3,8 @@ import { Component, input } from '@angular/core';
 @Component({
   selector: 'app-logo',
   template: `
-    <svg viewBox="0 0 132 28" role="img" aria-label="Chubb">
-      <text x="0" y="23.5" textLength="132" lengthAdjust="spacingAndGlyphs">CHUBB</text>
+    <svg viewBox="0 0 96 28" role="img" aria-label="APAC">
+      <text x="0" y="23.5" textLength="96" lengthAdjust="spacingAndGlyphs">APAC</text>
     </svg>
     @if (product()) {
       <span class="product">{{ product() }}</span>

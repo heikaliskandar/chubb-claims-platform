@@ -2,7 +2,7 @@
 
 > **Brief:** *Both user types access the same Angular application.*
 
-![Sign-in screen](../images/claims-portal-mockup.webp)
+![APAC Claims sign-in page](../images/sign-in.webp)
 
 ## One app, adapted per user
 

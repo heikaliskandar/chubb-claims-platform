@@ -1,4 +1,4 @@
-# CHUBB APAC ENGINEERING — Take-Home Assessment
+# Take-Home Assessment
 
 **Young Graduate Program (Full-stack Developer)**
 
@@ -8,7 +8,7 @@
 
 ## Background
 
-Chubb APAC processes motor and property claims across six markets. Today the process is fragmented: claimants submit by phone or email and wait with no visibility into what is happening. Claims staff manage incoming work from shared inboxes and spreadsheets, with no consolidated view of their workload. Managers have no real-time picture of outstanding claims or liability exposure.
+An APAC insurer processes motor and property claims across six markets. Today the process is fragmented: claimants submit by phone or email and wait with no visibility into what is happening. Claims staff manage incoming work from shared inboxes and spreadsheets, with no consolidated view of their workload. Managers have no real-time picture of outstanding claims or liability exposure.
 
 Your task is to build the platform.
 
@@ -62,7 +62,5 @@ This is a sprint-format assessment. Target 2–3 hours. Hard cap: 5 hours. We ar
 - This brief is deliberately underspecified. We expect you to decompose the problem, make technology and architecture decisions, and design a solution. Those decisions are part of what we are evaluating.
 - Prioritise ruthlessly. Decide what to build and what to leave out, and be prepared to explain that prioritisation in the walkthrough.
 - AI is your primary working interface. We expect AI tooling to drive the bulk of code generation. What we are evaluating is how you direct, challenge, and override it. Document your process as you go. You sign off every line you submit — the panel will probe anything you cannot defend.
-
-If you have questions about the assessment, contact the hiring panel at <Vinitha.SooreshRao@Chubb.com> or <Keshwin.Dhillon@chubb.com>
 
 **Good luck.**

@@ -193,6 +193,13 @@ Phase boundaries are taken from the commit timestamps (each phase was committed 
 - ✅ UI: Edit claim reuses the new-claim form (market locked, with an explanation), a banner explains what can still change, a bin icon with confirmation on removable documents, a withdraw dialog in plain language, and "Details updated" in the timeline.
 - ✅ Tested on a throwaway copy of the production setup so the live demo data stayed clean: 187 unit tests, 14 integration tests, and 73 end-to-end tests (4 new), with no accessibility violations on the changed screens. Migration V7 then applied cleanly to the live data.
 
+## Phase 25: Removing company branding
+
+- ❓ The recruiter asked me to remove the company's branding because the repository and demo are public.
+- ✅ Neutral product name *APAC Claims*: new wordmark, page title, an original shield favicon, a neutral footer ("Demo with fictional data"); the logo was removed from the cover photo by blending in the surrounding sky; the README mockup replaced by a fresh screenshot; Java packages and Maven group renamed from the company namespace to `com.claimsplatform` with `git mv`, so history follows the files; the brief and master prompt neutralised, and the hiring panel's email addresses removed.
+- ✅ Re-verified everything after the package move: full backend suites with integration tests and the unchanged API contract, frontend tests, and 41 end-to-end tests against the live link.
+- ✏️ A clean rebuild showed the backend has 198 unit tests, not 200: the earlier counts included a stale report from the project template's original `contextLoads` test. Docs corrected.
+
 ## Reflection
 
 - **What worked:** making the AI stop after every phase, and asking it to verify against real registries, compilers and tests rather than its memory. Most of the bugs it introduced were caught by compiling or testing before I committed.

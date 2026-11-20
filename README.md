@@ -1,8 +1,8 @@
-# Chubb APAC Claims Platform
+# APAC Claims Platform
 
 A claims platform for motor and property claims across six APAC markets: one Angular app for claimants and claims staff, backed by two Spring Boot services that talk over REST and Kafka.
 
-![Claims portal prototype](docs/images/claims-portal-mockup.webp)
+![APAC Claims sign-in page](docs/images/sign-in.webp)
 
 [![CI](https://github.com/heikaliskandar/chubb-claims-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/heikaliskandar/chubb-claims-platform/actions/workflows/ci.yml)
 ![Java](https://img.shields.io/badge/Java_21-ED8B00?style=flat-square&logo=openjdk&logoColor=white)
@@ -75,7 +75,7 @@ Step-by-step flows for every user type, with diagrams, the demo data and a ten-m
 | REST and Kafka, with a reason for each ([doc](docs/features/events-and-messaging.md)) | REST for anything a user waits on; Kafka (transactional outbox, idempotent consumer, DLT) for facts other parts of the system react to. See [ADR 0002](docs/adr/0002-rest-vs-kafka.md) |
 | Async processing across both tiers | Outbox → Kafka → read model; the UI polls and shows "Updated hh:mm:ss" on dashboards |
 
-**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 200 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 73 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
+**Beyond the brief:** delegated approval authority per position and currency, four-eyes referrals with an approvals inbox, a reporting-line hierarchy that controls who sees which claims and people, employee profiles, light and dark themes, a responsive layout, RFC 7807 errors, OpenAPI docs, 198 unit and web tests plus Testcontainers integration tests against real PostgreSQL and Kafka, security headers with a strict Content Security Policy, 73 Playwright end-to-end tests mapped to the brief, and Lighthouse 100 for accessibility and best practices on every signed-in page.
 
 ## Architecture at a glance
 
@@ -229,8 +229,8 @@ curl -u officer1:password -X POST http://localhost:8081/api/v1/claims/{id}/assig
 ## Tests
 
 ```bash
-cd services/claims-service && ./mvnw test      # 187 unit + web-layer tests, no Docker needed
-cd services/insights-service && ./mvnw test    # 13 unit + web-layer tests
+cd services/claims-service && ./mvnw test      # 186 unit + web-layer tests, no Docker needed
+cd services/insights-service && ./mvnw test    # 12 unit + web-layer tests
 ./mvnw verify                                  # adds the Testcontainers integration tests (needs Docker)
 cd frontend && npm test -- --watch=false       # 16 frontend unit tests (Vitest)
 cd e2e && npm ci && npx playwright test        # 73 end-to-end tests against the running stack

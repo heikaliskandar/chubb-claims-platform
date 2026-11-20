@@ -2,7 +2,7 @@
 
 How each type of user works in the platform, mapped to the brief. Every flow can be followed in the running app with the demo data. All demo passwords are `password`.
 
-![Claims portal sign-in](images/claims-portal-mockup.webp)
+![APAC Claims sign-in page](images/sign-in.webp)
 
 ## Who uses it
 
